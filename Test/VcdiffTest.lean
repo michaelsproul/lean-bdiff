@@ -334,4 +334,140 @@ def main : IO Unit := do
       else IO.println s!"FAIL: double inst, got {result.toList} expected {expected.toList}"
     | .error e => IO.println s!"FAIL: double inst, error: {e}"
 
+  -- ## Encoder roundtrip tests (encode then decode with our decoder)
+
+  -- Test: encode identical files (should produce valid patch with no COPY/ADD needed)
+  do
+    let source := ByteArray.mk #[0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48]
+    let target := source
+    let patch := Encoder.encode source target
+    match Decoder.decode patch source with
+    | .ok result =>
+      if result == target then IO.println "PASS: roundtrip identical"
+      else IO.println s!"FAIL: roundtrip identical, got {result.size} bytes, expected {target.size}"
+    | .error e => IO.println s!"FAIL: roundtrip identical, error: {e}"
+
+  -- Test: encode with no source (all ADD)
+  do
+    let source := ByteArray.empty
+    let target := ByteArray.mk #[0x48, 0x65, 0x6C, 0x6C, 0x6F]
+    let patch := Encoder.encode source target
+    match Decoder.decode patch source with
+    | .ok result =>
+      if result == target then IO.println "PASS: roundtrip no-source"
+      else IO.println s!"FAIL: roundtrip no-source, got {result.toList} expected {target.toList}"
+    | .error e => IO.println s!"FAIL: roundtrip no-source, error: {e}"
+
+  -- Test: encode with partial overlap
+  do
+    let source := "Hello, World!".toUTF8
+    let target := "Hello, Lean 4!".toUTF8
+    let patch := Encoder.encode source target
+    match Decoder.decode patch source with
+    | .ok result =>
+      if result == target then IO.println "PASS: roundtrip partial overlap"
+      else IO.println s!"FAIL: roundtrip overlap, sizes {result.size} vs {target.size}"
+    | .error e => IO.println s!"FAIL: roundtrip overlap, error: {e}"
+
+  -- Test: encode with completely different content
+  do
+    let source := "AAAA".toUTF8
+    let target := "ZZZZ".toUTF8
+    let patch := Encoder.encode source target
+    match Decoder.decode patch source with
+    | .ok result =>
+      if result == target then IO.println "PASS: roundtrip different"
+      else IO.println s!"FAIL: roundtrip different"
+    | .error e => IO.println s!"FAIL: roundtrip different, error: {e}"
+
+  -- Test: encode larger data with repetition
+  do
+    let mut srcArr : ByteArray := ByteArray.empty
+    for i in [:256] do
+      srcArr := srcArr.push (i % 256).toUInt8
+    let mut tgtArr : ByteArray := ByteArray.empty
+    for i in [:256] do
+      tgtArr := tgtArr.push ((i + 3) % 256).toUInt8
+    let patch := Encoder.encode srcArr tgtArr
+    match Decoder.decode patch srcArr with
+    | .ok result =>
+      if result == tgtArr then IO.println "PASS: roundtrip 256-byte shifted"
+      else IO.println s!"FAIL: roundtrip 256-byte, sizes {result.size} vs {tgtArr.size}"
+    | .error e => IO.println s!"FAIL: roundtrip 256-byte, error: {e}"
+
+  -- ## xdelta3 compatibility tests (our encoder -> xdelta3 decoder)
+  IO.println ""
+  IO.println "--- xdelta3 compatibility ---"
+
+  -- Helper: write files and test with xdelta3
+  let testXdelta3 := fun (name : String) (source target : ByteArray) => do
+    let srcFile := s!"/tmp/bdiff_test_src_{name}"
+    let tgtFile := s!"/tmp/bdiff_test_tgt_{name}"
+    let patchFile := s!"/tmp/bdiff_test_patch_{name}"
+    let outFile := s!"/tmp/bdiff_test_out_{name}"
+
+    IO.FS.writeBinFile srcFile source
+    IO.FS.writeBinFile tgtFile target
+
+    -- Encode with our encoder
+    let patch := Encoder.encode source target
+    IO.FS.writeBinFile patchFile patch
+
+    -- Decode with xdelta3
+    let result ← IO.Process.output {
+      cmd := "xdelta3"
+      args := #["-d", "-f", "-s", srcFile, patchFile, outFile]
+    }
+    if result.exitCode == 0 then
+      let decoded ← IO.FS.readBinFile outFile
+      if decoded == target then IO.println s!"PASS: xdelta3 {name}"
+      else IO.println s!"FAIL: xdelta3 {name}, decoded {decoded.size} bytes vs expected {target.size}"
+    else
+      IO.println s!"FAIL: xdelta3 {name}, exit={result.exitCode}: {result.stderr}"
+
+  testXdelta3 "identical" "ABCDEFGH".toUTF8 "ABCDEFGH".toUTF8
+  testXdelta3 "nosource" ByteArray.empty "Hello".toUTF8
+  testXdelta3 "overlap" "Hello, World!".toUTF8 "Hello, Lean 4!".toUTF8
+  testXdelta3 "different" "AAAA".toUTF8 "ZZZZ".toUTF8
+
+  -- ## Reverse: xdelta3 encoder -> our decoder
+  IO.println ""
+  IO.println "--- xdelta3 encode, our decode ---"
+
+  let testXdelta3Reverse := fun (name : String) (source target : ByteArray) => do
+    let srcFile := s!"/tmp/bdiff_rev_src_{name}"
+    let tgtFile := s!"/tmp/bdiff_rev_tgt_{name}"
+    let patchFile := s!"/tmp/bdiff_rev_patch_{name}"
+
+    IO.FS.writeBinFile srcFile source
+    IO.FS.writeBinFile tgtFile target
+
+    -- Encode with xdelta3
+    let result ← IO.Process.output {
+      cmd := "xdelta3"
+      args := #["-e", "-f", "-S", "none", "-s", srcFile, tgtFile, patchFile]
+    }
+    if result.exitCode != 0 then
+      IO.println s!"FAIL: xdelta3 encode {name}, exit={result.exitCode}: {result.stderr}"
+      return
+
+    -- Decode with our decoder
+    let patch ← IO.FS.readBinFile patchFile
+    match Decoder.decode patch source with
+    | .ok decoded =>
+      if decoded == target then IO.println s!"PASS: reverse {name}"
+      else IO.println s!"FAIL: reverse {name}, decoded {decoded.size} bytes vs expected {target.size}"
+    | .error e => IO.println s!"FAIL: reverse {name}, error: {e}"
+
+  testXdelta3Reverse "identical" "ABCDEFGH".toUTF8 "ABCDEFGH".toUTF8
+  testXdelta3Reverse "overlap" "Hello, World!".toUTF8 "Hello, Lean 4!".toUTF8
+  testXdelta3Reverse "different" "AAAA".toUTF8 "ZZZZ".toUTF8
+  -- Larger test
+  do
+    let mut src := ByteArray.empty
+    for i in [:1000] do src := src.push (i % 256).toUInt8
+    let mut tgt := ByteArray.empty
+    for i in [:1000] do tgt := tgt.push ((i * 3 + 7) % 256).toUInt8
+    testXdelta3Reverse "1k" src tgt
+
   IO.println "Done."
