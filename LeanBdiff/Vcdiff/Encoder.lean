@@ -119,6 +119,35 @@ inductive RawInst where
   | run (byte : UInt8) (size : Nat)
   deriving Repr, Inhabited
 
+/-- Minimum run length to emit a RUN instruction instead of ADD. -/
+def minRunLength : Nat := 4
+
+/-- Emit ADD data, splitting out RUN sequences of repeated bytes. -/
+def emitAddWithRuns (insts : Array RawInst) (data : ByteArray)
+    : Array RawInst := Id.run do
+  let mut result := insts
+  let mut i := 0
+  let mut addStart := 0
+  while i < data.size do
+    -- Count run of identical bytes
+    let b := data[i]!
+    let mut runLen := 1
+    while i + runLen < data.size && data[i + runLen]! == b do
+      runLen := runLen + 1
+    if runLen >= minRunLength then
+      -- Flush preceding ADD bytes
+      if i > addStart then
+        result := result.push (.add (data.extract addStart i))
+      result := result.push (.run b runLen)
+      i := i + runLen
+      addStart := i
+    else
+      i := i + runLen
+  -- Flush remaining ADD bytes
+  if addStart < data.size then
+    result := result.push (.add (data.extract addStart data.size))
+  result
+
 /-- Scan the target and produce a sequence of raw instructions. -/
 partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
     : Array RawInst := Id.run do
@@ -131,10 +160,9 @@ partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
     | some m =>
       -- Emit any pending ADD
       if m.targetPos > pos then
-        -- There are unmatched bytes between pos and m.targetPos
         pendingAdd := pendingAdd ++ target.extract pos m.targetPos
       if pendingAdd.size > 0 then
-        insts := insts.push (.add pendingAdd)
+        insts := emitAddWithRuns insts pendingAdd
         pendingAdd := ByteArray.empty
       insts := insts.push (.copy m.sourcePos m.length)
       pos := m.targetPos + m.length
@@ -144,7 +172,7 @@ partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
 
   -- Flush remaining ADD
   if pendingAdd.size > 0 then
-    insts := insts.push (.add pendingAdd)
+    insts := emitAddWithRuns insts pendingAdd
 
   insts
 
