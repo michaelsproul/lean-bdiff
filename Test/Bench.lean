@@ -14,6 +14,14 @@ def genData (size : Nat) (seed : UInt32) : ByteArray := Id.run do
     arr := arr.push (s >>> 16).toUInt8
   arr
 
+@[noinline] def doEncode (source target : ByteArray) : IO ByteArray :=
+  pure (Encoder.encode source target)
+
+@[noinline] def doDecode (patch source : ByteArray) : IO (Except DecodeError ByteArray) :=
+  pure (match Decoder.decode patch source with
+    | .ok r => .ok r
+    | .error e => .error e)
+
 def bench (name : String) (srcSize tgtSize : Nat) (modRate : Nat) : IO Unit := do
   let source := genData srcSize 42
   let mut target := ByteArray.empty
@@ -24,16 +32,21 @@ def bench (name : String) (srcSize tgtSize : Nat) (modRate : Nat) : IO Unit := d
     else
       target := target.push base[i]!
 
-  -- Encode (use ← pure to force evaluation in IO)
+  -- Write to temp files to ensure data is materialized
+  IO.FS.writeBinFile "/tmp/bench_src" source
+  IO.FS.writeBinFile "/tmp/bench_tgt" target
+  let src ← IO.FS.readBinFile "/tmp/bench_src"
+  let tgt ← IO.FS.readBinFile "/tmp/bench_tgt"
+
+  -- Encode
   let encStart ← IO.monoNanosNow
-  let patch ← pure (Encoder.encode source target)
-  let _ ← pure patch.size  -- force
+  let patch ← doEncode src tgt
   let encStop ← IO.monoNanosNow
   let encMs := (encStop - encStart) / 1000000
 
   -- Decode
   let decStart ← IO.monoNanosNow
-  let decoded ← pure (Decoder.decode patch source)
+  let decoded ← doDecode patch src
   let decStop ← IO.monoNanosNow
   let decMs := (decStop - decStart) / 1000000
 
@@ -41,12 +54,12 @@ def bench (name : String) (srcSize tgtSize : Nat) (modRate : Nat) : IO Unit := d
   let ratio := if tgtSize > 0 then (patchSize * 100) / tgtSize else 0
   match decoded with
   | .ok r =>
-    if r == target then
+    if r == tgt then
       IO.println s!"{name}: encode {encMs}ms, decode {decMs}ms, patch {patchSize}B ({ratio}%)"
     else
-      IO.println s!"{name}: MISMATCH! decoded {r.size}B vs target {tgtSize}B, patch {patchSize}B"
+      IO.println s!"{name}: MISMATCH! decoded {r.size}B vs target {tgtSize}B"
   | .error e =>
-    IO.println s!"{name}: DECODE ERROR: {e}, patch {patchSize}B"
+    IO.println s!"{name}: DECODE ERROR: {e}"
 
 def main : IO Unit := do
   IO.println "VCDIFF Benchmark"
