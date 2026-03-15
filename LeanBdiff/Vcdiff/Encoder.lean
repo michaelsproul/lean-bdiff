@@ -148,7 +148,12 @@ def emitAddWithRuns (insts : Array RawInst) (data : ByteArray)
     result := result.push (.add (data.extract addStart data.size))
   result
 
-/-- Scan the target and produce a sequence of raw instructions. -/
+/-- Lazy matching threshold: a later match must be this much longer to prefer it. -/
+def lazyThreshold : Nat := 2
+
+/-- Scan the target and produce a sequence of raw instructions.
+    Uses lazy matching: after finding a match, checks if a better match
+    exists at the next position. -/
 partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
     : Array RawInst := Id.run do
   let mut insts : Array RawInst := #[]
@@ -158,14 +163,30 @@ partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
   while pos < target.size do
     match findBestMatch idx target pos with
     | some m =>
-      -- Emit any pending ADD
-      if m.targetPos > pos then
-        pendingAdd := pendingAdd ++ target.extract pos m.targetPos
+      -- Lazy matching: check if next position has a better match
+      let mut bestMatch := m
+      let mut lazySkip := 0
+      if bestMatch.length < 64 then  -- don't bother for long matches
+        for delta in [1:4] do  -- look ahead up to 3 positions
+          if pos + delta < target.size then
+            match findBestMatch idx target (pos + delta) with
+            | some m2 =>
+              if m2.length > bestMatch.length + lazyThreshold then
+                bestMatch := m2
+                lazySkip := delta
+            | none => pure ()
+      -- Add skipped bytes to pending ADD
+      if lazySkip > 0 then
+        pendingAdd := pendingAdd ++ target.extract pos (pos + lazySkip)
+        pos := pos + lazySkip
+      -- Emit any pending ADD (including bytes between pos and match start)
+      if bestMatch.targetPos > pos then
+        pendingAdd := pendingAdd ++ target.extract pos bestMatch.targetPos
       if pendingAdd.size > 0 then
         insts := emitAddWithRuns insts pendingAdd
         pendingAdd := ByteArray.empty
-      insts := insts.push (.copy m.sourcePos m.length)
-      pos := m.targetPos + m.length
+      insts := insts.push (.copy bestMatch.sourcePos bestMatch.length)
+      pos := bestMatch.targetPos + bestMatch.length
     | none =>
       pendingAdd := pendingAdd.push target[pos]!
       pos := pos + 1
