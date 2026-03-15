@@ -150,16 +150,9 @@ partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
 
 -- ## VCDIFF Encoding
 
-/-- Encode address using mode 0 (VCD_SELF, absolute). Simple but correct.
-    Returns the encoded address bytes and updated cache. -/
-def encodeAddress (addr : Nat) (_here : Nat) (cache : AddressCache.State)
-    : ByteArray × AddressCache.State :=
-  -- Always use mode 0 (VCD_SELF) for simplicity
-  (Varint.encode addr, cache.update addr)
-
-/-- Find the best opcode for a single instruction.
+/-- Find the best opcode for a single instruction with a given mode.
     Returns (opcode, needsSizeVarint). -/
-def findSingleOpcode (inst : RawInst) : UInt8 × Bool :=
+def findSingleOpcode (inst : RawInst) (mode : Nat := 0) : UInt8 × Bool :=
   match inst with
   | .run _ _ => (0, true)  -- opcode 0 = RUN size=0
   | .add data =>
@@ -168,12 +161,13 @@ def findSingleOpcode (inst : RawInst) : UInt8 × Bool :=
     else
       (1, true)  -- opcode 1 = ADD size=0
   | .copy _ size =>
-    -- Mode 0 (VCD_SELF): opcodes 19-34
-    -- 19 = COPY size=0 mode=0, 20-34 = COPY size=4..18 mode=0
+    -- Each mode has 16 opcodes starting at 19 + mode*16
+    -- First entry: size=0 (varint follows), next 15: size=4..18
+    let base := 19 + mode * 16
     if size >= 4 && size <= 18 then
-      ((19 + size - 4 + 1).toUInt8, false)  -- immediate size
+      ((base + size - 4 + 1).toUInt8, false)
     else
-      (19, true)  -- size=0, read from stream
+      (base.toUInt8, true)
 
 /-- Encode a window's worth of instructions into the three VCDIFF sections.
     Returns (dataSection, instSection, addrSection). -/
@@ -186,24 +180,29 @@ def encodeWindow (insts : Array RawInst) (sourceSegLen : Nat)
   let mut targetPos := 0  -- track position for address cache "here" value
 
   for inst in insts do
-    let (opcode, needsSize) := findSingleOpcode inst
-    instSection := instSection.push opcode
     match inst with
     | .add data =>
+      let (opcode, needsSize) := findSingleOpcode inst
+      instSection := instSection.push opcode
       if needsSize then
         instSection := instSection ++ Varint.encode data.size
       dataSection := dataSection ++ data
       targetPos := targetPos + data.size
     | .copy addr size =>
+      let here := sourceSegLen + targetPos
+      let (mode, addrBytes, cache') := addrCache.encodeAddress addr here
+      let (opcode, needsSize) := findSingleOpcode inst mode
+      instSection := instSection.push opcode
       if needsSize then
         instSection := instSection ++ Varint.encode size
-      let here := sourceSegLen + targetPos
-      let (addrBytes, cache') := encodeAddress addr here addrCache
       addrSection := addrSection ++ addrBytes
       addrCache := cache'
       targetPos := targetPos + size
     | .run byte size =>
-      instSection := instSection ++ Varint.encode size
+      let (opcode, needsSize) := findSingleOpcode inst
+      instSection := instSection.push opcode
+      if needsSize then
+        instSection := instSection ++ Varint.encode size
       dataSection := dataSection.push byte
       targetPos := targetPos + size
 
