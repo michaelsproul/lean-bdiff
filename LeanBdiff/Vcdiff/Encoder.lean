@@ -117,7 +117,7 @@ inductive RawInst where
   | add (data : ByteArray)
   | copy (addr : Nat) (size : Nat)
   | run (byte : UInt8) (size : Nat)
-  deriving Repr
+  deriving Repr, Inhabited
 
 /-- Scan the target and produce a sequence of raw instructions. -/
 partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
@@ -169,35 +169,98 @@ def findSingleOpcode (inst : RawInst) (mode : Nat := 0) : UInt8 × Bool :=
     else
       (base.toUInt8, true)
 
+/-- Try to find a double-instruction opcode for ADD+COPY pair.
+    Returns opcode if the pair fits a double entry, or none. -/
+def findAddCopyOpcode (addSz : Nat) (copySz : Nat) (mode : Nat) : Option UInt8 :=
+  if addSz >= 1 && addSz <= 4 then
+    if mode <= 5 && copySz >= 4 && copySz <= 6 then
+      -- Opcodes 163-234: ADD size=1..4 / COPY size=4..6 mode=0..5
+      some (163 + (addSz - 1) * 18 + mode * 3 + (copySz - 4)).toUInt8
+    else if mode >= 6 && mode <= 8 && copySz == 4 then
+      -- Opcodes 235-246: ADD size=1..4 / COPY size=4 mode=6..8
+      some (235 + (addSz - 1) * 3 + (mode - 6)).toUInt8
+    else none
+  else none
+
+/-- Try to find a double-instruction opcode for COPY+ADD pair.
+    Returns opcode if the pair fits, or none. -/
+def findCopyAddOpcode (copySz : Nat) (mode : Nat) (addSz : Nat) : Option UInt8 :=
+  if copySz == 4 && addSz == 1 && mode <= 8 then
+    -- Opcodes 247-255: COPY size=4 mode=0..8 / ADD size=1
+    some (247 + mode).toUInt8
+  else none
+
 /-- Encode a window's worth of instructions into the three VCDIFF sections.
     Returns (dataSection, instSection, addrSection). -/
-def encodeWindow (insts : Array RawInst) (sourceSegLen : Nat)
+partial def encodeWindow (insts : Array RawInst) (sourceSegLen : Nat)
     : ByteArray × ByteArray × ByteArray := Id.run do
   let mut dataSection := ByteArray.empty
   let mut instSection := ByteArray.empty
   let mut addrSection := ByteArray.empty
   let mut addrCache := AddressCache.State.init
-  let mut targetPos := 0  -- track position for address cache "here" value
+  let mut targetPos := 0
+  let mut i := 0
 
-  for inst in insts do
+  while i < insts.size do
+    let inst := insts[i]!
     match inst with
     | .add data =>
-      let (opcode, needsSize) := findSingleOpcode inst
-      instSection := instSection.push opcode
-      if needsSize then
-        instSection := instSection ++ Varint.encode data.size
-      dataSection := dataSection ++ data
-      targetPos := targetPos + data.size
+      -- Check if next instruction is COPY that can pair with this ADD
+      let mut paired := false
+      if i + 1 < insts.size then
+        match insts[i + 1]! with
+        | .copy addr size =>
+          let here := sourceSegLen + targetPos + data.size
+          let (mode, addrBytes, cache') := addrCache.encodeAddress addr here
+          match findAddCopyOpcode data.size size mode with
+          | some opcode =>
+            instSection := instSection.push opcode
+            dataSection := dataSection ++ data
+            addrSection := addrSection ++ addrBytes
+            addrCache := cache'
+            targetPos := targetPos + data.size + size
+            paired := true
+            i := i + 2
+          | none => pure ()
+        | _ => pure ()
+      if !paired then
+        let (opcode, needsSize) := findSingleOpcode inst
+        instSection := instSection.push opcode
+        if needsSize then
+          instSection := instSection ++ Varint.encode data.size
+        dataSection := dataSection ++ data
+        targetPos := targetPos + data.size
+        i := i + 1
     | .copy addr size =>
       let here := sourceSegLen + targetPos
       let (mode, addrBytes, cache') := addrCache.encodeAddress addr here
-      let (opcode, needsSize) := findSingleOpcode inst mode
-      instSection := instSection.push opcode
-      if needsSize then
-        instSection := instSection ++ Varint.encode size
-      addrSection := addrSection ++ addrBytes
-      addrCache := cache'
-      targetPos := targetPos + size
+      -- Check if next instruction is ADD size=1 and we can pair COPY+ADD
+      let mut paired := false
+      if size == 4 && i + 1 < insts.size then
+        match insts[i + 1]! with
+        | .add nextData =>
+          if nextData.size == 1 then
+            match findCopyAddOpcode size mode nextData.size with
+            | some opcode =>
+              instSection := instSection.push opcode
+              addrSection := addrSection ++ addrBytes
+              addrCache := cache'
+              dataSection := dataSection ++ nextData
+              targetPos := targetPos + size + nextData.size
+              paired := true
+              i := i + 2
+            | none => pure ()
+          else pure ()
+        | _ => pure ()
+      if !paired then
+        let (opcode, needsSize) := findSingleOpcode inst mode
+        instSection := instSection.push opcode
+        if needsSize then
+          instSection := instSection ++ Varint.encode size
+        addrSection := addrSection ++ addrBytes
+        addrCache := cache'
+        targetPos := targetPos + size
+        i := i + 1
     | .run byte size =>
       let (opcode, needsSize) := findSingleOpcode inst
       instSection := instSection.push opcode
@@ -205,6 +268,7 @@ def encodeWindow (insts : Array RawInst) (sourceSegLen : Nat)
         instSection := instSection ++ Varint.encode size
       dataSection := dataSection.push byte
       targetPos := targetPos + size
+      i := i + 1
 
   (dataSection, instSection, addrSection)
 
