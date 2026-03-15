@@ -241,11 +241,13 @@ def findSingleOpcode (inst : RawInst) (mode : Nat := 0) : UInt8 × Bool :=
 def findAddCopyOpcode (addSz : Nat) (copySz : Nat) (mode : Nat) : Option UInt8 :=
   if addSz >= 1 && addSz <= 4 then
     if mode <= 5 && copySz >= 4 && copySz <= 6 then
-      -- Opcodes 163-234: ADD size=1..4 / COPY size=4..6 mode=0..5
-      some (163 + (addSz - 1) * 18 + mode * 3 + (copySz - 4)).toUInt8
+      -- Opcodes 163-234: mode outermost, addSz middle, copySz innermost
+      -- Each mode has 4*3=12 entries
+      some (163 + mode * 12 + (addSz - 1) * 3 + (copySz - 4)).toUInt8
     else if mode >= 6 && mode <= 8 && copySz == 4 then
-      -- Opcodes 235-246: ADD size=1..4 / COPY size=4 mode=6..8
-      some (235 + (addSz - 1) * 3 + (mode - 6)).toUInt8
+      -- Opcodes 235-246: mode outermost, addSz innermost
+      -- Each mode has 4 entries
+      some (235 + (mode - 6) * 4 + (addSz - 1)).toUInt8
     else none
   else none
 

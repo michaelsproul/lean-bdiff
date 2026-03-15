@@ -7,7 +7,7 @@
     1       : ADD size=0 / NOOP
     2-18    : ADD size=1..17 / NOOP
     19-162  : COPY (16 entries per mode × 9 modes) / NOOP
-    163-246 : ADD size=1..4 / COPY size=4..6 mode=0..5 or size=4 mode=6..8
+    163-246 : ADD size=1..4 / COPY size=4..6 mode=0..5 or size=4 mode=6..8 (mode outer, addSz mid, copySz inner)
     247-255 : COPY size=4 mode=0..8 / ADD size=1
 -/
 import LeanBdiff.Vcdiff.Defs
@@ -48,17 +48,17 @@ private def buildDefaultTable : Array CodeTableEntry := Id.run do
       table := table.push ⟨mkCopy s m.toUInt8, noop⟩
 
   -- Index 163-234: ADD size=1..4 / COPY size=4..6, mode=0..5
-  -- 4 add sizes × 6 modes × 3 copy sizes = 72 entries
-  -- Per RFC 3284: copySz varies fastest, then mode, then addSz
-  for addSz in [1:5] do
-    for m in [0:6] do
+  -- 6 modes × 4 add sizes × 3 copy sizes = 72 entries
+  -- Per RFC 3284: mode outermost, addSz middle, copySz innermost
+  for m in [0:6] do
+    for addSz in [1:5] do
       for copySz in [4:7] do
         table := table.push ⟨mkAdd addSz, mkCopy copySz m.toUInt8⟩
 
   -- Index 235-246: ADD size=1..4 / COPY size=4, mode=6..8
-  -- 4 add sizes × 3 modes = 12 entries
-  for addSz in [1:5] do
-    for m in [6:9] do
+  -- 3 modes × 4 add sizes = 12 entries
+  for m in [6:9] do
+    for addSz in [1:5] do
       table := table.push ⟨mkAdd addSz, mkCopy 4 m.toUInt8⟩
 
   -- Index 247-255: COPY size=4, mode=0..8 / ADD size=1

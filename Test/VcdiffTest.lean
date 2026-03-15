@@ -470,4 +470,83 @@ def main : IO Unit := do
     for i in [:1000] do tgt := tgt.push ((i * 3 + 7) % 256).toUInt8
     testXdelta3Reverse "1k" src tgt
 
+  -- ## Larger file tests
+  IO.println ""
+  IO.println "--- larger file tests ---"
+
+  -- Helper to generate pseudo-random bytes from a seed
+  let genData := fun (size : Nat) (seed : UInt32) => Id.run do
+    let mut arr := ByteArray.empty
+    let mut s := seed
+    for _ in [:size] do
+      s := s * 1103515245 + 12345
+      arr := arr.push (s >>> 16).toUInt8
+    arr
+
+  -- 10KB roundtrip: source and target share ~80% content
+  do
+    let baseData := genData 10000 42
+    let mut tgt10 := ByteArray.empty
+    for i in [:10000] do
+      if i % 5 == 0 then
+        tgt10 := tgt10.push ((baseData[i]!.toNat + 1) % 256).toUInt8
+      else
+        tgt10 := tgt10.push baseData[i]!
+    let patch := Encoder.encode baseData tgt10
+    match Decoder.decode patch baseData with
+    | .ok result =>
+      if result == tgt10 then IO.println s!"PASS: 10KB roundtrip (patch {patch.size} bytes)"
+      else IO.println s!"FAIL: 10KB roundtrip, decoded {result.size} vs {tgt10.size}"
+    | .error e => IO.println s!"FAIL: 10KB roundtrip, error: {e}"
+
+  -- 10KB xdelta3 compat
+  do
+    let base10 := genData 10000 42
+    let mut tgt10x := ByteArray.empty
+    for i in [:10000] do
+      if i % 5 == 0 then
+        tgt10x := tgt10x.push ((base10[i]!.toNat + 1) % 256).toUInt8
+      else
+        tgt10x := tgt10x.push base10[i]!
+    testXdelta3 "10k" base10 tgt10x
+
+  -- 100KB roundtrip
+  do
+    let base100 := genData 100000 123
+    let mut tgt100 := ByteArray.empty
+    for i in [:100000] do
+      if i % 10 == 0 then
+        tgt100 := tgt100.push ((base100[i]!.toNat + 1) % 256).toUInt8
+      else
+        tgt100 := tgt100.push base100[i]!
+    let patch := Encoder.encode base100 tgt100
+    match Decoder.decode patch base100 with
+    | .ok result =>
+      if result == tgt100 then IO.println s!"PASS: 100KB roundtrip (patch {patch.size} bytes)"
+      else IO.println s!"FAIL: 100KB roundtrip, decoded {result.size} vs {tgt100.size}"
+    | .error e => IO.println s!"FAIL: 100KB roundtrip, error: {e}"
+
+  -- 100KB xdelta3 compat
+  do
+    let base100x := genData 100000 123
+    let mut tgt100x := ByteArray.empty
+    for i in [:100000] do
+      if i % 10 == 0 then
+        tgt100x := tgt100x.push ((base100x[i]!.toNat + 1) % 256).toUInt8
+      else
+        tgt100x := tgt100x.push base100x[i]!
+    testXdelta3 "100k" base100x tgt100x
+
+  -- Test with repeated bytes (RUN instruction test)
+  do
+    let runSrc := ByteArray.mk #[0x00, 0x00, 0x00, 0x00]
+    let mut runTgt := ByteArray.empty
+    for _ in [:100] do runTgt := runTgt.push 0xAA
+    let patch := Encoder.encode runSrc runTgt
+    match Decoder.decode patch runSrc with
+    | .ok result =>
+      if result == runTgt then IO.println s!"PASS: RUN roundtrip (patch {patch.size} bytes)"
+      else IO.println s!"FAIL: RUN roundtrip"
+    | .error e => IO.println s!"FAIL: RUN roundtrip, error: {e}"
+
   IO.println "Done."
