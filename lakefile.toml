@@ -16,3 +16,7 @@ rev = "v4.29.0-rc6"
 
 [[lean_lib]]
 name = "LeanBdiff"
+
+[[lean_exe]]
+name = "test-vcdiff"
+root = "Test.VcdiffTest"
