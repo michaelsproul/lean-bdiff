@@ -21,8 +21,8 @@ def Cursor.hasBytes (c : Cursor) (n : Nat) : Bool :=
   c.pos + n ≤ c.data.size
 
 def Cursor.readByte (c : Cursor) : DecodeResult (UInt8 × Cursor) :=
-  if h : c.pos < c.data.size then
-    .ok (c.data.get ⟨c.pos, h⟩, { c with pos := c.pos + 1 })
+  if c.pos < c.data.size then
+    .ok (c.data[c.pos]!, { c with pos := c.pos + 1 })
   else
     .error .truncatedInput
 
@@ -61,7 +61,7 @@ partial def encode (n : Nat) : ByteArray := Id.run do
     bytes := bytes.push (val % 128).toUInt8
     val := val / 128
   -- Reverse and set continuation bits
-  let mut result := ByteArray.mkEmpty bytes.size
+  let mut result := ByteArray.empty
   for i in [:bytes.size] do
     let idx := bytes.size - 1 - i
     let b := bytes[idx]!

@@ -32,9 +32,9 @@ structure State where
 /-- Create a fresh cache with all entries zeroed. -/
 def State.init (sNear := defaultNearSize) (sSame := defaultSameSize) : State :=
   { sNear, sSame,
-    near := Array.mkArray sNear 0,
+    near := Array.replicate sNear 0,
     nearIdx := 0,
-    same := Array.mkArray (sSame * 256) 0 }
+    same := Array.replicate (sSame * 256) 0 }
 
 /-- Total number of address modes. -/
 def State.numModes (s : State) : Nat := 2 + s.sNear + s.sSame

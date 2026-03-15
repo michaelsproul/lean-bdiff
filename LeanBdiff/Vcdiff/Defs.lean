@@ -38,10 +38,13 @@ instance : ToString DecodeError where
 
 abbrev DecodeResult (α : Type) := Except DecodeError α
 
+instance : Repr ByteArray where
+  reprPrec ba _ := repr ba.toList
+
 /-- VCDIFF magic bytes (excluding version): 0xD6 0xC3 0xC4 -/
 def magic : ByteArray := ⟨#[0xD6, 0xC3, 0xC4]⟩
 
-/-- Header indicator flags. -/
+-- Header indicator flags.
 namespace HdrIndicator
   def secondary : UInt8 := 0x01
   def codeTable : UInt8 := 0x02
@@ -49,7 +52,7 @@ namespace HdrIndicator
   def reserved  : UInt8 := 0xF8  -- bits 3-7
 end HdrIndicator
 
-/-- Window indicator flags. -/
+-- Window indicator flags.
 namespace WinIndicator
   def source  : UInt8 := 0x01
   def target  : UInt8 := 0x02
@@ -57,7 +60,7 @@ namespace WinIndicator
   def reserved : UInt8 := 0xF8  -- bits 3-7
 end WinIndicator
 
-/-- Delta indicator flags. -/
+-- Delta indicator flags.
 namespace DeltaIndicator
   def dataComp : UInt8 := 0x01
   def instComp : UInt8 := 0x02
@@ -71,19 +74,19 @@ inductive InstType where
   | add
   | run
   | copy (mode : UInt8)
-  deriving Repr, BEq
+  deriving Repr, BEq, Inhabited
 
 /-- A single half-instruction from the code table. -/
 structure HalfInst where
   type : InstType
-  size : Nat  -- 0 means "read size from instruction stream"
-  deriving Repr, BEq
+  size : Nat := 0  -- 0 means "read size from instruction stream"
+  deriving Repr, BEq, Inhabited
 
 /-- A code table entry: pair of half-instructions. -/
 structure CodeTableEntry where
   inst1 : HalfInst
   inst2 : HalfInst
-  deriving Repr, BEq
+  deriving Repr, BEq, Inhabited
 
 /-- Parsed VCDIFF file header. -/
 structure Header where

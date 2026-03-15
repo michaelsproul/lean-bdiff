@@ -106,7 +106,7 @@ def parseWindow (c : Varint.Cursor) : DecodeResult (Window × Varint.Cursor) := 
 
   -- Validate encoding length
   let headerSize := c.pos - encStart
-  let expectedEncLen := headerSize + dataLen + instLen + addrLen
+  let _expectedEncLen := headerSize + dataLen + instLen + addrLen
   -- Note: _encLen includes everything after itself, so we compare section sizes
   -- The total after enc_len varint = 1(deltaInd) + sizeof(tgtLen) + sizeof(dataLen)
   -- + sizeof(instLen) + sizeof(addrLen) + (4 if adler32) + dataLen + instLen + addrLen
@@ -158,7 +158,7 @@ private def execHalfInst
     -- The source window for COPY is: source segment ++ target decoded so far
     -- (the combined window). Check bounds.
     let windowSize := sourceWindow.size + target.size
-    if addr + instSize > windowSize then
+    if addr >= windowSize then
       throw (.copyOutOfBounds addr instSize windowSize)
     -- Copy byte by byte to handle overlapping copies (where addr is in target region
     -- and we're copying bytes we're currently producing)
@@ -181,7 +181,7 @@ partial def applyWindow (win : Window) (source : ByteArray) : DecodeResult ByteA
     else
       ByteArray.empty
 
-  let mut target := ByteArray.mkEmpty win.targetLen
+  let mut target := ByteArray.empty
   let mut instCursor : Varint.Cursor := ⟨win.instSection, 0⟩
   let mut dataCursor : Varint.Cursor := ⟨win.dataSection, 0⟩
   let mut addrCursor : Varint.Cursor := ⟨win.addrSection, 0⟩
