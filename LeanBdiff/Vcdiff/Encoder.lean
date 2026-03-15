@@ -193,18 +193,26 @@ partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
                 bestMatch := m2
                 lazySkip := delta
             | none => pure ()
-      -- Add skipped bytes to pending ADD
-      if lazySkip > 0 then
-        pendingAdd := pendingAdd ++ target.extract pos (pos + lazySkip)
-        pos := pos + lazySkip
-      -- Emit any pending ADD (including bytes between pos and match start)
-      if bestMatch.targetPos > pos then
-        pendingAdd := pendingAdd ++ target.extract pos bestMatch.targetPos
-      if pendingAdd.size > 0 then
-        insts := emitAddWithRuns insts pendingAdd
-        pendingAdd := ByteArray.empty
-      insts := insts.push (.copy bestMatch.sourcePos bestMatch.length)
-      pos := bestMatch.targetPos + bestMatch.length
+      -- Constrain match: don't let backward extension go before current pos
+      if bestMatch.targetPos < pos then
+        let trim := pos - bestMatch.targetPos
+        bestMatch := { bestMatch with
+          sourcePos := bestMatch.sourcePos + trim,
+          targetPos := pos,
+          length := if bestMatch.length > trim then bestMatch.length - trim else 0 }
+      -- If trimmed match is too short, treat as no match
+      if bestMatch.length < hashWindow then
+        pendingAdd := pendingAdd.push target[pos]!
+        pos := pos + 1
+      else
+        -- Add unmatched bytes between current pos and match start to pending ADD
+        if bestMatch.targetPos > pos then
+          pendingAdd := pendingAdd ++ target.extract pos bestMatch.targetPos
+        if pendingAdd.size > 0 then
+          insts := emitAddWithRuns insts pendingAdd
+          pendingAdd := ByteArray.empty
+        insts := insts.push (.copy bestMatch.sourcePos bestMatch.length)
+        pos := bestMatch.targetPos + bestMatch.length
     | none =>
       pendingAdd := pendingAdd.push target[pos]!
       pos := pos + 1

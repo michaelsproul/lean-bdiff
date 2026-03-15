@@ -537,6 +537,33 @@ def main : IO Unit := do
         tgt100x := tgt100x.push base100x[i]!
     testXdelta3 "100k" base100x tgt100x
 
+  -- 1MB roundtrip (10% modification)
+  do
+    let base1m := genData 1000000 42
+    let mut tgt1m := ByteArray.empty
+    for i in [:1000000] do
+      if i % 10 == 0 then
+        tgt1m := tgt1m.push ((base1m[i]!.toNat + 1) % 256).toUInt8
+      else
+        tgt1m := tgt1m.push base1m[i]!
+    let patch := Encoder.encode base1m tgt1m
+    match Decoder.decode patch base1m with
+    | .ok result =>
+      if result == tgt1m then IO.println s!"PASS: 1MB roundtrip (patch {patch.size} bytes)"
+      else IO.println s!"FAIL: 1MB roundtrip, decoded {result.size} vs {tgt1m.size}"
+    | .error e => IO.println s!"FAIL: 1MB roundtrip, error: {e}"
+
+  -- 1MB xdelta3 compat
+  do
+    let base1mx := genData 1000000 42
+    let mut tgt1mx := ByteArray.empty
+    for i in [:1000000] do
+      if i % 10 == 0 then
+        tgt1mx := tgt1mx.push ((base1mx[i]!.toNat + 1) % 256).toUInt8
+      else
+        tgt1mx := tgt1mx.push base1mx[i]!
+    testXdelta3 "1m" base1mx tgt1mx
+
   -- Test with repeated bytes (RUN instruction test)
   do
     let runSrc := ByteArray.mk #[0x00, 0x00, 0x00, 0x00]

@@ -20,3 +20,7 @@ name = "LeanBdiff"
 [[lean_exe]]
 name = "test-vcdiff"
 root = "Test.VcdiffTest"
+
+[[lean_exe]]
+name = "bench-vcdiff"
+root = "Test.Bench"
