@@ -1,31 +1,35 @@
 # Progress Tracker
 
-## Phase 1: VCDIFF Decoder
+## Phase 1: VCDIFF Decoder - COMPLETE
+- [x] Core types and error definitions
+- [x] Varint codec
+- [x] Default code table
+- [x] Address cache
+- [x] Decoder
+- [x] Unit tests (9 pass)
+- [x] xdelta3 reverse compatibility (xdelta3 encode -> our decode, 4 tests)
 
-### Completed
-- [x] Core types and error definitions (`LeanBdiff/Vcdiff/Defs.lean`)
-- [x] Varint codec (`LeanBdiff/Vcdiff/Varint.lean`)
-- [x] Default code table (`LeanBdiff/Vcdiff/CodeTable.lean`)
-- [x] Address cache (`LeanBdiff/Vcdiff/AddressCache.lean`)
-- [x] Decoder (`LeanBdiff/Vcdiff/Decoder.lean`)
-- [x] Unit tests (`Test/VcdiffTest.lean`)
-- [x] Build and fix compilation errors
-- [x] Run tests and fix failures (9/9 pass)
+## Phase 2: Basic Encoder - COMPLETE (MVP)
+- [x] Rolling hash source index
+- [x] Greedy string matching
+- [x] Instruction generation (ADD/COPY)
+- [x] VCDIFF serialization (mode 0 / VCD_SELF only)
+- [x] Internal roundtrip tests (5 pass)
+- [x] xdelta3 forward compatibility (our encode -> xdelta3 decode, 4 tests)
 
-### Deferred
-- [ ] Test with real xdelta3-produced patches (xdelta3 not available in sandbox)
+## Phase 3: Performance Optimization - IN PROGRESS
+- [x] Address cache encoding (NEAR/SAME modes for smaller patches)
+- [x] Double-instruction opcodes (ADD+COPY / COPY+ADD in one byte)
+- [x] RUN detection for repeated bytes
+- [x] Lazy matching for better match selection
+- [x] VCD_ADLER32 checksum support
+- [x] Fixed code table loop order for entries 163-246 (RFC 3284 compliance)
+- [x] Larger file tests (10KB, 100KB roundtrip + xdelta3 compat)
+- Total: 27/27 tests passing
+- [ ] Profiling and optimization
+- [ ] Windowed processing for very large files
 
-## Phase 2: Basic Encoder
-
-### Next Steps (in order)
-1. Rolling hash for source fingerprinting
-2. Source index (hash table mapping fingerprints to positions)
-3. String matching (scan target, find matches, extend greedily)
-4. Instruction selection (matches/literals -> ADD/COPY/RUN)
-5. Address cache encoding
-6. Code table encoding (instruction pairs -> opcodes)
-7. VCDIFF serialization
-8. Roundtrip tests (encode with ours, decode with xdelta3 and vice versa)
-
-## Phase 3: Performance Optimization
-Not started.
+### Next Steps
+- Profile encoder performance on larger inputs (1MB+)
+- Consider windowed processing for files exceeding available memory
+- Potential C FFI inner loops if profiling shows bottlenecks
