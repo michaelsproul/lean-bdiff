@@ -17,6 +17,24 @@ namespace LeanBdiff.Vcdiff.Encoder
 
 open LeanBdiff.Vcdiff
 
+-- ## Adler32
+
+/-- Compute Adler32 checksum over a ByteArray. -/
+def adler32 (data : ByteArray) : UInt32 :=
+  let modAdler : UInt32 := 65521
+  let (a, b) := Id.run do
+    let mut a : UInt32 := 1
+    let mut b : UInt32 := 0
+    for i in [:data.size] do
+      a := (a + data[i]!.toUInt32) % modAdler
+      b := (b + a) % modAdler
+    (a, b)
+  (b <<< 16) ||| a
+
+/-- Write a UInt32 as 4 big-endian bytes. -/
+def writeUInt32BE (v : UInt32) : ByteArray :=
+  ByteArray.mk #[(v >>> 24).toUInt8, (v >>> 16).toUInt8, (v >>> 8).toUInt8, v.toUInt8]
+
 -- ## Rolling Hash
 
 /-- Rolling hash parameters (same polynomial as xdelta3's large hash). -/
@@ -333,6 +351,9 @@ partial def encode (source : ByteArray) (target : ByteArray) : ByteArray := Id.r
   let sourceSegLen := source.size
   let (dataSection, instSection, addrSection) := encodeWindow insts sourceSegLen
 
+  -- Compute Adler32 checksum of target data
+  let checksumBytes := writeUInt32BE (adler32 target)
+
   -- Build delta encoding body (RFC 3284 order)
   let targetLenEnc := Varint.encode target.size
   let dataLenEnc := Varint.encode dataSection.size
@@ -341,15 +362,16 @@ partial def encode (source : ByteArray) (target : ByteArray) : ByteArray := Id.r
 
   let deltaBody := targetLenEnc ++ ByteArray.mk #[0x00]  -- delta_indicator = 0
     ++ dataLenEnc ++ instLenEnc ++ addrLenEnc
+    ++ checksumBytes
     ++ dataSection ++ instSection ++ addrSection
 
   let encLenEnc := Varint.encode deltaBody.size
 
-  -- Build window
+  -- Build window (VCD_ADLER32 = bit 2 of Win_Indicator)
   let winIndicator := if source.size > 0 then
-    WinIndicator.source  -- VCD_SOURCE
+    WinIndicator.source ||| WinIndicator.adler32
   else
-    0  -- no source
+    WinIndicator.adler32
 
   let mut window := ByteArray.mk #[winIndicator]
   if source.size > 0 then
