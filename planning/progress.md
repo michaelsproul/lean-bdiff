@@ -145,6 +145,11 @@ Prove that executing the generated instructions against the source reproduces th
 - [x] Multi-instruction section roundtrips (2 ADDs, ADD+RUN, COPY+ADD, 3 instructions)
 - [x] General ADD section roundtrip for sizes 1..17 (`encodeOneInst_add_sections`)
 - [x] Edge cases: empty instruction list, exhausted cursor, fuel sufficiency
+- [x] General code table lookup for ADD: `lookup_add_entry` (sizes 1..17)
+- [x] General `execHalfInst` for ADD with arbitrary HalfInst size field
+- [x] General `decodeOneStep` for single ADD: `decodeOneStep_add_general` (all sizes 1..17)
+- [x] Composed encode→decode roundtrip: `encodeOneInst_decodeOneStep_add` (general)
+- [x] `decodeLoop` single ADD roundtrip: `decodeLoop_single_add` (general)
 - [ ] General section roundtrip theorem for arbitrary instruction lists
 - [ ] Prove overall instruction execution produces target
 

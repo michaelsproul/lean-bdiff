@@ -366,4 +366,136 @@ theorem decodeLoop_exhausted (n : Nat) (sw target : ByteArray)
     .ok (target, ic, dc, ac, cache) := by
   cases n <;> simp [decodeLoop, h]
 
+-- ============================================================================
+-- ## General code table lookup for ADD opcodes
+-- ============================================================================
+
+-- For sizes 1..17, CodeTable.lookup on opcode (1+n) returns ADD(n), NOOP
+theorem lookup_add_entry (n : Nat) (h1 : n ≥ 1) (h17 : n ≤ 17) :
+    CodeTable.lookup (1 + n).toUInt8 = ⟨⟨.add, n⟩, ⟨.noop, 0⟩⟩ := by
+  interval_cases n <;> native_decide
+
+-- ============================================================================
+-- ## execHalfInst ADD with arbitrary HalfInst size field
+-- ============================================================================
+
+-- ADD execution depends only on inst.type, not inst.size field
+theorem execHalfInst_add_general (k n : Nat) (sourceWindow target : ByteArray)
+    (dataCursor addrCursor : Varint.Cursor) (cache : AddressCache.State)
+    (here : Nat) (h : dataCursor.pos + n ≤ dataCursor.data.size) :
+    Decoder.execHalfInst ⟨.add, k⟩ n sourceWindow target
+      dataCursor addrCursor cache here =
+    .ok (target ++ dataCursor.data.extract dataCursor.pos (dataCursor.pos + n),
+         ⟨dataCursor.data, dataCursor.pos + n⟩, addrCursor, cache) := by
+  unfold Decoder.execHalfInst
+  simp only [bind, Except.bind]
+  simp only [Varint.Cursor.hasBytes, h, decide_true, Bool.not_true]
+  rw [Encoder.Proofs.readBytes_ok h]
+  rfl
+
+-- ============================================================================
+-- ## General decodeOneStep for single ADD (sizes 1..17)
+-- ============================================================================
+
+-- Helper: ByteArray singleton indexing
+private theorem ba_singleton_getElem (x : UInt8) :
+    (ByteArray.mk #[x])[0]! = x := rfl
+
+-- For ADD with immediate size, decodeOneStep on the encoded sections correctly
+-- appends data to target. Uses interval_cases to handle all 17 size variants.
+theorem decodeOneStep_add_general (n : Nat) (data : ByteArray)
+    (sourceWindow target : ByteArray)
+    (cache : AddressCache.State)
+    (h1 : n ≥ 1) (h17 : n ≤ 17) (hn : data.size = n) :
+    decodeOneStep sourceWindow target
+      ⟨ByteArray.mk #[(1 + n).toUInt8], 0⟩
+      ⟨data, 0⟩
+      ⟨ByteArray.empty, 0⟩
+      cache =
+    .ok (target ++ data.extract 0 n,
+         ⟨ByteArray.mk #[(1 + n).toUInt8], 1⟩,
+         ⟨data, n⟩,
+         ⟨ByteArray.empty, 0⟩,
+         cache) := by
+  unfold decodeOneStep
+  simp only [bind, Except.bind]
+  -- readByte on 1-byte inst section at pos 0
+  rw [Encoder.Proofs.readByte_ok (show (0 : Nat) < (ByteArray.mk #[(1 + n).toUInt8]).size
+    from by simp [ByteArray.size])]
+  -- Reduce indexed byte to opcode value
+  simp only [ba_singleton_getElem]
+  -- Code table lookup + execHalfInst: unfold both, then simplify
+  rw [lookup_add_entry n h1 h17]
+  -- Use conv to reduce struct projections without unfolding execHalfInst
+  conv => simp only []
+  -- Now all struct projections are reduced
+  have hne : n ≠ 0 := by omega
+  simp only [show (n == 0) = false from beq_eq_false_iff_ne.mpr hne, Bool.false_and,
+    show (InstType.add != InstType.noop) = true from by decide,
+    show (InstType.noop != InstType.noop) = false from by decide,
+    show ((0 : Nat) == 0 && false) = false from by decide,
+    ↓reduceIte]
+  -- Now the goal should have execHalfInst ⟨.add, n⟩ n ...
+  unfold Decoder.execHalfInst
+  simp only [bind, Except.bind, pure, Except.pure,
+    Varint.Cursor.hasBytes, Varint.Cursor.readBytes,
+    show 0 + n ≤ data.size from by omega,
+    show n ≤ data.size from by omega,
+    decide_true, Bool.not_true, Bool.true_eq, Bool.not_false,
+    Bool.false_eq_true, ↓reduceIte, ite_false, ite_true, Nat.zero_add]
+
+-- ============================================================================
+-- ## Composed encode → decode roundtrip for single ADD
+-- ============================================================================
+
+-- Encoding a single ADD and decoding it produces target ++ data.extract 0 n
+theorem encodeOneInst_decodeOneStep_add (data : ByteArray)
+    (sourceWindow target : ByteArray) (cache : AddressCache.State)
+    (h1 : data.size ≥ 1) (h17 : data.size ≤ 17) :
+    let (dataSec, instSec, addrSec, _cache', _) :=
+      encodeOneInst (.add data) sourceWindow.size cache 0
+    decodeOneStep sourceWindow target
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩ cache =
+    .ok (target ++ data.extract 0 data.size,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, 0⟩,
+         cache) := by
+  -- Unfold encodeOneInst to get concrete sections
+  rw [encodeOneInst_add_sections data h1 h17 sourceWindow.size cache 0]
+  simp only []
+  -- Apply the general decodeOneStep theorem
+  rw [decodeOneStep_add_general data.size data sourceWindow target cache h1 h17 rfl]
+  -- instSec.size = 1
+  rfl
+
+-- ============================================================================
+-- ## decodeLoop with single ADD instruction
+-- ============================================================================
+
+-- decodeLoop with fuel ≥ 1 on a single ADD instruction's sections
+theorem decodeLoop_single_add (data : ByteArray)
+    (sourceWindow target : ByteArray) (cache : AddressCache.State)
+    (h1 : data.size ≥ 1) (h17 : data.size ≤ 17) :
+    let instSec := ByteArray.mk #[(1 + data.size).toUInt8]
+    decodeLoop 1 sourceWindow target
+      ⟨instSec, 0⟩ ⟨data, 0⟩ ⟨ByteArray.empty, 0⟩ cache =
+    .ok (target ++ data.extract 0 data.size,
+         ⟨instSec, 1⟩, ⟨data, data.size⟩,
+         ⟨ByteArray.empty, 0⟩, cache) := by
+  simp only []
+  -- Unfold one step of decodeLoop
+  unfold decodeLoop
+  have hsz : (ByteArray.mk #[(1 + data.size).toUInt8]).size = 1 := rfl
+  have hlt : ¬(0 ≥ (ByteArray.mk #[(1 + data.size).toUInt8]).size) := by
+    rw [hsz]; omega
+  simp only [hlt, ↓reduceIte]
+  -- Apply decodeOneStep
+  rw [decodeOneStep_add_general data.size data sourceWindow target cache h1 h17 rfl]
+  -- Recurse with fuel 0 and exhausted inst cursor
+  unfold decodeLoop
+  have hge : 1 ≥ (ByteArray.mk #[(1 + data.size).toUInt8]).size := by
+    rw [hsz]
+  simp only [hge, ↓reduceIte]
+
 end LeanBdiff.Vcdiff.WindowRoundtrip
