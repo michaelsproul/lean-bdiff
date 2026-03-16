@@ -1203,7 +1203,10 @@ theorem execHalfInst_run_at_pos
       ⟨dataAll, dataPos⟩ addrCursor cache here =
     .ok (target ++ repeatByte byte sz,
          ⟨dataAll, dataPos + 1⟩, addrCursor, cache) := by
-  sorry
+  unfold Decoder.execHalfInst
+  simp only [bind, Except.bind]
+  rw [Encoder.Proofs.readByte_ok hBound]
+  simp only [hByte, repeatByte]
 
 -- ============================================================================
 -- ## execHalfInst COPY mode 0 on source window

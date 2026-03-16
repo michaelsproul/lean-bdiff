@@ -122,6 +122,19 @@ def parseWindow (c : Varint.Cursor) : DecodeResult (Window × Varint.Cursor) := 
   return (⟨winInd, sourceSegLen, sourceSegOff, targetLen,
            dataSection, instSection, addrSection, checksum⟩, c)
 
+/-- Copy `n` bytes starting at address `addr` from the combined source+target window,
+    appending each byte to `target`. Handles overlapping self-copies correctly since
+    each byte is read from the current state of `target`. -/
+def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → ByteArray
+  | _, 0 => target
+  | i, n + 1 =>
+    let srcPos := addr + i
+    let b := if srcPos < sourceWindow.size then
+      sourceWindow[srcPos]!
+    else
+      target[srcPos - sourceWindow.size]!
+    copyLoop sourceWindow (target.push b) addr (i + 1) n
+
 /-- Execute a single half-instruction, returning updated state.
     `sourceWindow` is the concatenation of source segment + target decoded so far
     (for COPY within the combined window). -/
@@ -147,9 +160,7 @@ def execHalfInst
   | .run =>
     -- Read 1 byte from data section, repeat instSize times
     let (b, dataCursor') ← dataCursor.readByte
-    let mut target' := target
-    for _ in [:instSize] do
-      target' := target'.push b
+    let target' := target ++ ByteArray.mk (Array.replicate instSize b)
     return (target', dataCursor', addrCursor, addrCache)
   | .copy mode =>
     -- Decode address and copy from source window
@@ -162,14 +173,7 @@ def execHalfInst
       throw (.copyOutOfBounds addr instSize windowSize)
     -- Copy byte by byte to handle overlapping copies (where addr is in target region
     -- and we're copying bytes we're currently producing)
-    let mut target' := target
-    for i in [:instSize] do
-      let srcPos := addr + i
-      let b := if srcPos < sourceWindow.size then
-        sourceWindow[srcPos]!
-      else
-        target'[srcPos - sourceWindow.size]!
-      target' := target'.push b
+    let target' := copyLoop sourceWindow target addr 0 instSize
     return (target', dataCursor, addrCursor', addrCache')
 
 /-- Apply a decoded window to produce the target bytes for that window. -/
