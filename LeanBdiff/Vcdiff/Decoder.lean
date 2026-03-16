@@ -125,7 +125,7 @@ def parseWindow (c : Varint.Cursor) : DecodeResult (Window × Varint.Cursor) := 
 /-- Execute a single half-instruction, returning updated state.
     `sourceWindow` is the concatenation of source segment + target decoded so far
     (for COPY within the combined window). -/
-private def execHalfInst
+def execHalfInst
     (inst : HalfInst)
     (instSize : Nat)  -- resolved size (never 0)
     (sourceWindow : ByteArray)
