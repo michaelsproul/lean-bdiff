@@ -92,14 +92,19 @@ Key techniques:
 - `Varint.decode_encode` from Phase A for varint roundtrip
 - `simp only [hsub]` for Nat subtraction cancellation (here - (here - addr) = addr)
 
-#### Phase C: Code Table Roundtrip
+#### Phase C: Code Table Roundtrip - COMPLETE
 Prove that decoder code table lookups invert encoder opcode selection.
 
-- [ ] Prove `findSingleOpcode` roundtrip: lookup returns matching InstType and size
-- [ ] Prove `findAddCopyOpcode` roundtrip: lookup returns ADD+COPY pair
-- [ ] Prove `findCopyAddOpcode` roundtrip: lookup returns COPY+ADD pair
+- [x] Table well-formedness: `defaultTable_size` (256 entries)
+- [x] Single instruction lookups: RUN (opcode 0), ADD (1-18), COPY (19-162)
+- [x] Double instruction lookups: ADD+COPY (163-246), COPY+ADD (247-255)
+- [x] Prove `findSingleOpcode` roundtrip: lookup returns matching InstType and size
+- [x] Prove `findAddCopyOpcode` roundtrip: lookup returns ADD+COPY pair
+- [x] Prove `findCopyAddOpcode` roundtrip: lookup returns COPY+ADD pair
+- [x] Composed encoder→decoder roundtrip theorems for all instruction types
 
-Strategy: These are finite/decidable — use `native_decide` or exhaustive case analysis.
+Strategy: `interval_cases` + `native_decide` for exhaustive case analysis over bounded ranges.
+Depends on: None (standalone, uses only CodeTable and Encoder definitions)
 
 #### Phase D: Instruction Semantics
 Prove that executing the generated instructions against the source reproduces the target.
