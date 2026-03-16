@@ -1212,6 +1212,61 @@ theorem execHalfInst_run_at_pos
 -- ## execHalfInst COPY mode 0 on source window
 -- ============================================================================
 
+-- Array extract decomposition: extract start (start+n+1) = [a[start]] ++ extract (start+1) (start+1+n)
+private theorem Array.extract_cons' {α : Type} (a : Array α) (start n : Nat)
+    (h : start + n + 1 ≤ a.size) :
+    a.extract start (start + (n + 1)) =
+    #[a[start]'(by omega)] ++ a.extract (start + 1) (start + 1 + n) := by
+  ext i
+  · simp [Array.size_extract, Array.size_append]; omega
+  · rename_i h1 h2
+    simp only [Array.size_extract, Array.size_append] at h1 h2
+    by_cases hi : i = 0
+    · subst hi; simp [Array.getElem_extract]
+    · rw [Array.getElem_extract]
+      have hi_size : i < (#[a[start]'(by omega)] ++ a.extract (start + 1) (start + 1 + n)).size := by
+        simp [Array.size_append, Array.size_extract]; omega
+      rw [Array.getElem_append (h := hi_size)]
+      simp only [show ¬(i < (#[a[start]'(by omega)]).size) from by simp; omega]
+      simp only [dif_neg (show ¬False from id), Array.getElem_extract]
+      congr 1; simp; omega
+
+-- ByteArray version of extract_cons
+private theorem ByteArray.extract_cons (a : ByteArray) (start n : Nat)
+    (h : start + n + 1 ≤ a.size) :
+    a.extract start (start + (n + 1)) =
+    ByteArray.mk #[a[start]!] ++ a.extract (start + 1) (start + 1 + n) := by
+  apply ByteArray.ext
+  rw [ByteArray.data_extract, ByteArray.data_append, ByteArray.data_extract]
+  have hstart : start < a.size := by omega
+  conv_lhs => rw [Array.extract_cons' a.data start n (by rwa [ByteArray.size] at h)]
+  congr 1
+  · simp [ByteArray.getElem!_eq_getElem (by exact hstart)]
+  · rfl
+
+-- copyLoop for source-only copies: all reads from sourceWindow
+theorem copyLoop_source_only (sw tgt : ByteArray) (addr i sz : Nat)
+    (h : addr + i + sz ≤ sw.size) :
+    Decoder.copyLoop sw tgt addr i sz = tgt ++ sw.extract (addr + i) (addr + i + sz) := by
+  induction sz generalizing tgt i with
+  | zero => simp [Decoder.copyLoop]
+  | succ n ih =>
+    unfold Decoder.copyLoop
+    have hlt : addr + i < sw.size := by omega
+    simp only [show addr + i < sw.size from hlt, ↓reduceIte]
+    rw [ih (tgt.push sw[addr + i]!) (i + 1) (by omega)]
+    -- tgt.push sw[addr+i]! ++ sw.extract (addr+i+1) (addr+i+1+n) = tgt ++ sw.extract (addr+i) (addr+i+n+1)
+    rw [show addr + (i + 1) = addr + i + 1 from by omega,
+        show addr + (i + 1) + n = addr + i + 1 + n from by omega,
+        show addr + i + (n + 1) = addr + i + (n + 1) from rfl]
+    rw [← ByteArray.extract_cons sw (addr + i) n (by omega)]
+    rw [show addr + i + 1 + n = addr + i + (n + 1) from by omega]
+    -- tgt.push x ++ rest = tgt ++ (#[x] ++ rest)
+    have hpush : tgt.push sw[addr + i]! = tgt ++ ByteArray.mk #[sw[addr + i]!] := by
+      apply ByteArray.ext
+      simp [ByteArray.data_push, ByteArray.data_append, Array.push_eq_append]
+    rw [hpush, ByteArray.append_assoc]
+
 -- COPY mode 0 from source window: when address is within source and
 -- the addr section has the encoded address at the right position.
 theorem execHalfInst_copy_source_at_pos
@@ -1229,7 +1284,16 @@ theorem execHalfInst_copy_source_at_pos
          dataCursor,
          ⟨addrAll, addrPos + (Varint.encode addr).size⟩,
          cache.update addr) := by
-  sorry
+  unfold Decoder.execHalfInst
+  simp only [bind, Except.bind]
+  rw [hAddrDecode]
+  simp only []
+  -- addr < windowSize check: addr < sw.size + target.size
+  have hNotGe : ¬(addr ≥ sourceWindow.size + target.size) := by omega
+  simp only [show (addr ≥ sourceWindow.size + target.size) = false from by omega, ↓reduceIte]
+  -- copyLoop gives the right result
+  rw [copyLoop_source_only sourceWindow target addr 0 sz (by omega)]
+  simp only [show addr + 0 = addr from by omega]
 
 -- ============================================================================
 -- ## decodeOneStep for RUN on concatenated sections
@@ -1259,7 +1323,27 @@ theorem decodeOneStep_run_in_concat
          ⟨dataAll, dataPos + 1⟩,
          ⟨addrAll, addrPos⟩,
          cache) := by
-  sorry
+  unfold decodeOneStep
+  simp only [bind, Except.bind]
+  -- Read opcode byte (0 = RUN with varint size)
+  rw [Encoder.Proofs.readByte_ok hInstBound]
+  simp only [hInstByte]
+  rw [lookup_run_entry]
+  conv => simp only []
+  -- inst1.size == 0 is true, inst1.type != .noop is true → read varint
+  simp only [show (0 : Nat) == 0 = true from by decide,
+    show (InstType.run != InstType.noop) = true from by decide,
+    Bool.true_and, ↓reduceIte]
+  -- Decode varint for size
+  rw [hVarint]
+  simp only []
+  -- inst2 is noop, no second instruction
+  simp only [show (InstType.noop != InstType.noop) = false from by decide,
+    show ((0 : Nat) == 0 && false) = false from by decide,
+    ↓reduceIte]
+  -- Execute the RUN instruction
+  rw [execHalfInst_run_at_pos byte sz sourceWindow target dataAll dataPos
+      ⟨addrAll, addrPos⟩ cache (sourceWindow.size + target.size) hDataBound hDataByte]
 
 -- ============================================================================
 -- ## decodeOneStep for COPY mode 0 on concatenated sections
@@ -1320,18 +1404,14 @@ theorem execInstSpec_copy_size (addr sz : Nat) (src target : ByteArray)
 -- ## encodeOneInst matches the mode chosen by encodeAddress
 -- ============================================================================
 
--- For COPY with initial cache, encodeAddress always picks mode 0
--- (since all near/same entries are 0).
-theorem encodeAddress_init_mode0 (addr here : Nat)
-    (haddr : addr > 0) (hhere : here > addr) :
-    (AddressCache.State.init.encodeAddress addr here).1 = 0 := by
-  sorry
-
--- For COPY with initial cache, the address bytes are Varint.encode addr
--- (mode 0 = VCD_SELF).
-theorem encodeAddress_init_bytes (addr here : Nat)
-    (haddr_pos : addr > 0) (hhere : here > addr) :
-    (AddressCache.State.init.encodeAddress addr here).2.1 = Varint.encode addr := by
+-- When encodeAddress picks mode 0, the encoded bytes are Varint.encode addr.
+-- This follows from the definition: mode 0 = VCD_SELF uses absolute address.
+-- The proof is deferred; it requires reasoning about the mutable-variable loop
+-- in encodeAddress. For initial cache, mode 0 is picked when addr < 128
+-- (since here - addr might be smaller for larger addresses).
+theorem encodeAddress_mode0_bytes (cache : AddressCache.State) (addr here : Nat)
+    (hMode : (cache.encodeAddress addr here).1 = 0) :
+    (cache.encodeAddress addr here).2.1 = Varint.encode addr := by
   sorry
 
 -- ============================================================================
