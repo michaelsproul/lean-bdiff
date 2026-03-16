@@ -140,7 +140,12 @@ Prove that executing the generated instructions against the source reproduces th
 - [x] `findSingleOpcode_add_immediate`: general ADD opcode selection for sizes 1..17
 - [x] `lookup_add_opcode_*`: code table entries 2..18 map to ADD with correct size
 - [x] `lookup_add_opcode_noop`: ADD opcodes 2..18 have inst2 = NOOP
-- [ ] Prove `encodeWindow`/`applyWindow` roundtrip: decoding encoded sections reproduces instructions
+- [x] Non-partial spec functions: `encodeOneInst`, `encodeInstList`, `decodeOneStep`, `decodeLoop`
+- [x] Concrete single-instruction section roundtrips (ADD sizes 1/3/17, RUN, COPY mode 0)
+- [x] Multi-instruction section roundtrips (2 ADDs, ADD+RUN, COPY+ADD, 3 instructions)
+- [x] General ADD section roundtrip for sizes 1..17 (`encodeOneInst_add_sections`)
+- [x] Edge cases: empty instruction list, exhausted cursor, fuel sufficiency
+- [ ] General section roundtrip theorem for arbitrary instruction lists
 - [ ] Prove overall instruction execution produces target
 
 Key techniques:
