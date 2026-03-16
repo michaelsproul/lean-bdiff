@@ -25,6 +25,7 @@ import LeanBdiff.Vcdiff.Proofs.InstructionSemantics
 import Mathlib.Tactic.IntervalCases
 import Std.Tactic.BVDecide
 import Batteries.Data.ByteArray
+import Batteries.Data.Array.Lemmas
 
 set_option linter.style.nativeDecide false
 
@@ -516,8 +517,77 @@ theorem bytearray_getElem_append_right (a b : ByteArray) (i : Nat)
     (a ++ b)[i] = b[i - a.size] :=
   ByteArray.get_append_right hi hab
 
--- Extract from the left part of a concatenated ByteArray equals extract from left
--- This is crucial for readBytes on concatenated sections.
+-- ============================================================================
+-- ## ByteArray.extract on concatenated arrays
+-- ============================================================================
+
+-- Bridge lemma: ByteArray.extract on (a ++ b) when stop ≤ a.size
+-- equals extract on a alone. Proved by lifting to Array via .data.
+theorem bytearray_extract_append_left (a b : ByteArray) (i j : Nat)
+    (h : j ≤ a.size) :
+    (a ++ b).extract i j = a.extract i j := by
+  ext1
+  rw [ByteArray.data_extract, ByteArray.data_extract,
+      ByteArray.data_append]
+  exact Array.extract_append_of_stop_le_size_left
+    (by rwa [ByteArray.size] at h)
+
+-- Extract on (a ++ b) when a.size ≤ start reads from b
+theorem bytearray_extract_append_right (a b : ByteArray)
+    (i j : Nat) (h : a.size ≤ i) :
+    (a ++ b).extract i j = b.extract (i - a.size) (j - a.size) := by
+  ext1
+  rw [ByteArray.data_extract, ByteArray.data_extract,
+      ByteArray.data_append]
+  exact Array.extract_append_of_size_left_le_start
+    (by rwa [ByteArray.size] at h)
+
+-- Extract from 0 to a.size of a is a itself
+theorem bytearray_extract_full (a : ByteArray) :
+    a.extract 0 a.size = a := by
+  ext1
+  simp [ByteArray.data_extract]
+
+-- Extract from 0 to n where n ≥ a.size is a itself
+theorem bytearray_extract_ge_size (a : ByteArray) (n : Nat)
+    (h : a.size ≤ n) :
+    a.extract 0 n = a := by
+  ext1
+  rw [ByteArray.data_extract]
+  simp only [ByteArray.size] at h
+  rw [Array.extract_eq_of_size_le_stop h]
+  simp
+
+-- readBytes on (a ++ b) starting at 0 with n ≤ a.size extracts from a
+-- (strengthened version: result equals a.extract, not (a++b).extract)
+theorem readBytes_concat_left (a b : ByteArray) (n : Nat)
+    (h : n ≤ a.size) :
+    Varint.Cursor.readBytes ⟨a ++ b, 0⟩ n =
+    .ok (a.extract 0 n, ⟨a ++ b, n⟩) := by
+  rw [Encoder.Proofs.readBytes_ok
+    (show 0 + n ≤ (a ++ b).size from by
+      rw [ByteArray.size_append]; omega)]
+  simp only [Nat.zero_add, Except.ok.injEq, Prod.mk.injEq,
+    and_true]
+  exact bytearray_extract_append_left a b 0 n h
+
+-- readBytes on (a ++ b) starting at a.size with n ≤ b.size
+-- extracts from b
+theorem readBytes_concat_right (a b : ByteArray) (n : Nat)
+    (h : n ≤ b.size) :
+    Varint.Cursor.readBytes ⟨a ++ b, a.size⟩ n =
+    .ok (b.extract 0 n, ⟨a ++ b, a.size + n⟩) := by
+  rw [Encoder.Proofs.readBytes_ok
+    (show a.size + n ≤ (a ++ b).size from by
+      rw [ByteArray.size_append]; omega)]
+  congr 1
+  rw [bytearray_extract_append_right a b a.size (a.size + n)
+    (le_refl _)]
+  simp
+
+-- ============================================================================
+-- ## encodeInstList helpers
+-- ============================================================================
 
 -- encodeInstList for a single instruction equals encodeOneInst
 theorem encodeInstList_singleton (inst : Encoder.RawInst)
@@ -845,5 +915,160 @@ theorem decodeLoop_fuel_add (sw target : ByteArray)
   | succ m ih =>
     rw [Nat.add_succ]
     exact decodeLoop_fuel_mono sw target ic dc ac cache (n + m) result ih
+
+-- ============================================================================
+-- ## General ADD on concatenated data sections
+-- ============================================================================
+
+-- execHalfInst ADD on (data1 ++ data2) at pos 0 with n ≤ data1.size
+-- produces the same target append as operating on data1 alone.
+-- The cursor advances to position n in the concatenated data.
+theorem execHalfInst_add_concat (n : Nat) (data1 data2 : ByteArray)
+    (sourceWindow target : ByteArray)
+    (addrCursor : Varint.Cursor) (cache : AddressCache.State)
+    (here : Nat) (h : n ≤ data1.size) :
+    Decoder.execHalfInst ⟨.add, 0⟩ n sourceWindow target
+      ⟨data1 ++ data2, 0⟩ addrCursor cache here =
+    .ok (target ++ data1.extract 0 n,
+         ⟨data1 ++ data2, n⟩, addrCursor, cache) := by
+  have hlen : 0 + n ≤ (data1 ++ data2).size := by
+    rw [ByteArray.size_append]; omega
+  rw [execHalfInst_add_general 0 n sourceWindow target
+    ⟨data1 ++ data2, 0⟩ addrCursor cache here hlen]
+  simp only [Nat.zero_add]
+  rw [bytearray_extract_append_left data1 data2 0 n h]
+
+-- ============================================================================
+-- ## readByte on concatenated ByteArray
+-- ============================================================================
+
+-- readByte from (a ++ b) at position i < a.size reads the same
+-- byte as from a at position i, but cursor stays in (a ++ b).
+-- Note: readByte produces ba[pos]! (getElem! / panicking).
+-- For concrete singleton ByteArrays, readByte results are handled by
+-- ba_singleton_getElem + rfl. For general concatenated arrays, we work
+-- directly at the Varint.Cursor.readByte level using readByte_ok.
+-- The key insight: readByte_ok gives us ba[pos]!, and we can state
+-- theorems about the full readByte result without decomposing getElem!.
+
+-- readByte on (a ++ b) at pos i < a.size: result uses (a ++ b)[i]!
+-- This is just readByte_ok with a bounds transfer.
+theorem readByte_concat_ok (a b : ByteArray) (i : Nat)
+    (h : i < a.size) :
+    Varint.Cursor.readByte ⟨a ++ b, i⟩ =
+    .ok ((a ++ b)[i]!, ⟨a ++ b, i + 1⟩) :=
+  Encoder.Proofs.readByte_ok (by rw [ByteArray.size_append]; omega)
+
+-- ============================================================================
+-- ## execHalfInst ADD on concatenated sections at arbitrary position
+-- ============================================================================
+
+-- execHalfInst ADD at position p in concatenated data (d1 ++ d2),
+-- where p + n ≤ d1.size, reads from d1 only.
+theorem execHalfInst_add_concat_at (k n p : Nat)
+    (d1 d2 : ByteArray) (sourceWindow target : ByteArray)
+    (addrCursor : Varint.Cursor) (cache : AddressCache.State)
+    (here : Nat) (h : p + n ≤ d1.size) :
+    Decoder.execHalfInst ⟨.add, k⟩ n sourceWindow target
+      ⟨d1 ++ d2, p⟩ addrCursor cache here =
+    .ok (target ++ d1.extract p (p + n),
+         ⟨d1 ++ d2, p + n⟩, addrCursor, cache) := by
+  have hlen : p + n ≤ (d1 ++ d2).size := by
+    rw [ByteArray.size_append]; omega
+  rw [execHalfInst_add_general k n sourceWindow target
+    ⟨d1 ++ d2, p⟩ addrCursor cache here hlen]
+  rw [bytearray_extract_append_left d1 d2 p (p + n) (by omega)]
+
+-- Corollary: at position 0 with n ≤ d1.size
+theorem execHalfInst_add_concat_zero (k n : Nat)
+    (d1 d2 : ByteArray) (sourceWindow target : ByteArray)
+    (addrCursor : Varint.Cursor) (cache : AddressCache.State)
+    (here : Nat) (h : n ≤ d1.size) :
+    Decoder.execHalfInst ⟨.add, k⟩ n sourceWindow target
+      ⟨d1 ++ d2, 0⟩ addrCursor cache here =
+    .ok (target ++ d1.extract 0 n,
+         ⟨d1 ++ d2, n⟩, addrCursor, cache) := by
+  have := execHalfInst_add_concat_at k n 0 d1 d2 sourceWindow
+    target addrCursor cache here (by omega)
+  simp only [Nat.zero_add] at this
+  exact this
+
+-- ============================================================================
+-- ## Section size properties from encodeOneInst
+-- ============================================================================
+
+-- For ADD with immediate sizes, the encoded instSection is exactly 1 byte
+theorem encodeOneInst_add_instSec_size (data : ByteArray)
+    (h1 : data.size ≥ 1) (h17 : data.size ≤ 17)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (_, instSec, _, _, _) :=
+      encodeOneInst (.add data) srcLen cache tgtPos
+    instSec.size = 1 := by
+  rw [encodeOneInst_add_sections data h1 h17 srcLen cache tgtPos]
+  rfl
+
+-- For ADD, the encoded dataSection has the same size as the input
+theorem encodeOneInst_add_dataSec_size (data : ByteArray)
+    (h1 : data.size ≥ 1) (h17 : data.size ≤ 17)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (dataSec, _, _, _, _) :=
+      encodeOneInst (.add data) srcLen cache tgtPos
+    dataSec.size = data.size := by
+  rw [encodeOneInst_add_sections data h1 h17 srcLen cache tgtPos]
+
+-- For ADD, the encoded addrSection is empty
+theorem encodeOneInst_add_addrSec_empty (data : ByteArray)
+    (h1 : data.size ≥ 1) (h17 : data.size ≤ 17)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (_, _, addrSec, _, _) :=
+      encodeOneInst (.add data) srcLen cache tgtPos
+    addrSec = ByteArray.empty := by
+  rw [encodeOneInst_add_sections data h1 h17 srcLen cache tgtPos]
+
+-- ============================================================================
+-- ## General decodeOneStep ADD on concatenated inst/data sections
+-- ============================================================================
+
+-- When inst section has ADD opcode at position p and data section has
+-- data starting at position q, decodeOneStep correctly processes the ADD
+-- from the concatenated sections.
+-- This is the key lemma for multi-instruction proofs: it shows each ADD
+-- instruction in a concatenated stream is processed independently.
+theorem decodeOneStep_add_in_concat
+    (n : Nat) (sourceWindow target : ByteArray)
+    (instData : ByteArray) (instPos : Nat)
+    (dataAll : ByteArray) (dataPos : Nat)
+    (addrAll : ByteArray) (addrPos : Nat)
+    (cache : AddressCache.State)
+    (h1 : n ≥ 1) (h17 : n ≤ 17)
+    (hInstBound : instPos < instData.size)
+    (hInstByte : instData[instPos]! = (1 + n).toUInt8)
+    (hDataBound : dataPos + n ≤ dataAll.size) :
+    decodeOneStep sourceWindow target
+      ⟨instData, instPos⟩ ⟨dataAll, dataPos⟩
+      ⟨addrAll, addrPos⟩ cache =
+    .ok (target ++ dataAll.extract dataPos (dataPos + n),
+         ⟨instData, instPos + 1⟩,
+         ⟨dataAll, dataPos + n⟩,
+         ⟨addrAll, addrPos⟩,
+         cache) := by
+  unfold decodeOneStep
+  simp only [bind, Except.bind]
+  rw [Encoder.Proofs.readByte_ok hInstBound]
+  simp only [hInstByte]
+  rw [lookup_add_entry n h1 h17]
+  conv => simp only []
+  have hne : n ≠ 0 := by omega
+  simp only [show (n == 0) = false from beq_eq_false_iff_ne.mpr hne,
+    Bool.false_and,
+    show (InstType.add != InstType.noop) = true from by decide,
+    show (InstType.noop != InstType.noop) = false from by decide,
+    show ((0 : Nat) == 0 && false) = false from by decide,
+    ↓reduceIte]
+  unfold Decoder.execHalfInst
+  simp only [bind, Except.bind, pure, Except.pure,
+    Varint.Cursor.hasBytes, Varint.Cursor.readBytes,
+    hDataBound, decide_true, Bool.not_true,
+    Bool.false_eq_true, ↓reduceIte, ite_false, ite_true]
 
 end LeanBdiff.Vcdiff.WindowRoundtrip
