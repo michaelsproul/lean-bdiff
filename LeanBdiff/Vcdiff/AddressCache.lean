@@ -50,37 +50,47 @@ def State.update (s : State) (addr : Nat) : State :=
     { s with same := s.same.set! (addr % (s.sSame * 256)) addr }
   else s
 
+/-- Check NEAR modes, returning best mode/encoding found so far. -/
+def State.tryNearModes (s : State) (addr : Nat) (bestMode : Nat) (bestEnc : ByteArray)
+    : Nat → Nat × ByteArray
+  | 0 => (bestMode, bestEnc)
+  | fuel + 1 =>
+    let i := s.sNear - fuel - 1
+    let base := s.near[i]!
+    let (m, e) := if addr >= base then
+      let encN := Varint.encode (addr - base)
+      if encN.size < bestEnc.size then (2 + i, encN) else (bestMode, bestEnc)
+    else (bestMode, bestEnc)
+    s.tryNearModes addr m e fuel
+
+/-- Check SAME modes, returning best mode/encoding found so far. -/
+def State.trySameModes (s : State) (addr : Nat) (bestMode : Nat) (bestEnc : ByteArray)
+    : Nat → Nat × ByteArray
+  | 0 => (bestMode, bestEnc)
+  | fuel + 1 =>
+    let bank := s.sSame - fuel - 1
+    let slot := bank * 256 + (addr % 256)
+    if s.same[slot]! == addr && addr != 0 then
+      (2 + s.sNear + bank, ByteArray.mk #[addr.toUInt8])
+    else
+      s.trySameModes addr bestMode bestEnc fuel
+
 /-- Encode a COPY address, choosing the mode that produces the smallest output.
     Returns (mode, encodedBytes, updatedCache). -/
 def State.encodeAddress (s : State) (addr : Nat) (here : Nat)
-    : Nat × ByteArray × State := Id.run do
-  -- Try all modes, pick the one with smallest encoding
+    : Nat × ByteArray × State :=
   -- Mode 0 (VCD_SELF): varint(addr)
   let enc0 := Varint.encode addr
-  let mut bestMode := 0
-  let mut bestEnc := enc0
-  -- Mode 1 (VCD_HERE): varint(here - addr), only valid if here > addr
-  if here > addr then
-    let enc1 := Varint.encode (here - addr)
-    if enc1.size < bestEnc.size then
-      bestMode := 1
-      bestEnc := enc1
-  -- NEAR modes 2..2+sNear-1: varint(addr - near[i]), only if addr >= near[i]
-  for i in [:s.sNear] do
-    let base := s.near[i]!
-    if addr >= base then
-      let encN := Varint.encode (addr - base)
-      if encN.size < bestEnc.size then
-        bestMode := 2 + i
-        bestEnc := encN
-  -- SAME modes 2+sNear..2+sNear+sSame-1: single byte, only if cache hit
-  for bank in [:s.sSame] do
-    let slot := bank * 256 + (addr % 256)
-    if s.same[slot]! == addr && addr != 0 then
-      -- 1 byte is always smallest possible
-      bestMode := 2 + s.sNear + bank
-      bestEnc := ByteArray.mk #[addr.toUInt8]
-      break
+  let (bestMode, bestEnc) :=
+    -- Mode 1 (VCD_HERE): varint(here - addr), only valid if here > addr
+    if here > addr then
+      let enc1 := Varint.encode (here - addr)
+      if enc1.size < enc0.size then (1, enc1) else (0, enc0)
+    else (0, enc0)
+  -- NEAR modes
+  let (bestMode, bestEnc) := s.tryNearModes addr bestMode bestEnc s.sNear
+  -- SAME modes (check from last to first; first hit wins)
+  let (bestMode, bestEnc) := s.trySameModes addr bestMode bestEnc s.sSame
   (bestMode, bestEnc, s.update addr)
 
 -- Decode a COPY address given the mode, address cursor, and current "here" position.

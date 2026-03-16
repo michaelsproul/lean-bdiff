@@ -1183,8 +1183,8 @@ theorem varint_decode_at_pos (data : ByteArray) (pos : Nat) (n : Nat)
     (h_extract : data.extract pos (pos + (Varint.encode n).size) = Varint.encode n)
     (h_bound : pos + (Varint.encode n).size ≤ data.size) :
     Varint.decode ⟨data, pos⟩ =
-    .ok (n, ⟨data, pos + (Varint.encode n).size⟩) := by
-  sorry
+    .ok (n, ⟨data, pos + (Varint.encode n).size⟩) :=
+  Varint.decode_at_pos n h_n data pos h_bound h_extract
 
 -- ============================================================================
 -- ## execHalfInst RUN on concatenated data sections
@@ -1423,15 +1423,90 @@ theorem execInstSpec_copy_size (addr sz : Nat) (src target : ByteArray)
 -- ## encodeOneInst matches the mode chosen by encodeAddress
 -- ============================================================================
 
+-- tryNearModes: output mode ≥ 2 or output = (input mode, input enc)
+private theorem tryNearModes_result (s : AddressCache.State) (addr m : Nat) (enc : ByteArray)
+    : (fuel : Nat) →
+    let r := s.tryNearModes addr m enc fuel
+    r.1 ≥ 2 ∨ r = (m, enc)
+  | 0 => Or.inr rfl
+  | fuel + 1 => by
+    simp only [AddressCache.State.tryNearModes]
+    split
+    · split
+      · simp only []
+        let i := s.sNear - fuel - 1
+        let encN := Varint.encode (addr - s.near[i]!)
+        have ih := tryNearModes_result s addr (2 + i) encN fuel
+        rcases ih with hge | heq
+        · left; exact hge
+        · rw [heq]; left; omega
+      · simp only []
+        exact tryNearModes_result s addr m enc fuel
+    · simp only []
+      exact tryNearModes_result s addr m enc fuel
+
+-- trySameModes: output mode ≥ 2+sNear or output = (input mode, input enc)
+private theorem trySameModes_result (s : AddressCache.State) (addr m : Nat) (enc : ByteArray)
+    : (fuel : Nat) →
+    let r := s.trySameModes addr m enc fuel
+    r.1 ≥ 2 + s.sNear ∨ r = (m, enc)
+  | 0 => Or.inr rfl
+  | fuel + 1 => by
+    simp only [AddressCache.State.trySameModes]
+    split
+    · left; omega
+    · exact trySameModes_result s addr m enc fuel
+
 -- When encodeAddress picks mode 0, the encoded bytes are Varint.encode addr.
--- This follows from the definition: mode 0 = VCD_SELF uses absolute address.
--- The proof is deferred; it requires reasoning about the mutable-variable loop
--- in encodeAddress. For initial cache, mode 0 is picked when addr < 128
--- (since here - addr might be smaller for larger addresses).
 theorem encodeAddress_mode0_bytes (cache : AddressCache.State) (addr here : Nat)
     (hMode : (cache.encodeAddress addr here).1 = 0) :
     (cache.encodeAddress addr here).2.1 = Varint.encode addr := by
-  sorry
+  simp only [AddressCache.State.encodeAddress] at hMode ⊢
+  -- After VCD_HERE check, we have (bestMode, bestEnc) where bestMode ∈ {0, 1}
+  -- After tryNearModes, tryNearModes_result says mode ≥ 2 or unchanged
+  -- After trySameModes, trySameModes_result says mode ≥ 2+sNear or unchanged
+  -- If final mode = 0, then both must be "unchanged", tracing back to VCD_HERE
+  -- where mode 0 means bestEnc = Varint.encode addr
+  split at hMode ⊢
+  · -- here > addr
+    split at hMode ⊢
+    · -- VCD_HERE was better: bestMode=1, bestEnc=enc1
+      -- After tryNearModes with mode 1: result mode ≥ 2 or (1, enc1)
+      -- After trySameModes: mode ≥ 2+sNear or unchanged
+      -- If final mode = 0: impossible since both paths give mode ≥ 1
+      have h_near := tryNearModes_result cache addr 1 _ cache.sNear
+      have h_same := trySameModes_result cache addr _ _ cache.sSame
+      rcases h_near with hge | heq
+      · -- NEAR gave mode ≥ 2
+        rcases h_same with hge2 | heq2
+        · simp only [heq2] at hMode; omega
+        · simp only [heq2] at hMode; omega
+      · simp only [heq] at hMode h_same
+        rcases h_same with hge2 | heq2
+        · omega
+        · simp only [heq2] at hMode
+    · -- VCD_HERE not better: bestMode=0, bestEnc=enc0=Varint.encode addr
+      have h_near := tryNearModes_result cache addr 0 (Varint.encode addr) cache.sNear
+      have h_same := trySameModes_result cache addr _ _ cache.sSame
+      rcases h_near with hge | heq
+      · rcases h_same with hge2 | heq2
+        · simp only [heq2] at hMode; omega
+        · simp only [heq2] at hMode; omega
+      · simp only [heq] at hMode h_same ⊢
+        rcases h_same with hge2 | heq2
+        · omega
+        · simp only [heq2]
+  · -- here ≤ addr: bestMode=0, bestEnc=Varint.encode addr
+    have h_near := tryNearModes_result cache addr 0 (Varint.encode addr) cache.sNear
+    have h_same := trySameModes_result cache addr _ _ cache.sSame
+    rcases h_near with hge | heq
+    · rcases h_same with hge2 | heq2
+      · simp only [heq2] at hMode; omega
+      · simp only [heq2] at hMode; omega
+    · simp only [heq] at hMode h_same ⊢
+      rcases h_same with hge2 | heq2
+      · omega
+      · simp only [heq2]
 
 -- ============================================================================
 -- ## encodeOneInst for COPY mode 0 (general)
