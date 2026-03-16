@@ -1555,6 +1555,14 @@ theorem encodeOneInst_copy_mode0_sections (addr sz : Nat)
 --
 -- Note: The theorem is stated with cursor positions into the full concatenated
 -- sections, which is how decodeLoop actually operates.
+--
+-- PROOF GAP: The inductive step requires a "cursor relocation" lemma showing
+-- that decodeLoop on ⟨prefix ++ suffix, prefix.size⟩ gives the same result
+-- as decodeLoop on ⟨suffix, 0⟩ (modulo cursor data pointers). This is true
+-- because readByte/readBytes/Varint.decode only use bytes from the current
+-- position onwards, but proving it requires relocation lemmas for every
+-- cursor operation in decodeOneStep. All instruction-level sub-lemmas
+-- (decodeOneStep_add/run/copy_in_concat) are proved.
 
 theorem encodeInstList_decodeLoop_roundtrip
     (insts : List Encoder.RawInst)
