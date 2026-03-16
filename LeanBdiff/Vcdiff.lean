@@ -5,3 +5,4 @@ import LeanBdiff.Vcdiff.AddressCache
 import LeanBdiff.Vcdiff.Decoder
 import LeanBdiff.Vcdiff.Encoder
 import LeanBdiff.Vcdiff.Proofs.Varint
+import LeanBdiff.Vcdiff.Proofs.AddressCache

@@ -75,16 +75,22 @@ Key sub-lemmas proved:
 - `bv_decide` for UInt8/BitVec-level proofs
 - `decodeLoop_match_decodeListAux` recursive def bridging ByteArray decodeLoop to List decodeListAux
 
-#### Phase B: Address Cache Roundtrip
+#### Phase B: Address Cache Roundtrip - COMPLETE
 Prove that `AddressCache.decode` inverts `AddressCache.State.encodeAddress`.
 
-- [ ] Prove roundtrip for mode 0 (VCD_SELF): varint(addr)
-- [ ] Prove roundtrip for mode 1 (VCD_HERE): varint(here - addr)
-- [ ] Prove roundtrip for NEAR modes 2..5: varint(addr - near[i])
-- [ ] Prove roundtrip for SAME modes 6..8: single-byte lookup
-- [ ] Prove cache state consistency (encode then decode updates cache identically)
+- [x] Prove roundtrip for mode 0 (VCD_SELF): varint(addr) — `decode_mode0`
+- [x] Prove roundtrip for mode 1 (VCD_HERE): varint(here - addr) — `decode_mode1`
+- [x] Prove roundtrip for NEAR modes 2..5: varint(addr - near[i]) — `decode_near_mode`
+- [x] Prove roundtrip for SAME modes 6..8: single-byte lookup — `decode_same_mode`
+- [x] Prove cache state consistency (encode then decode updates cache identically) — embedded in theorem conclusions
 
 Depends on: Phase A (varint roundtrip)
+
+Key techniques:
+- `beq_false_of_ne` + `omega` for BEq conditions on mode dispatch
+- `if_pos`/`if_neg` for Decidable propositions in if-then-else
+- `Varint.decode_encode` from Phase A for varint roundtrip
+- `simp only [hsub]` for Nat subtraction cancellation (here - (here - addr) = addr)
 
 #### Phase C: Code Table Roundtrip
 Prove that decoder code table lookups invert encoder opcode selection.
