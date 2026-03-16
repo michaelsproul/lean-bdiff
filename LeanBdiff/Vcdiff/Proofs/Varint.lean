@@ -12,6 +12,8 @@
 -/
 import LeanBdiff.Vcdiff.Varint
 import Std.Tactic.BVDecide
+import Mathlib.Data.List.Basic
+import Batteries.Data.Array.Lemmas
 
 namespace LeanBdiff.Vcdiff.Varint
 
@@ -407,6 +409,139 @@ private def decodeLoop_match_decodeListAux
         · -- BEq false in goal: continuation case matches
           exact decodeLoop_match_decodeListAux allBytes (pos + 1) _ fuel v h
 
+-- ============================================================================
+-- ## Generalized bridge: varint in the middle of a ByteArray
+-- ============================================================================
+
+-- Non-private version of the list/ByteArray index bridge
+theorem ba_get_eq_list_getElem (l : List UInt8) (pos : Nat) (h : pos < l.length)
+    (h2 : pos < (⟨l.toArray⟩ : ByteArray).size) :
+    (⟨l.toArray⟩ : ByteArray)[pos] = l[pos] := by
+  show (⟨l.toArray⟩ : ByteArray).data[pos] = l[pos]
+  exact List.getElem_toArray (by simp [List.size_toArray]; exact h)
+
+-- Generalized bridge: decodeLoop on a ByteArray where the varint is
+-- embedded at an arbitrary position (not necessarily at the end).
+-- The cursor ends at the position after the varint bytes.
+theorem decodeLoop_match_general
+    (allBytes : List UInt8) (pos acc : Nat) :
+    (fuel : Nat) → (v : Nat) → (remaining : List UInt8) →
+    decodeListAux (allBytes.drop pos) acc fuel = some (v, remaining) →
+    decodeLoop ⟨allBytes.toArray⟩ pos acc fuel =
+    .ok (v, ⟨⟨allBytes.toArray⟩, allBytes.length - remaining.length⟩)
+  | 0, _, _, h => by simp [decodeListAux] at h
+  | fuel + 1, v, remaining, h => by
+    have hpos : pos < allBytes.length := by
+      if hge : allBytes.length ≤ pos then
+        exfalso; rw [List.drop_eq_nil_of_le hge] at h; simp [decodeListAux] at h
+      else omega
+    have hba_size : pos < (⟨allBytes.toArray⟩ : ByteArray).size := by
+      simp [ByteArray.size, List.size_toArray]; exact hpos
+    unfold decodeLoop
+    rw [dif_pos hba_size]
+    simp only [ba_get_eq_list_getElem allBytes pos hpos hba_size]
+    rw [List.drop_eq_getElem_cons hpos] at h
+    simp only [decodeListAux] at h
+    split at h
+    · next hmsb_h =>
+        simp only [Option.some.injEq, Prod.mk.injEq] at h
+        obtain ⟨hv, hrest⟩ := h
+        -- hrest : allBytes.drop (pos + 1) = remaining
+        subst hrest; subst hv
+        split
+        · -- BEq true: terminal case
+          congr 1; congr 1; congr 1
+          rw [List.length_drop]; omega
+        · -- BEq false: contradiction
+          next hmsb_g =>
+            exfalso; exact hmsb_g (beq_iff_eq.mpr hmsb_h)
+    · next hmsb_h =>
+        split
+        · next hmsb_g =>
+            exfalso; exact hmsb_h (beq_iff_eq.mp hmsb_g)
+        · exact decodeLoop_match_general allBytes (pos + 1) _ fuel v remaining h
+
+-- decodeListAux suffix extension: if decoding l consumes all bytes,
+-- then decoding l ++ suffix also succeeds and returns suffix as remaining.
+theorem decodeListAux_append (l suffix : List UInt8) (acc : Nat) :
+    (fuel : Nat) → (v : Nat) →
+    decodeListAux l acc fuel = some (v, []) →
+    decodeListAux (l ++ suffix) acc fuel = some (v, suffix)
+  | 0, _, h => by simp [decodeListAux] at h
+  | fuel + 1, v, h => by
+    match l with
+    | [] => simp [decodeListAux] at h
+    | b :: rest =>
+      simp only [List.cons_append]
+      -- Unfold both h and goal with decodeListAux
+      simp only [decodeListAux] at h ⊢
+      -- Split on MSB condition
+      split
+      · next hmsb =>
+          -- Terminal: MSB clear. h says some (acc', rest) = some (v, [])
+          rw [hmsb] at h
+          simp only [↓reduceIte] at h
+          simp only [Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨hv, hrest⟩ := h
+          -- rest = [], so rest ++ suffix = suffix
+          subst hrest; subst hv
+          simp
+      · next hmsb =>
+          -- Continuation: MSB set. Recurse.
+          -- Resolve the if in h (same condition, opposite branch)
+          split at h
+          · next hmsb_h => exact absurd hmsb_h hmsb
+          · exact decodeListAux_append rest suffix _ fuel v h
+
+-- Make numDigits_le_5 accessible
+theorem numDigits_le_5' (n : Nat) (h : n < 2 ^ 35) (hn : n ≠ 0) : numDigits n ≤ 5 := by
+  rw [numDigits_pos hn]
+  if h1 : n / 128 = 0 then simp [h1] else
+  rw [numDigits_pos h1]
+  if h2 : n / 128 / 128 = 0 then simp [h2] else
+  rw [numDigits_pos h2]
+  if h3 : n / 128 / 128 / 128 = 0 then simp [h3] else
+  rw [numDigits_pos h3]
+  if h4 : n / 128 / 128 / 128 / 128 = 0 then simp [h4] else
+  rw [numDigits_pos h4]
+  have : n / 128 / 128 / 128 / 128 / 128 = 0 := by omega
+  simp [this]
+
+-- Helper: the encoded list for n ≠ 0
+private def encList (n : Nat) : List UInt8 := setContinuationBits (toBase128 n)
+
+-- decodeListAux on encList succeeds (factored from decode_encode)
+private theorem decodeListAux_encList (n : Nat) (h : n < 2 ^ 35) (hn : n ≠ 0) :
+    decodeListAux (encList n) 0 5 = some (n, []) := by
+  have := decodeListAux_setContinuationBits (toBase128 n)
+    (toBase128_ne_nil hn) (fun d hd => toBase128_digit_bound hd)
+    0 5 (by rw [toBase128_length]; exact numDigits_le_5' n h hn)
+  rwa [fromBase128_toBase128] at this
+
+-- encode n for n ≠ 0 has data = encList
+private theorem encode_data_eq (n : Nat) (hn : n ≠ 0) :
+    (encode n).data = (encList n).toArray := by
+  simp [encode, show (n == 0) = false from by simp [hn], encList]
+
+-- Helper: extract from a ByteArray matches a sublist via List.drop/take
+private theorem list_drop_take_eq_of_extract
+    (data : ByteArray) (pos len : Nat)
+    (expected : ByteArray) (h_bound : pos + len ≤ data.size)
+    (h_extract : data.extract pos (pos + len) = expected) :
+    (data.data.toList.drop pos).take len = expected.data.toList := by
+  subst h_extract
+  rw [ByteArray.data_extract, Array.toList_extract, List.extract_eq_take_drop]
+  simp [Nat.add_sub_cancel_left]
+
+-- The key drop decomposition: when extract matches, drop pos = encoded ++ rest
+private theorem list_drop_decompose
+    (data : ByteArray) (pos : Nat) (encoded : List UInt8)
+    (h_bound : pos + encoded.length ≤ data.size)
+    (h_take : (data.data.toList.drop pos).take encoded.length = encoded) :
+    data.data.toList.drop pos = encoded ++ data.data.toList.drop (pos + encoded.length) := by
+  conv_lhs => rw [← List.take_append_drop encoded.length (data.data.toList.drop pos)]
+  rw [h_take, List.drop_drop]
+
 private theorem numDigits_le_5 (n : Nat) (h : n < 2 ^ 35) (hn : n ≠ 0) : numDigits n ≤ 5 := by
   rw [numDigits_pos hn]
   if h1 : n / 128 = 0 then simp [h1] else
@@ -438,5 +573,71 @@ theorem decode_encode (n : Nat) (h : n < 2 ^ 35) :
   rw [decodeLoop_match_decodeListAux
     (setContinuationBits (toBase128 n)) 0 0 5 n (by rwa [List.drop_zero])]
   simp [ByteArray.size, List.size_toArray]
+
+-- ============================================================================
+-- ## Varint decode at arbitrary position
+-- ============================================================================
+
+-- decodeListAux succeeds on the encoded bytes of n
+-- (same proof as in decode_encode, factored out)
+private theorem decodeListAux_encode (n : Nat) (h : n < 2 ^ 35) :
+    decodeListAux (encode n).data.toList 0 5 = some (n, []) := by
+  if hn : n = 0 then subst hn; native_decide
+  else
+    have heq : (encode n).data.toList = setContinuationBits (toBase128 n) := by
+      simp only [encode, show (n == 0) = false from by simp [hn],
+                 show (false = true) = False from by simp, ite_false]
+    rw [heq]
+    have := decodeListAux_setContinuationBits (toBase128 n)
+      (toBase128_ne_nil hn) (fun d hd => toBase128_digit_bound hd)
+      0 5 (by rw [toBase128_length]; exact numDigits_le_5' n h hn)
+    rwa [fromBase128_toBase128] at this
+
+/-- Varint decode at arbitrary position: if the bytes at [pos, pos+encSize)
+    in data match encode(n), then decode succeeds. -/
+theorem decode_at_pos (n : Nat) (h : n < 2 ^ 35)
+    (data : ByteArray) (pos : Nat)
+    (h_bound : pos + (encode n).size ≤ data.size)
+    (h_extract : data.extract pos (pos + (encode n).size) = encode n) :
+    decode ⟨data, pos⟩ = .ok (n, ⟨data, pos + (encode n).size⟩) := by
+  simp only [decode]
+  -- Abbreviations for list-level reasoning
+  let encBytes := (encode n).data.toList
+  let dataList := data.data.toList
+  -- Size bridge: ByteArray.size = Array.size = List.length
+  have henc_size : (encode n).size = encBytes.length := by
+    show (encode n).data.size = (encode n).data.toList.length
+    rw [Array.size_eq_length_toList]
+  have hdata_size : data.size = dataList.length := by
+    show data.data.size = data.data.toList.length
+    rw [Array.size_eq_length_toList]
+  -- decodeListAux on encoded bytes succeeds
+  have hdla := decodeListAux_encode n h
+  -- The bytes at [pos, pos+encSize) in data match the encoded bytes
+  have h_take : (dataList.drop pos).take encBytes.length = encBytes :=
+    list_drop_take_eq_of_extract data pos (encode n).size (encode n) h_bound h_extract
+  -- Decompose: dataList.drop pos = encBytes ++ suffix
+  have h_bound_list : pos + encBytes.length ≤ data.size := by rw [← henc_size]; exact h_bound
+  have hdrop := list_drop_decompose data pos encBytes h_bound_list h_take
+  -- Extend decodeListAux to the full data
+  let suffix := dataList.drop (pos + encBytes.length)
+  have hdla_data : decodeListAux (dataList.drop pos) 0 5 = some (n, suffix) := by
+    rw [hdrop]; exact decodeListAux_append encBytes suffix 0 5 n hdla
+  -- Key: data.data = dataList.toArray
+  have hdata_arr : dataList.toArray = data.data :=
+    @Array.toArray_toList UInt8 data.data
+  have hdata_eq : (⟨dataList.toArray⟩ : ByteArray) = data := by
+    cases data; exact congrArg ByteArray.mk hdata_arr
+  -- Apply generalized bridge
+  show decodeLoop data pos 0 5 = _
+  conv_lhs => rw [← hdata_eq]
+  rw [decodeLoop_match_general dataList pos 0 5 n suffix hdla_data]
+  -- Rewrite ⟨dataList.toArray⟩ back to data
+  rw [hdata_eq]
+  -- Now: .ok (n, ⟨data, dataList.length - suffix.length⟩) = .ok (n, ⟨data, pos + (encode n).size⟩)
+  congr 1; congr 1; congr 1
+  -- dataList.length - suffix.length = pos + (encode n).size
+  show dataList.length - (dataList.drop (pos + encBytes.length)).length = pos + (encode n).size
+  rw [List.length_drop, ← henc_size, ← hdata_size]; omega
 
 end LeanBdiff.Vcdiff.Varint
