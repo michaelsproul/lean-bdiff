@@ -1376,7 +1376,26 @@ theorem decodeOneStep_copy_mode0_in_concat
          ⟨dataAll, dataPos⟩,
          ⟨addrAll, addrPos + (Varint.encode addr).size⟩,
          cache.update addr) := by
-  sorry
+  unfold decodeOneStep
+  simp only [bind, Except.bind]
+  -- Read opcode byte
+  rw [Encoder.Proofs.readByte_ok hInstBound]
+  simp only [hInstByte]
+  -- Lookup gives COPY mode 0 with immediate size
+  rw [lookup_copy_mode0_entry sz hSz4 hSz18]
+  conv => simp only []
+  -- inst1.size = sz ≠ 0, so no varint read for size; inst1.type = .copy 0 ≠ .noop
+  have hne : sz ≠ 0 := by omega
+  simp only [show (sz == 0) = false from beq_eq_false_iff_ne.mpr hne,
+    Bool.false_and,
+    show (InstType.copy 0 != InstType.noop) = true from by decide,
+    show (InstType.noop != InstType.noop) = false from by decide,
+    show ((0 : Nat) == 0 && false) = false from by decide,
+    ↓reduceIte]
+  -- Execute COPY using execHalfInst_copy_source_at_pos
+  rw [execHalfInst_copy_source_at_pos addr sz sourceWindow target
+      ⟨dataAll, dataPos⟩ addrAll addrPos cache
+      (sourceWindow.size + target.size) hAddr hAddrDecode]
 
 -- ============================================================================
 -- ## Target size tracking through execInstSpec
@@ -1428,7 +1447,19 @@ theorem encodeOneInst_copy_mode0_sections (addr sz : Nat)
     encodeOneInst (.copy addr sz) srcLen cache tgtPos =
     (ByteArray.empty, ByteArray.mk #[(sz + 16).toUInt8],
      addrBytes, cache', tgtPos + sz) := by
-  sorry
+  -- Destructure the encodeAddress result
+  obtain ⟨mode, addrBytes, cache'⟩ := cache.encodeAddress addr (srcLen + tgtPos)
+  simp only at hMode
+  -- Unfold encodeOneInst for COPY
+  unfold encodeOneInst
+  simp only []
+  -- The mode from encodeAddress is 0
+  rw [show cache.encodeAddress addr (srcLen + tgtPos) = (mode, addrBytes, cache')
+    from rfl]
+  simp only [hMode]
+  -- findSingleOpcode for COPY with mode 0 and immediate size 4..18
+  rw [findSingleOpcode_copy_mode0_immediate sz addr hSz4 hSz18]
+  simp only [ite_false]
 
 -- ============================================================================
 -- ## Main inductive roundtrip: encodeInstList → decodeLoop
