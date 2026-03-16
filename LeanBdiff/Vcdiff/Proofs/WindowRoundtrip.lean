@@ -24,6 +24,7 @@ import LeanBdiff.Vcdiff.Proofs.Encoder
 import LeanBdiff.Vcdiff.Proofs.InstructionSemantics
 import Mathlib.Tactic.IntervalCases
 import Std.Tactic.BVDecide
+import Batteries.Data.ByteArray
 
 set_option linter.style.nativeDecide false
 
@@ -498,4 +499,23 @@ theorem decodeLoop_single_add (data : ByteArray)
     rw [hsz]
   simp only [hge, ↓reduceIte]
 
+-- ============================================================================
+-- ## ByteArray append properties (for multi-instruction roundtrip)
+-- ============================================================================
+
+-- The byte read from pos < a.size in (a ++ b) equals the byte in a
+theorem bytearray_getElem_append_left (a b : ByteArray) (i : Nat)
+    (hi : i < a.size) (hab : i < (a ++ b).size := by rw [ByteArray.size_append]; omega) :
+    (a ++ b)[i] = a[i] :=
+  ByteArray.get_append_left hi
+
+-- The byte read from pos ≥ a.size in (a ++ b) equals the byte in b
+theorem bytearray_getElem_append_right (a b : ByteArray) (i : Nat)
+    (hi : a.size ≤ i) (hab : i < (a ++ b).size)
+    (hb : i - a.size < b.size := by rw [ByteArray.size_append] at hab; omega) :
+    (a ++ b)[i] = b[i - a.size] :=
+  ByteArray.get_append_right hi hab
+
+-- Extract from the left part of a concatenated ByteArray equals extract from left
+-- This is crucial for readBytes on concatenated sections.
 end LeanBdiff.Vcdiff.WindowRoundtrip
