@@ -1071,4 +1071,501 @@ theorem decodeOneStep_add_in_concat
     hDataBound, decide_true, Bool.not_true,
     Bool.false_eq_true, ↓reduceIte, ite_false, ite_true]
 
+-- ============================================================================
+-- ## Pure specification functions for instruction execution
+-- ============================================================================
+
+/-- Repeat a byte n times as a ByteArray. -/
+def repeatByte (b : UInt8) (n : Nat) : ByteArray :=
+  ByteArray.mk (Array.replicate n b)
+
+/-- Execute a single instruction purely (specification function).
+    For COPY, assumes all addresses are within the source window
+    (no overlapping target-self copies). -/
+def execInstSpec (inst : Encoder.RawInst) (sourceWindow target : ByteArray) : ByteArray :=
+  match inst with
+  | .add data => target ++ data
+  | .run byte sz => target ++ repeatByte byte sz
+  | .copy addr sz => target ++ sourceWindow.extract addr (addr + sz)
+
+/-- Execute a list of instructions purely (specification function). -/
+def execInstListSpec : List Encoder.RawInst → ByteArray → ByteArray → ByteArray
+  | [], _, target => target
+  | inst :: rest, src, target =>
+    execInstListSpec rest src (execInstSpec inst src target)
+
+-- ============================================================================
+-- ## Instruction validity predicates
+-- ============================================================================
+
+/-- An instruction is valid for our roundtrip proof:
+    - ADD: immediate-size opcode (1..17 bytes)
+    - RUN: any size ≥ 1
+    - COPY: mode 0, immediate-size opcode (4..18), source-only -/
+def ValidInst (inst : Encoder.RawInst) (sourceWindow : ByteArray) : Prop :=
+  match inst with
+  | .add data => data.size ≥ 1 ∧ data.size ≤ 17
+  | .run _ sz => sz ≥ 1 ∧ sz < 2 ^ 31
+  | .copy addr sz => sz ≥ 4 ∧ sz ≤ 18 ∧ addr + sz ≤ sourceWindow.size ∧ addr < 2 ^ 31
+
+/-- All instructions in a list are valid. -/
+def ValidInstList (insts : List Encoder.RawInst) (sourceWindow : ByteArray) : Prop :=
+  insts.Forall (fun i => ValidInst i sourceWindow)
+
+-- ============================================================================
+-- ## encodeInstList decomposition
+-- ============================================================================
+
+-- encodeInstList cons unfolds to encodeOneInst + encodeInstList on rest
+-- with sections concatenated.
+theorem encodeInstList_cons (inst : Encoder.RawInst)
+    (rest : List Encoder.RawInst) (srcLen : Nat)
+    (cache : AddressCache.State) (pos : Nat) :
+    encodeInstList (inst :: rest) srcLen cache pos =
+    let (d, i, a, c', p') := encodeOneInst inst srcLen cache pos
+    let (dR, iR, aR, c'', p'') := encodeInstList rest srcLen c' p'
+    (d ++ dR, i ++ iR, a ++ aR, c'', p'') := by
+  unfold encodeInstList
+  rfl
+
+-- ============================================================================
+-- ## Section size tracking from encodeOneInst
+-- ============================================================================
+
+-- Inst section size for ADD (immediate): always 1
+-- (already proved as encodeOneInst_add_instSec_size)
+
+-- Inst section size for RUN: 1 + varint(sz).size
+theorem encodeOneInst_run_instSec_size (b : UInt8) (sz : Nat)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (_, instSec, _, _, _) := encodeOneInst (.run b sz) srcLen cache tgtPos
+    instSec.size = 1 + (Varint.encode sz).size := by
+  rw [encodeOneInst_run_sections]
+  simp [ByteArray.size_append, ByteArray.size]
+
+-- Data section size for RUN: always 1
+theorem encodeOneInst_run_dataSec_size (b : UInt8) (sz : Nat)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (dataSec, _, _, _, _) := encodeOneInst (.run b sz) srcLen cache tgtPos
+    dataSec.size = 1 := by
+  rw [encodeOneInst_run_sections]
+
+-- Addr section for RUN: empty
+theorem encodeOneInst_run_addrSec_empty (b : UInt8) (sz : Nat)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (_, _, addrSec, _, _) := encodeOneInst (.run b sz) srcLen cache tgtPos
+    addrSec = ByteArray.empty := by
+  rw [encodeOneInst_run_sections]
+
+-- Cache unchanged after ADD
+theorem encodeOneInst_add_cache (data : ByteArray)
+    (h1 : data.size ≥ 1) (h17 : data.size ≤ 17)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (_, _, _, c', _) := encodeOneInst (.add data) srcLen cache tgtPos
+    c' = cache := by
+  rw [encodeOneInst_add_sections data h1 h17]
+
+-- Cache unchanged after RUN
+theorem encodeOneInst_run_cache (b : UInt8) (sz : Nat)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    let (_, _, _, c', _) := encodeOneInst (.run b sz) srcLen cache tgtPos
+    c' = cache := by
+  rw [encodeOneInst_run_sections]
+
+-- ============================================================================
+-- ## Varint decode on concatenated ByteArray
+-- ============================================================================
+
+-- When a varint is embedded in a larger ByteArray at a known position,
+-- Varint.decode reads it correctly.
+theorem varint_decode_at_pos (data : ByteArray) (pos : Nat) (n : Nat)
+    (h_n : n < 2 ^ 35)
+    (h_extract : data.extract pos (pos + (Varint.encode n).size) = Varint.encode n)
+    (h_bound : pos + (Varint.encode n).size ≤ data.size) :
+    Varint.decode ⟨data, pos⟩ =
+    .ok (n, ⟨data, pos + (Varint.encode n).size⟩) := by
+  sorry
+
+-- ============================================================================
+-- ## execHalfInst RUN on concatenated data sections
+-- ============================================================================
+
+-- RUN reads 1 byte from data section and repeats it sz times.
+-- When data cursor is at position p in concatenated data, and the
+-- byte at that position is b, RUN produces repeatByte b sz.
+theorem execHalfInst_run_at_pos
+    (byte : UInt8) (sz : Nat) (sourceWindow target : ByteArray)
+    (dataAll : ByteArray) (dataPos : Nat)
+    (addrCursor : Varint.Cursor) (cache : AddressCache.State)
+    (here : Nat) (hBound : dataPos < dataAll.size)
+    (hByte : dataAll[dataPos]! = byte) :
+    Decoder.execHalfInst ⟨.run, 0⟩ sz sourceWindow target
+      ⟨dataAll, dataPos⟩ addrCursor cache here =
+    .ok (target ++ repeatByte byte sz,
+         ⟨dataAll, dataPos + 1⟩, addrCursor, cache) := by
+  sorry
+
+-- ============================================================================
+-- ## execHalfInst COPY mode 0 on source window
+-- ============================================================================
+
+-- COPY mode 0 from source window: when address is within source and
+-- the addr section has the encoded address at the right position.
+theorem execHalfInst_copy_source_at_pos
+    (addr sz : Nat) (sourceWindow target : ByteArray)
+    (dataCursor : Varint.Cursor)
+    (addrAll : ByteArray) (addrPos : Nat)
+    (cache : AddressCache.State)
+    (here : Nat)
+    (hAddr : addr + sz ≤ sourceWindow.size)
+    (hAddrDecode : AddressCache.decode 0 here ⟨addrAll, addrPos⟩ cache =
+      .ok (addr, ⟨addrAll, addrPos + (Varint.encode addr).size⟩, cache.update addr)) :
+    Decoder.execHalfInst ⟨.copy 0, 0⟩ sz sourceWindow target
+      dataCursor ⟨addrAll, addrPos⟩ cache here =
+    .ok (target ++ sourceWindow.extract addr (addr + sz),
+         dataCursor,
+         ⟨addrAll, addrPos + (Varint.encode addr).size⟩,
+         cache.update addr) := by
+  sorry
+
+-- ============================================================================
+-- ## decodeOneStep for RUN on concatenated sections
+-- ============================================================================
+
+-- When inst section has RUN opcode (0) at instPos followed by varint(sz),
+-- data section has byte at dataPos, and addr section is untouched:
+theorem decodeOneStep_run_in_concat
+    (byte : UInt8) (sz : Nat)
+    (sourceWindow target : ByteArray)
+    (instData : ByteArray) (instPos : Nat)
+    (dataAll : ByteArray) (dataPos : Nat)
+    (addrAll : ByteArray) (addrPos : Nat)
+    (cache : AddressCache.State)
+    (hSz : sz ≥ 1) (hSzBound : sz < 2 ^ 31)
+    (hInstBound : instPos < instData.size)
+    (hInstByte : instData[instPos]! = 0)
+    (hVarint : Varint.decode ⟨instData, instPos + 1⟩ =
+      .ok (sz, ⟨instData, instPos + 1 + (Varint.encode sz).size⟩))
+    (hDataBound : dataPos < dataAll.size)
+    (hDataByte : dataAll[dataPos]! = byte) :
+    decodeOneStep sourceWindow target
+      ⟨instData, instPos⟩ ⟨dataAll, dataPos⟩
+      ⟨addrAll, addrPos⟩ cache =
+    .ok (target ++ repeatByte byte sz,
+         ⟨instData, instPos + 1 + (Varint.encode sz).size⟩,
+         ⟨dataAll, dataPos + 1⟩,
+         ⟨addrAll, addrPos⟩,
+         cache) := by
+  sorry
+
+-- ============================================================================
+-- ## decodeOneStep for COPY mode 0 on concatenated sections
+-- ============================================================================
+
+-- When inst section has COPY mode 0 opcode at instPos (immediate size 4..18),
+-- addr section has the encoded address, and source window has the data:
+theorem decodeOneStep_copy_mode0_in_concat
+    (addr sz : Nat)
+    (sourceWindow target : ByteArray)
+    (instData : ByteArray) (instPos : Nat)
+    (dataAll : ByteArray) (dataPos : Nat)
+    (addrAll : ByteArray) (addrPos : Nat)
+    (cache : AddressCache.State)
+    (hSz4 : sz ≥ 4) (hSz18 : sz ≤ 18)
+    (hAddr : addr + sz ≤ sourceWindow.size) (hAddrBound : addr < 2 ^ 35)
+    (hInstBound : instPos < instData.size)
+    (hInstByte : instData[instPos]! = (sz + 16).toUInt8)
+    (hAddrDecode : AddressCache.decode 0
+      (sourceWindow.size + target.size)
+      ⟨addrAll, addrPos⟩ cache =
+      .ok (addr,
+           ⟨addrAll, addrPos + (Varint.encode addr).size⟩,
+           cache.update addr)) :
+    decodeOneStep sourceWindow target
+      ⟨instData, instPos⟩ ⟨dataAll, dataPos⟩
+      ⟨addrAll, addrPos⟩ cache =
+    .ok (target ++ sourceWindow.extract addr (addr + sz),
+         ⟨instData, instPos + 1⟩,
+         ⟨dataAll, dataPos⟩,
+         ⟨addrAll, addrPos + (Varint.encode addr).size⟩,
+         cache.update addr) := by
+  sorry
+
+-- ============================================================================
+-- ## Target size tracking through execInstSpec
+-- ============================================================================
+
+theorem execInstSpec_add_size (data : ByteArray) (src target : ByteArray) :
+    (execInstSpec (.add data) src target).size = target.size + data.size := by
+  simp [execInstSpec, ByteArray.size_append]
+
+theorem execInstSpec_run_size (b : UInt8) (sz : Nat) (src target : ByteArray) :
+    (execInstSpec (.run b sz) src target).size = target.size + sz := by
+  simp [execInstSpec, repeatByte, ByteArray.size_append, ByteArray.size]
+
+theorem execInstSpec_copy_size (addr sz : Nat) (src target : ByteArray)
+    (h : addr + sz ≤ src.size) :
+    (execInstSpec (.copy addr sz) src target).size = target.size + sz := by
+  simp only [execInstSpec, ByteArray.size_append]
+  rw [ByteArray.size]
+  rw [show (src.extract addr (addr + sz)).data.size =
+    min (addr + sz) src.data.size - addr from by simp [ByteArray.data_extract, Array.size_extract]]
+  simp [ByteArray.size] at h
+  omega
+
+-- ============================================================================
+-- ## encodeOneInst matches the mode chosen by encodeAddress
+-- ============================================================================
+
+-- For COPY with initial cache, encodeAddress always picks mode 0
+-- (since all near/same entries are 0).
+theorem encodeAddress_init_mode0 (addr here : Nat)
+    (haddr : addr > 0) (hhere : here > addr) :
+    (AddressCache.State.init.encodeAddress addr here).1 = 0 := by
+  sorry
+
+-- For COPY with initial cache, the address bytes are Varint.encode addr
+-- (mode 0 = VCD_SELF).
+theorem encodeAddress_init_bytes (addr here : Nat)
+    (haddr_pos : addr > 0) (hhere : here > addr) :
+    (AddressCache.State.init.encodeAddress addr here).2.1 = Varint.encode addr := by
+  sorry
+
+-- ============================================================================
+-- ## encodeOneInst for COPY mode 0 (general)
+-- ============================================================================
+
+-- When encodeAddress picks mode 0, encodeOneInst for COPY produces:
+-- dataSec = empty, instSec = #[opcode], addrSec = encoded addr bytes
+theorem encodeOneInst_copy_mode0_sections (addr sz : Nat)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat)
+    (hSz4 : sz ≥ 4) (hSz18 : sz ≤ 18)
+    (hMode : (cache.encodeAddress addr (srcLen + tgtPos)).1 = 0) :
+    let (mode, addrBytes, cache') := cache.encodeAddress addr (srcLen + tgtPos)
+    encodeOneInst (.copy addr sz) srcLen cache tgtPos =
+    (ByteArray.empty, ByteArray.mk #[(sz + 16).toUInt8],
+     addrBytes, cache', tgtPos + sz) := by
+  sorry
+
+-- ============================================================================
+-- ## Main inductive roundtrip: encodeInstList → decodeLoop
+-- ============================================================================
+
+-- The main compositional roundtrip theorem. States that encoding a valid
+-- list of instructions via encodeInstList and then decoding via decodeLoop
+-- produces the same target as the pure spec function execInstListSpec.
+--
+-- Proof sketch (by induction on insts):
+-- - Base case: empty list → decodeLoop on empty sections = identity
+-- - Inductive case:
+--   1. Unfold encodeInstList to get (d ++ dR, i ++ iR, a ++ aR)
+--   2. Show decodeOneStep at position 0 processes first instruction correctly
+--      (using decodeOneStep_add_in_concat / _run_in_concat / _copy_mode0_in_concat)
+--   3. After step, cursors are at (i.size, d.size, a.size) in concatenated sections
+--   4. Apply induction hypothesis for remaining instructions at those positions
+--
+-- Note: The theorem is stated with cursor positions into the full concatenated
+-- sections, which is how decodeLoop actually operates.
+
+theorem encodeInstList_decodeLoop_roundtrip
+    (insts : List Encoder.RawInst)
+    (sourceWindow : ByteArray)
+    (initTarget : ByteArray)
+    (initCache : AddressCache.State)
+    (h_valid : ValidInstList insts sourceWindow) :
+    let (dataSec, instSec, addrSec, finalCache, _finalPos) :=
+      encodeInstList insts sourceWindow.size initCache initTarget.size
+    decodeLoop insts.length sourceWindow initTarget
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩ initCache =
+    .ok (execInstListSpec insts sourceWindow initTarget,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, addrSec.size⟩,
+         finalCache) := by
+  sorry
+
+-- ============================================================================
+-- ## Connection to real encoder: encodeWindow ≈ encodeInstList
+-- ============================================================================
+
+-- The real encoder's encodeWindow (which uses mutable state in a while loop)
+-- produces the same sections as encodeInstList when there are no double-opcode
+-- pairings. This is the key link between spec and implementation.
+--
+-- For ADD-only instruction lists (no pairing possible), this is exact.
+-- For general lists, double-opcode pairing can combine adjacent ADD+COPY
+-- or COPY+ADD into single opcodes. The proof must account for this.
+
+-- Simplified version: for instruction lists with no pairable neighbors
+theorem encodeWindow_eq_encodeInstList_no_pairs
+    (insts : Array Encoder.RawInst)
+    (sourceSegLen : Nat)
+    -- no adjacent ADD+COPY or COPY+ADD pairs that could be combined
+    (h_no_pairs : True) :  -- simplified; real condition is more complex
+    Encoder.encodeWindow insts sourceSegLen =
+    let (d, i, a, _, _) := encodeInstList insts.toList sourceSegLen
+      AddressCache.State.init 0
+    (d, i, a) := by
+  sorry
+
+-- ============================================================================
+-- ## Connection to real decoder: applyWindow ≈ decodeLoop
+-- ============================================================================
+
+-- The real decoder's applyWindow parses the window structure and then
+-- processes instructions via a while loop. The decodeLoop spec function
+-- mirrors this loop with fuel-based termination.
+--
+-- Key insight: applyWindow's while loop reads opcodes from instSection
+-- and calls execHalfInst, exactly as decodeOneStep does.
+
+theorem applyWindow_eq_decodeLoop
+    (win : Window) (source : ByteArray)
+    (h_nocomp : win.winIndicator &&& DeltaIndicator.reserved = 0)
+    (fuel : Nat)
+    (h_fuel : fuel ≥ win.instSection.size)  -- at most 1 opcode per byte
+    (sourceSegment : ByteArray)
+    (h_seg : sourceSegment =
+      if win.winIndicator &&& WinIndicator.source != 0 then
+        source.extract win.sourceSegOff (win.sourceSegOff + win.sourceSegLen)
+      else ByteArray.empty) :
+    ∃ target cache,
+    decodeLoop fuel sourceSegment ByteArray.empty
+      ⟨win.instSection, 0⟩ ⟨win.dataSection, 0⟩
+      ⟨win.addrSection, 0⟩ AddressCache.State.init =
+    .ok (target,
+         ⟨win.instSection, win.instSection.size⟩,
+         ⟨win.dataSection, win.dataSection.size⟩,
+         ⟨win.addrSection, win.addrSection.size⟩,
+         cache) ↔
+    Decoder.applyWindow win source = .ok target := by
+  sorry
+
+-- ============================================================================
+-- ## Top-level roundtrip: encode → decode
+-- ============================================================================
+
+-- The main correctness theorem: for any source and target, encoding
+-- and then decoding produces the original target.
+--
+-- This requires:
+-- 1. parseHeader correctly parses the encoder's header (Phase D)
+-- 2. parseWindow correctly parses the window structure (Phase D)
+-- 3. applyWindow correctly executes instructions (this file)
+-- 4. The instruction list from generateInstructions, when executed,
+--    reproduces the target (correctness of instruction generation)
+
+-- Step 1: Wire format roundtrip for a single window
+-- Given well-formed sections, serializing them into the VCDIFF wire format
+-- and parsing them back recovers the original sections.
+theorem parseWindow_encoded_sections
+    (source target : ByteArray)
+    (dataSec instSec addrSec : ByteArray)
+    (h_source_pos : source.size > 0) :
+    let checksumBytes := Encoder.writeUInt32BE (Encoder.adler32 target)
+    let targetLenEnc := Varint.encode target.size
+    let dataLenEnc := Varint.encode dataSec.size
+    let instLenEnc := Varint.encode instSec.size
+    let addrLenEnc := Varint.encode addrSec.size
+    let deltaBody := targetLenEnc ++ ByteArray.mk #[0x00]
+      ++ dataLenEnc ++ instLenEnc ++ addrLenEnc
+      ++ checksumBytes
+      ++ dataSec ++ instSec ++ addrSec
+    let encLenEnc := Varint.encode deltaBody.size
+    let winIndicator := WinIndicator.source ||| WinIndicator.adler32
+    let windowBytes := ByteArray.mk #[winIndicator]
+      ++ Varint.encode source.size
+      ++ Varint.encode 0
+      ++ encLenEnc ++ deltaBody
+    ∃ win rest,
+    Decoder.parseWindow ⟨windowBytes, 0⟩ = .ok (win, rest) ∧
+    win.dataSection = dataSec ∧
+    win.instSection = instSec ∧
+    win.addrSection = addrSec ∧
+    win.targetLen = target.size ∧
+    win.sourceSegLen = source.size ∧
+    win.sourceSegOff = 0 := by
+  sorry
+
+-- Step 2: Full encode → decode roundtrip
+-- This is the ultimate theorem: the complete VCDIFF encode→decode pipeline
+-- recovers the original target data.
+--
+-- Preconditions:
+-- - The encoder's generateInstructions produces a valid instruction list
+-- - The instruction list correctly covers the entire target
+-- - All instructions are within bounds
+--
+-- The proof chains:
+-- parseHeader_encoded (Phase D) →
+-- parseWindow_encoded_sections (above) →
+-- encodeInstList_decodeLoop_roundtrip (above) →
+-- Adler32 checksum match (Phase D)
+
+theorem encode_decode_roundtrip
+    (source target : ByteArray)
+    (h_source_pos : source.size > 0)
+    (h_target_bound : target.size < 2 ^ 31)
+    -- The encoder's instruction generation is correct:
+    -- executing the generated instructions reproduces the target
+    (h_insts_correct :
+      let idx := Encoder.buildSourceIndex source
+      let insts := Encoder.generateInstructions idx target
+      execInstListSpec insts.toList source ByteArray.empty = target)
+    -- The generated instructions are valid
+    (h_insts_valid :
+      let idx := Encoder.buildSourceIndex source
+      let insts := Encoder.generateInstructions idx target
+      ValidInstList insts.toList source) :
+    Decoder.decode (Encoder.encode source target) source = .ok target := by
+  sorry
+
+-- ============================================================================
+-- ## Concrete full roundtrip examples (sanity checks via native_decide)
+-- ============================================================================
+
+-- Small concrete roundtrip: encode then decode via spec functions
+theorem concrete_roundtrip_adds :
+    let insts : List Encoder.RawInst :=
+      [.add ⟨#[0x48, 0x45, 0x4C, 0x4C, 0x4F]⟩]  -- "HELLO"
+    let (dataSec, instSec, addrSec, cache', _) :=
+      encodeInstList insts 0 AddressCache.State.init 0
+    decodeLoop 1 ByteArray.empty ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[0x48, 0x45, 0x4C, 0x4C, 0x4F]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, 0⟩,
+         cache') := by native_decide
+
+-- Mixed instructions: ADD + RUN + COPY
+theorem concrete_roundtrip_mixed :
+    let source : ByteArray := ⟨#[0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48]⟩
+    let insts : List Encoder.RawInst :=
+      [.add ⟨#[0x30]⟩,      -- ADD "0"
+       .run 0xFF 4,           -- RUN 0xFF × 4
+       .copy 0 5]             -- COPY "ABCDE"
+    let (dataSec, instSec, addrSec, cache', _) :=
+      encodeInstList insts source.size AddressCache.State.init 0
+    decodeLoop 3 source ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[0x30, 0xFF, 0xFF, 0xFF, 0xFF, 0x41, 0x42, 0x43, 0x44, 0x45]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, addrSec.size⟩,
+         cache') := by native_decide
+
+-- Verify execInstListSpec matches the concrete decode result
+theorem execInstListSpec_mixed :
+    let source : ByteArray := ⟨#[0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48]⟩
+    let insts : List Encoder.RawInst :=
+      [.add ⟨#[0x30]⟩,
+       .run 0xFF 4,
+       .copy 0 5]
+    execInstListSpec insts source ByteArray.empty =
+    ⟨#[0x30, 0xFF, 0xFF, 0xFF, 0xFF, 0x41, 0x42, 0x43, 0x44, 0x45]⟩ := by
+  native_decide
+
 end LeanBdiff.Vcdiff.WindowRoundtrip
