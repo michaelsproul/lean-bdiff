@@ -518,4 +518,332 @@ theorem bytearray_getElem_append_right (a b : ByteArray) (i : Nat)
 
 -- Extract from the left part of a concatenated ByteArray equals extract from left
 -- This is crucial for readBytes on concatenated sections.
+
+-- encodeInstList for a single instruction equals encodeOneInst
+theorem encodeInstList_singleton (inst : Encoder.RawInst)
+    (srcLen : Nat) (cache : AddressCache.State) (pos : Nat) :
+    encodeInstList [inst] srcLen cache pos =
+    let (d, i, a, c, p) := encodeOneInst inst srcLen cache pos
+    (d ++ ByteArray.empty, i ++ ByteArray.empty,
+     a ++ ByteArray.empty, c, p) := by
+  unfold encodeInstList encodeInstList
+  rfl
+
+-- ByteArray.append with empty is identity
+theorem bytearray_append_empty (a : ByteArray) :
+    a ++ ByteArray.empty = a := by
+  apply ByteArray.ext
+  simp [ByteArray.size_append, ByteArray.size]
+
+-- ByteArray.empty append is identity
+theorem bytearray_empty_append (a : ByteArray) :
+    ByteArray.empty ++ a = a := by
+  apply ByteArray.ext
+  simp [ByteArray.size_append, ByteArray.size]
+
+-- ByteArray.append is associative
+theorem bytearray_append_assoc (a b c : ByteArray) :
+    a ++ b ++ c = a ++ (b ++ c) := by
+  apply ByteArray.ext
+  simp [ByteArray.size_append]
+
+-- readByte on (a ++ b) at position p < a.size reads from a
+theorem readByte_append_left (a b : ByteArray) (p : Nat)
+    (h : p < a.size) :
+    Varint.Cursor.readByte ⟨a ++ b, p⟩ =
+    .ok ((a ++ b)[p]!, ⟨a ++ b, p + 1⟩) := by
+  rw [Encoder.Proofs.readByte_ok
+    (show p < (a ++ b).size from by rw [ByteArray.size_append]; omega)]
+
+-- readBytes on (a ++ b) at position 0 with n ≤ a.size extracts from a
+theorem readBytes_append_left (a b : ByteArray) (n : Nat)
+    (h : n ≤ a.size) :
+    Varint.Cursor.readBytes ⟨a ++ b, 0⟩ n =
+    .ok ((a ++ b).extract 0 n, ⟨a ++ b, n⟩) := by
+  rw [Encoder.Proofs.readBytes_ok
+    (show 0 + n ≤ (a ++ b).size from by rw [ByteArray.size_append]; omega)]
+  simp
+
+-- ============================================================================
+-- ## General section roundtrip: RUN
+-- ============================================================================
+
+-- RUN always uses opcode 0 with varint-encoded size
+theorem findSingleOpcode_run (b : UInt8) (sz : Nat) :
+    Encoder.findSingleOpcode (.run b sz) = (0, true) := by
+  unfold Encoder.findSingleOpcode
+  rfl
+
+-- CodeTable.lookup 0 = RUN with size 0 (varint follows)
+theorem lookup_run_entry :
+    CodeTable.lookup 0 = ⟨⟨.run, 0⟩, ⟨.noop, 0⟩⟩ := by native_decide
+
+-- encodeOneInst for RUN produces expected sections
+theorem encodeOneInst_run_sections (b : UInt8) (sz : Nat)
+    (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
+    encodeOneInst (.run b sz) srcLen cache tgtPos =
+    (ByteArray.mk #[b],
+     ByteArray.mk #[0x00] ++ Varint.encode sz,
+     ByteArray.empty, cache, tgtPos + sz) := by
+  unfold encodeOneInst Encoder.findSingleOpcode
+  simp only []
+
+-- Concrete execHalfInst RUN roundtrips for various sizes
+theorem execHalfInst_run_concrete_sz2 :
+    Decoder.execHalfInst ⟨.run, 0⟩ 2
+      ByteArray.empty ByteArray.empty
+      ⟨⟨#[0x42]⟩, 0⟩ ⟨ByteArray.empty, 0⟩
+      AddressCache.State.init 0 =
+    .ok (⟨#[0x42, 0x42]⟩,
+         ⟨⟨#[0x42]⟩, 1⟩,
+         ⟨ByteArray.empty, 0⟩,
+         AddressCache.State.init) := by native_decide
+
+theorem execHalfInst_run_concrete_sz10 :
+    Decoder.execHalfInst ⟨.run, 0⟩ 10
+      ByteArray.empty ByteArray.empty
+      ⟨⟨#[0xFF]⟩, 0⟩ ⟨ByteArray.empty, 0⟩
+      AddressCache.State.init 0 =
+    .ok (ByteArray.mk (Array.replicate 10 0xFF),
+         ⟨⟨#[0xFF]⟩, 1⟩,
+         ⟨ByteArray.empty, 0⟩,
+         AddressCache.State.init) := by native_decide
+
+-- Concrete RUN roundtrip examples for various sizes
+theorem section_roundtrip_run_1 :
+    let inst := Encoder.RawInst.run 0xAA 1
+    let (dataSec, instSec, addrSec, _, _) :=
+      encodeOneInst inst 0 AddressCache.State.init 0
+    decodeOneStep ByteArray.empty ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[0xAA]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, 0⟩,
+         AddressCache.State.init) := by native_decide
+
+theorem section_roundtrip_run_8 :
+    let inst := Encoder.RawInst.run 0x42 8
+    let (dataSec, instSec, addrSec, _, _) :=
+      encodeOneInst inst 0 AddressCache.State.init 0
+    decodeOneStep ByteArray.empty ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, 0⟩,
+         AddressCache.State.init) := by native_decide
+
+-- RUN size=128 (varint 2 bytes): roundtrip through encode→decode
+theorem section_roundtrip_run_128 :
+    let inst := Encoder.RawInst.run 0x00 128
+    let (dataSec, instSec, addrSec, _, _) :=
+      encodeOneInst inst 0 AddressCache.State.init 0
+    decodeLoop 1 ByteArray.empty ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (ByteArray.mk (Array.replicate 128 0x00),
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, 0⟩,
+         AddressCache.State.init) := by native_decide
+
+-- ============================================================================
+-- ## General section roundtrip: COPY mode 0 (VCD_SELF)
+-- ============================================================================
+
+-- For COPY with mode 0, sizes 4..18, the encoder uses immediate-size opcodes
+-- COPY mode 0, size s: opcode = 19 + (s - 4) + 1 = s + 16
+theorem findSingleOpcode_copy_mode0_immediate (sz : Nat) (addr : Nat)
+    (h4 : sz ≥ 4) (h18 : sz ≤ 18) :
+    Encoder.findSingleOpcode (.copy addr sz) 0 = ((sz + 16).toUInt8, false) := by
+  unfold Encoder.findSingleOpcode
+  simp only [h4, h18, decide_true, Bool.and_self, ↓reduceIte]
+  congr 1
+  show (19 + 0 * 16 + sz - 4 + 1).toUInt8 = (sz + 16).toUInt8
+  congr 1
+  omega
+
+-- CodeTable.lookup for COPY mode 0 opcodes 20..34
+theorem lookup_copy_mode0_entry (sz : Nat) (h4 : sz ≥ 4) (h18 : sz ≤ 18) :
+    CodeTable.lookup (sz + 16).toUInt8 = ⟨⟨.copy 0, sz⟩, ⟨.noop, 0⟩⟩ := by
+  interval_cases sz <;> native_decide
+
+-- Concrete: encodeOneInst for COPY addr=0 sz=4 on init cache
+theorem encodeOneInst_copy_mode0_addr0_sz4 :
+    encodeOneInst (.copy 0 4) 5 AddressCache.State.init 0 =
+    (ByteArray.empty,
+     ⟨#[20]⟩,
+     Varint.encode 0,
+     AddressCache.State.init.update 0,
+     4) := by native_decide
+
+-- Concrete: encodeOneInst for COPY addr=0 sz=8 on init cache
+theorem encodeOneInst_copy_mode0_addr0_sz8 :
+    encodeOneInst (.copy 0 8) 10 AddressCache.State.init 0 =
+    (ByteArray.empty,
+     ⟨#[24]⟩,
+     Varint.encode 0,
+     AddressCache.State.init.update 0,
+     8) := by native_decide
+
+-- Concrete COPY roundtrips with different sizes and addresses
+theorem section_roundtrip_copy_sz5 :
+    let source : ByteArray := ⟨#[0, 1, 2, 3, 4, 5, 6, 7]⟩
+    let inst := Encoder.RawInst.copy 0 5
+    let (dataSec, instSec, addrSec, cache', _) :=
+      encodeOneInst inst source.size AddressCache.State.init 0
+    decodeOneStep source ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[0, 1, 2, 3, 4]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, 0⟩,
+         ⟨addrSec, addrSec.size⟩,
+         cache') := by native_decide
+
+theorem section_roundtrip_copy_sz18 :
+    let source : ByteArray := ⟨#[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]⟩
+    let inst := Encoder.RawInst.copy 2 18
+    let (dataSec, instSec, addrSec, cache', _) :=
+      encodeOneInst inst source.size AddressCache.State.init 0
+    decodeOneStep source ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, 0⟩,
+         ⟨addrSec, addrSec.size⟩,
+         cache') := by native_decide
+
+-- ============================================================================
+-- ## General COPY mode 0: decodeOneStep with encoded sections
+-- ============================================================================
+
+-- For COPY mode 0 with immediate size opcodes (4..18), the code table
+-- dispatches correctly: inst1 is COPY mode 0, inst2 is NOOP.
+-- Proved per-size via interval_cases + native_decide.
+theorem copy_mode0_opcode_dispatch (sz : Nat)
+    (h4 : sz ≥ 4) (h18 : sz ≤ 18) :
+    (CodeTable.lookup (sz + 16).toUInt8).inst1.type = .copy 0 ∧
+    (CodeTable.lookup (sz + 16).toUInt8).inst1.size = sz ∧
+    (CodeTable.lookup (sz + 16).toUInt8).inst2.type = .noop := by
+  interval_cases sz <;> native_decide
+
+-- ============================================================================
+-- ## Multi-instruction inductive roundtrip: decodeLoop composition
+-- ============================================================================
+
+-- Key lemma: if decodeOneStep succeeds and decodeLoop succeeds on the rest,
+-- then decodeLoop succeeds on the combined input.
+-- This is the inductive step for multi-instruction roundtrip proofs.
+
+-- decodeLoop with fuel n+1 and non-exhausted cursor: after decodeOneStep .ok,
+-- result is decodeLoop n on the updated state.
+theorem decodeLoop_step_ok (sw target target' : ByteArray)
+    (ic dc ac ic' dc' ac' : Varint.Cursor)
+    (cache cache' : AddressCache.State)
+    (n : Nat) (h : ic.pos < ic.data.size)
+    (hstep : decodeOneStep sw target ic dc ac cache =
+             .ok (target', ic', dc', ac', cache')) :
+    decodeLoop (n + 1) sw target ic dc ac cache =
+    decodeLoop n sw target' ic' dc' ac' cache' := by
+  conv_lhs => unfold decodeLoop
+  simp only [show ¬(ic.pos ≥ ic.data.size) from by omega, ite_false,
+             hstep]
+
+-- Four-instruction roundtrip: ADD + RUN + COPY + ADD
+theorem multi_roundtrip_four_insts :
+    let source : ByteArray := ⟨#[0x57, 0x4F, 0x52, 0x4C, 0x44]⟩  -- "WORLD"
+    let insts := [Encoder.RawInst.add ⟨#[0x48, 0x49]⟩,     -- ADD "HI"
+                  Encoder.RawInst.run 0x20 3,                 -- RUN ' ' x3
+                  Encoder.RawInst.copy 0 4,                   -- COPY "WORL"
+                  Encoder.RawInst.add ⟨#[0x21]⟩]             -- ADD "!"
+    let (dataSec, instSec, addrSec, cache', _) :=
+      encodeInstList insts source.size AddressCache.State.init 0
+    decodeLoop 4 source ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[0x48, 0x49, 0x20, 0x20, 0x20, 0x57, 0x4F, 0x52, 0x4C, 0x21]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, addrSec.size⟩,
+         cache') := by native_decide
+
+-- Five instructions: ADD + COPY + RUN + COPY + ADD
+theorem multi_roundtrip_five_insts :
+    let source : ByteArray := ⟨#[0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48]⟩
+    let insts := [Encoder.RawInst.add ⟨#[0x30, 0x31]⟩,     -- ADD "01"
+                  Encoder.RawInst.copy 0 5,                   -- COPY "ABCDE"
+                  Encoder.RawInst.run 0xFF 2,                 -- RUN 0xFF x2
+                  Encoder.RawInst.copy 3 4,                   -- COPY "DEFG"
+                  Encoder.RawInst.add ⟨#[0x5A]⟩]             -- ADD "Z"
+    let (dataSec, instSec, addrSec, cache', _) :=
+      encodeInstList insts source.size AddressCache.State.init 0
+    decodeLoop 5 source ByteArray.empty
+      ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩
+      AddressCache.State.init =
+    .ok (⟨#[0x30, 0x31, 0x41, 0x42, 0x43, 0x44, 0x45, 0xFF, 0xFF,
+           0x44, 0x45, 0x46, 0x47, 0x5A]⟩,
+         ⟨instSec, instSec.size⟩,
+         ⟨dataSec, dataSec.size⟩,
+         ⟨addrSec, addrSec.size⟩,
+         cache') := by native_decide
+
+-- ============================================================================
+-- ## decodeLoop with excess fuel: extra fuel doesn't change result
+-- ============================================================================
+
+-- If decodeLoop succeeds with fuel n, it also succeeds with fuel n+1
+-- (giving the same result). This shows the fuel parameter is only for termination.
+theorem decodeLoop_fuel_mono (sw target : ByteArray)
+    (ic dc ac : Varint.Cursor) (cache : AddressCache.State)
+    (n : Nat) (result : ByteArray × Varint.Cursor × Varint.Cursor ×
+                        Varint.Cursor × AddressCache.State)
+    (h : decodeLoop n sw target ic dc ac cache = .ok result) :
+    decodeLoop (n + 1) sw target ic dc ac cache = .ok result := by
+  induction n generalizing target ic dc ac cache with
+  | zero =>
+    unfold decodeLoop at h ⊢
+    split at h
+    · -- ic exhausted at fuel 0 → also exhausted at fuel 1
+      rename_i hexh
+      simp only [hexh, ↓reduceIte]
+      exact h
+    · contradiction
+  | succ k ih =>
+    unfold decodeLoop at h ⊢
+    split at h
+    · -- ic exhausted
+      rename_i hexh
+      simp only [hexh, ↓reduceIte] at h ⊢
+      exact h
+    · -- ic not exhausted: unfold one step
+      rename_i hlt
+      simp only [hlt, ↓reduceIte] at h ⊢
+      -- Split on decodeOneStep result
+      revert h
+      match decodeOneStep sw target ic dc ac cache with
+      | .ok (target', ic', dc', ac', cache') =>
+        intro h
+        exact ih target' ic' dc' ac' cache' h
+      | .error e =>
+        intro h
+        contradiction
+
+-- Corollary: adding any amount of extra fuel preserves the result
+theorem decodeLoop_fuel_add (sw target : ByteArray)
+    (ic dc ac : Varint.Cursor) (cache : AddressCache.State)
+    (n m : Nat) (result : ByteArray × Varint.Cursor × Varint.Cursor ×
+                          Varint.Cursor × AddressCache.State)
+    (h : decodeLoop n sw target ic dc ac cache = .ok result) :
+    decodeLoop (n + m) sw target ic dc ac cache = .ok result := by
+  induction m with
+  | zero => exact h
+  | succ m ih =>
+    rw [Nat.add_succ]
+    exact decodeLoop_fuel_mono sw target ic dc ac cache (n + m) result ih
+
 end LeanBdiff.Vcdiff.WindowRoundtrip

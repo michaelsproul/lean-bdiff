@@ -467,4 +467,66 @@ theorem lookup_add_opcode_noop (n : Nat) (h1 : n ≥ 2) (h18 : n ≤ 18) :
     (CodeTable.lookup n.toUInt8).inst2.type = .noop := by
   interval_cases n <;> native_decide
 
+-- ============================================================================
+-- ## General RUN instruction roundtrip
+-- ============================================================================
+
+-- RUN opcode is always 0 with varint size
+theorem findSingleOpcode_run_general (b : UInt8) (sz : Nat) :
+    Encoder.findSingleOpcode (.run b sz) = (0, true) := by
+  unfold Encoder.findSingleOpcode; rfl
+
+-- CodeTable entry for opcode 0 is RUN with size 0
+theorem lookup_run_opcode_0 :
+    (CodeTable.lookup 0).inst1 = ⟨.run, 0⟩ ∧
+    (CodeTable.lookup 0).inst2.type = .noop := by native_decide
+
+-- RUN execution for concrete sizes
+-- (general proof requires reasoning about the for-loop,
+-- which is done per-size via native_decide)
+theorem run_roundtrip_sz1 :
+    Decoder.execHalfInst ⟨.run, 0⟩ 1 ByteArray.empty ByteArray.empty
+      ⟨⟨#[0xAA]⟩, 0⟩ ⟨ByteArray.empty, 0⟩
+      AddressCache.State.init 0 =
+    .ok (⟨#[0xAA]⟩, ⟨⟨#[0xAA]⟩, 1⟩,
+         ⟨ByteArray.empty, 0⟩, AddressCache.State.init) := by
+  native_decide
+
+theorem run_roundtrip_sz5 :
+    Decoder.execHalfInst ⟨.run, 0⟩ 5 ByteArray.empty ByteArray.empty
+      ⟨⟨#[0xBB]⟩, 0⟩ ⟨ByteArray.empty, 0⟩
+      AddressCache.State.init 0 =
+    .ok (⟨#[0xBB, 0xBB, 0xBB, 0xBB, 0xBB]⟩,
+         ⟨⟨#[0xBB]⟩, 1⟩,
+         ⟨ByteArray.empty, 0⟩, AddressCache.State.init) := by
+  native_decide
+
+-- ============================================================================
+-- ## General COPY opcode ranges
+-- ============================================================================
+
+-- COPY mode 0, sizes 4..18: opcodes 20..34
+theorem findSingleOpcode_copy_mode0 (sz : Nat) (addr : Nat)
+    (h4 : sz ≥ 4) (h18 : sz ≤ 18) :
+    (Encoder.findSingleOpcode (.copy addr sz) 0).2 = false := by
+  unfold Encoder.findSingleOpcode
+  simp [h4, h18]
+
+-- COPY mode 0, size=0 (varint): opcode 19
+theorem findSingleOpcode_copy_mode0_varint (addr : Nat) (sz : Nat)
+    (h : ¬(sz ≥ 4 ∧ sz ≤ 18)) :
+    Encoder.findSingleOpcode (.copy addr sz) 0 = (19, true) := by
+  unfold Encoder.findSingleOpcode
+  simp only [show ¬(sz ≥ 4 && sz ≤ 18) from by
+    simp only [Bool.and_eq_true, decide_eq_true_eq]; exact h]
+  simp
+
+-- COPY opcodes for modes 0..8
+-- Each mode m has base opcode 19 + m*16
+-- size=0 (varint): base opcode
+-- sizes 4..18: base + (size - 4) + 1
+theorem copy_mode_base (m : Nat) (hm : m ≤ 8) :
+    (CodeTable.lookup (19 + m * 16).toUInt8).inst1.type = .copy m.toUInt8 := by
+  interval_cases m <;> native_decide
+
 end LeanBdiff.Vcdiff.InstructionSemantics.Proofs
