@@ -154,8 +154,13 @@ Prove that executing the generated instructions against the source reproduces th
 - [x] `encodeAddress_mode_bound`: mode returned by encodeAddress < numModes
 - [x] `encodeAddress_decode_roundtrip`: decode inverts encode for all modes (addr < 2^35)
 - [x] `encodeInstList_decodeLoop_roundtrip`: main inductive theorem (sorry-free)
-- [ ] General section roundtrip theorem for arbitrary instruction lists
-- [ ] Prove overall instruction execution produces target
+- [x] `decodeLoop_eq_applyWindowLoop`: spec decodeLoop = real Decoder.applyWindowLoop (sorry-free)
+- [x] `applyWindow_of_decodeLoop`: decodeLoop success implies real applyWindow success (sorry-free)
+- [x] Decoder made non-partial: `decodeOneStep`, `applyWindowLoop`, `decodeWindows`, `decode`
+- [x] Encoder partially non-partial: `encodeOneInst'`, `encodeWindowLoop`, `encodeWindow`, `serializeWindow`
+- [ ] `encodeWindow_eq_encodeInstList_no_pairs`: real encoder = spec (needs no-pairing condition)
+- [ ] `parseWindow_encoded_sections`: wire format parsing roundtrip (~20 cursor steps)
+- [ ] `encode_decode_roundtrip`: top level (needs above two)
 
 Key techniques:
 - `native_decide` for concrete instruction execution examples
