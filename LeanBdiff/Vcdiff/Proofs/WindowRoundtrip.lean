@@ -2194,23 +2194,169 @@ private theorem ba_extract_left_full (a b : ByteArray) :
   rw [bytearray_extract_append_left a b 0 a.size (le_refl _)]
   exact bytearray_extract_full a
 
+-- ============================================================================
+-- ## encodeAddress: mode bound and decode roundtrip
+-- ============================================================================
+
+-- Lower bound on numDigits for values ≥ 2^35
+private theorem numDigits_ge_6 (n : Nat) (h : n ≥ 2 ^ 35) :
+    Varint.numDigits n ≥ 6 := by
+  have hn : n ≠ 0 := by omega
+  rw [Varint.numDigits_pos hn]
+  have h1 : n / 128 ≠ 0 := by omega
+  rw [Varint.numDigits_pos h1]
+  have h2 : n / 128 / 128 ≠ 0 := by omega
+  rw [Varint.numDigits_pos h2]
+  have h3 : n / 128 / 128 / 128 ≠ 0 := by omega
+  rw [Varint.numDigits_pos h3]
+  have h4 : n / 128 / 128 / 128 / 128 ≠ 0 := by omega
+  rw [Varint.numDigits_pos h4]
+  have h5 : n / 128 / 128 / 128 / 128 / 128 ≠ 0 := by omega
+  rw [Varint.numDigits_pos h5]
+  omega
+
+-- Varint encoding of values ≥ 2^35 has size ≥ 6
+private theorem varint_encode_size_ge_6 (n : Nat) (h : n ≥ 2 ^ 35) :
+    (Varint.encode n).size ≥ 6 := by
+  have hn : n ≠ 0 := by omega
+  unfold Varint.encode
+  split
+  · next h0 => simp at h0; omega
+  · simp only [ByteArray.size, List.size_toArray,
+      Varint.setContinuationBits_length, Varint.toBase128_length]
+    exact numDigits_ge_6 n h
+
+-- tryNearModes preserves mode bound
+private theorem tryNearModes_mode_bound (s : AddressCache.State) (addr bestMode : Nat)
+    (bestEnc : ByteArray) (h_best : bestMode < 2 + s.sNear + s.sSame)
+    : (fuel : Nat) → fuel ≤ s.sNear →
+    (s.tryNearModes addr bestMode bestEnc fuel).1 < 2 + s.sNear + s.sSame
+  | 0, _ => h_best
+  | fuel + 1, hfuel => by
+    unfold AddressCache.State.tryNearModes
+    -- The body has: let i := ...; let base := ...; let (m,e) := if ... then ... else ...; recurse
+    -- Use simp to reduce lets and ifs after case-splitting
+    dsimp only []
+    by_cases hge : addr ≥ s.near[s.sNear - fuel - 1]!
+    · rw [if_pos hge]
+      by_cases hlt : (Varint.encode (addr - s.near[s.sNear - fuel - 1]!)).size < bestEnc.size
+      · rw [if_pos hlt]
+        exact tryNearModes_mode_bound s addr _ _ (by omega) fuel (by omega)
+      · rw [if_neg hlt]
+        exact tryNearModes_mode_bound s addr _ _ h_best fuel (by omega)
+    · rw [if_neg hge]
+      exact tryNearModes_mode_bound s addr _ _ h_best fuel (by omega)
+
+-- trySameModes preserves mode bound
+private theorem trySameModes_mode_bound (s : AddressCache.State) (addr bestMode : Nat)
+    (bestEnc : ByteArray) (h_best : bestMode < 2 + s.sNear + s.sSame)
+    : (fuel : Nat) → fuel ≤ s.sSame →
+    (s.trySameModes addr bestMode bestEnc fuel).1 < 2 + s.sNear + s.sSame
+  | 0, _ => h_best
+  | fuel + 1, hfuel => by
+    unfold AddressCache.State.trySameModes
+    dsimp only []
+    split
+    · -- SAME match: result is (2 + sNear + bank, ...)
+      simp only [Prod.fst]; omega
+    · -- No match: recurse
+      exact trySameModes_mode_bound s addr bestMode bestEnc h_best fuel (by omega)
+
+-- Mode returned by encodeAddress is always < 2 + cache.sNear + cache.sSame
+theorem encodeAddress_mode_bound (cache : AddressCache.State) (addr here : Nat) :
+    (cache.encodeAddress addr here).1 < 2 + cache.sNear + cache.sSame := by
+  simp only [AddressCache.State.encodeAddress]
+  apply trySameModes_mode_bound
+  apply tryNearModes_mode_bound
+  · -- initial mode < bound
+    split <;> (try split) <;> omega
+  · exact le_refl _
+  · exact le_refl _
+
+-- Decode invariant: decode inverts the (mode, bytes) pair
+private def AddrDecodeOK (cache : AddressCache.State) (addr here : Nat)
+    (mode : Nat) (bytes : ByteArray) : Prop :=
+  AddressCache.decode mode here ⟨bytes, 0⟩ cache =
+    .ok (addr, ⟨bytes, bytes.size⟩, cache.update addr)
+
+-- tryNearModes preserves decode invariant
+private theorem tryNearModes_decode_ok (s : AddressCache.State) (addr here : Nat)
+    (h_addr : addr < 2 ^ 35) (bestMode : Nat) (bestEnc : ByteArray)
+    (h_inv : AddrDecodeOK s addr here bestMode bestEnc)
+    : (fuel : Nat) → fuel ≤ s.sNear →
+    AddrDecodeOK s addr here
+      (s.tryNearModes addr bestMode bestEnc fuel).1
+      (s.tryNearModes addr bestMode bestEnc fuel).2
+  | 0, _ => h_inv
+  | fuel + 1, hfuel => by
+    unfold AddressCache.State.tryNearModes
+    dsimp only []
+    by_cases hge : addr ≥ s.near[s.sNear - fuel - 1]!
+    · rw [if_pos hge]
+      by_cases hlt : (Varint.encode (addr - s.near[s.sNear - fuel - 1]!)).size < bestEnc.size
+      · rw [if_pos hlt]
+        exact tryNearModes_decode_ok s addr here h_addr _ _
+          (AddressCache.decode_near_mode (s.sNear - fuel - 1) addr
+            (s.near[s.sNear - fuel - 1]!) hge (by omega) s (by omega) rfl here)
+          fuel (by omega)
+      · rw [if_neg hlt]
+        exact tryNearModes_decode_ok s addr here h_addr bestMode bestEnc h_inv fuel (by omega)
+    · rw [if_neg hge]
+      exact tryNearModes_decode_ok s addr here h_addr bestMode bestEnc h_inv fuel (by omega)
+
+-- trySameModes preserves decode invariant
+private theorem trySameModes_decode_ok (s : AddressCache.State) (addr here : Nat)
+    (bestMode : Nat) (bestEnc : ByteArray)
+    (h_inv : AddrDecodeOK s addr here bestMode bestEnc)
+    : (fuel : Nat) → fuel ≤ s.sSame →
+    AddrDecodeOK s addr here
+      (s.trySameModes addr bestMode bestEnc fuel).1
+      (s.trySameModes addr bestMode bestEnc fuel).2
+  | 0, _ => h_inv
+  | fuel + 1, hfuel => by
+    unfold AddressCache.State.trySameModes
+    dsimp only []
+    split
+    · -- SAME match
+      rename_i hcond
+      show AddrDecodeOK s addr here _ _
+      rw [Bool.and_eq_true] at hcond
+      have hslot : s.same[(s.sSame - fuel - 1) * 256 + addr % 256]! = addr := by
+        exact beq_iff_eq.mp hcond.1
+      exact AddressCache.decode_same_mode (s.sSame - fuel - 1) addr s
+        (by omega) hslot here
+    · -- No match: recurse
+      exact trySameModes_decode_ok s addr here bestMode bestEnc h_inv fuel (by omega)
+
 -- encodeAddress fundamental roundtrip: decode inverts encode for any chosen mode.
--- This follows from Phase B roundtrips for each mode. Sorry for now; provable by
--- case analysis on which mode tryNearModes/trySameModes chose, using decode_mode0,
--- decode_mode1, decode_near_mode, and decode_same_mode from Phase B.
 theorem encodeAddress_decode_roundtrip
     (cache : AddressCache.State) (addr here : Nat)
     (h_addr : addr < 2 ^ 35) :
     let (mode, addrBytes, cache') := cache.encodeAddress addr here
     AddressCache.decode mode here ⟨addrBytes, 0⟩ cache =
       .ok (addr, ⟨addrBytes, addrBytes.size⟩, cache') := by
-  sorry
-
--- Mode returned by encodeAddress is ≤ 8 (for default cache: 2 + sNear + sSame - 1 = 8)
--- The mode is always < 2 + cache.sNear + cache.sSame
-theorem encodeAddress_mode_bound (cache : AddressCache.State) (addr here : Nat) :
-    (cache.encodeAddress addr here).1 < 2 + cache.sNear + cache.sSame := by
-  sorry
+  simp only [AddressCache.State.encodeAddress]
+  -- Propagate decode invariant: initial → tryNearModes → trySameModes
+  apply trySameModes_decode_ok cache addr here _ _ _ cache.sSame (le_refl _)
+  apply tryNearModes_decode_ok cache addr here h_addr _ _ _ cache.sNear (le_refl _)
+  -- Initial mode: 0 or 1
+  split -- if here > addr
+  · split -- if enc1.size < enc0.size
+    · -- Mode 1: VCD_HERE
+      show AddrDecodeOK cache addr here 1 (Varint.encode (here - addr))
+      have henc0 : (Varint.encode addr).size ≤ 5 :=
+        Encoder.Proofs.varint_encode_size_le_5 addr h_addr
+      have h_diff : here - addr < 2 ^ 35 := by
+        by_contra h_neg
+        have := varint_encode_size_ge_6 (here - addr) (by omega)
+        omega
+      exact AddressCache.decode_mode1 addr here (by omega) h_diff cache
+    · -- Mode 0: VCD_SELF
+      show AddrDecodeOK cache addr here 0 (Varint.encode addr)
+      exact AddressCache.decode_mode0 addr h_addr cache here
+  · -- Mode 0: VCD_SELF (here ≤ addr)
+    show AddrDecodeOK cache addr here 0 (Varint.encode addr)
+    exact AddressCache.decode_mode0 addr h_addr cache here
 
 -- findSingleOpcode for COPY with any mode 0..8 and immediate size 4..18
 -- opcode = (19 + mode * 16 + sz - 3).toUInt8

@@ -150,6 +150,10 @@ Prove that executing the generated instructions against the source reproduces th
 - [x] General `decodeOneStep` for single ADD: `decodeOneStep_add_general` (all sizes 1..17)
 - [x] Composed encode→decode roundtrip: `encodeOneInst_decodeOneStep_add` (general)
 - [x] `decodeLoop` single ADD roundtrip: `decodeLoop_single_add` (general)
+- [x] Cursor relocation lemmas (CursorReloc.lean, sorry-free): readByte, readBytes, hasBytes, varint, addr cache, execHalfInst
+- [x] `encodeAddress_mode_bound`: mode returned by encodeAddress < numModes
+- [x] `encodeAddress_decode_roundtrip`: decode inverts encode for all modes (addr < 2^35)
+- [x] `encodeInstList_decodeLoop_roundtrip`: main inductive theorem (sorry-free)
 - [ ] General section roundtrip theorem for arbitrary instruction lists
 - [ ] Prove overall instruction execution produces target
 
