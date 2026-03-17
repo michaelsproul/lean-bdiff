@@ -87,7 +87,7 @@ theorem hasBytes_reloc (pfx sfx : ByteArray) (k n : Nat) :
 -- ============================================================================
 
 -- The .data field of varint decode results is always the input data
-private theorem varint_decodeLoop_data (data : ByteArray) (pos acc : Nat)
+theorem varint_decodeLoop_data (data : ByteArray) (pos acc : Nat)
     : (remaining : Nat) → (v : Nat) → (c : Varint.Cursor) →
     Varint.decodeLoop data pos acc remaining = .ok (v, c) → c.data = data
   | 0, _, _, h => by simp [Varint.decodeLoop] at h
