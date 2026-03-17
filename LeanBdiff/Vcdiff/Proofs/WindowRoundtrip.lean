@@ -2082,29 +2082,206 @@ theorem decodeLoop_reloc_ok
   exact this
 
 -- ============================================================================
+-- ## Helper lemmas for the main inductive roundtrip
+-- ============================================================================
+
+-- Varint suffix extension: decoding works with extra data appended
+private theorem varint_decodeLoop_suffix_ok (data extra : ByteArray) (k acc v pos : Nat)
+    : (remaining : Nat) →
+    Varint.decodeLoop data k acc remaining = .ok (v, ⟨data, pos⟩) →
+    Varint.decodeLoop (data ++ extra) k acc remaining = .ok (v, ⟨data ++ extra, pos⟩)
+  | 0, h => by simp [Varint.decodeLoop] at h
+  | remaining + 1, h => by
+    unfold Varint.decodeLoop at h ⊢
+    by_cases hk : k < data.size
+    · have hk' : k < (data ++ extra).size := by rw [ByteArray.size_append]; omega
+      rw [dif_pos hk']; rw [dif_pos hk] at h
+      have hbyte : (data ++ extra)[k] = data[k] := ByteArray.get_append_left hk
+      rw [hbyte]
+      by_cases hcont : (data[k] &&& 0x80 == 0) = true
+      · simp only [hcont, ↓reduceIte] at h ⊢
+        simp only [Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
+        exact ⟨h.1, trivial, h.2.2⟩
+      · simp only [hcont, ↓reduceIte] at h ⊢
+        exact varint_decodeLoop_suffix_ok data extra (k + 1) _ v pos remaining h
+    · rw [dif_neg hk] at h; simp at h
+
+private theorem varint_decode_suffix_ok (data extra : ByteArray) (k v pos : Nat)
+    (h : Varint.decode ⟨data, k⟩ = .ok (v, ⟨data, pos⟩)) :
+    Varint.decode ⟨data ++ extra, k⟩ = .ok (v, ⟨data ++ extra, pos⟩) := by
+  simp only [Varint.decode] at h ⊢
+  exact varint_decodeLoop_suffix_ok data extra k 0 v pos 5 h
+
+-- Address cache decode suffix extension
+private theorem addr_decode_suffix_ok (mode here : Nat) (data extra : ByteArray) (k : Nat)
+    (cache : AddressCache.State) (addr pos : Nat) (cache' : AddressCache.State)
+    (h : AddressCache.decode mode here ⟨data, k⟩ cache = .ok (addr, ⟨data, pos⟩, cache')) :
+    AddressCache.decode mode here ⟨data ++ extra, k⟩ cache =
+      .ok (addr, ⟨data ++ extra, pos⟩, cache') := by
+  unfold AddressCache.decode at h ⊢
+  simp only [bind, Except.bind] at h ⊢
+  by_cases hm0 : (mode == 0) = true
+  · simp only [hm0, ↓reduceIte] at h ⊢
+    match hv : Varint.decode ⟨data, k⟩ with
+    | .ok (v, c) =>
+      rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
+      have hcd := CursorReloc.varint_decodeLoop_data data k 0 5 v c
+        (by simp only [Varint.decode] at hv; exact hv)
+      obtain ⟨_, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; subst hcd
+      rw [varint_decode_suffix_ok data extra k v cp hv]
+      simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
+      exact ⟨h.1, ⟨trivial, h.2.1.2⟩, h.2.2⟩
+    | .error e => rw [hv] at h; simp at h
+  · simp only [hm0, Bool.false_eq_true, ↓reduceIte] at h ⊢
+    by_cases hm1 : (mode == 1) = true
+    · simp only [hm1, ↓reduceIte] at h ⊢
+      match hv : Varint.decode ⟨data, k⟩ with
+      | .ok (v, c) =>
+        rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
+        have hcd := CursorReloc.varint_decodeLoop_data data k 0 5 v c
+          (by simp only [Varint.decode] at hv; exact hv)
+        obtain ⟨_, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; subst hcd
+        rw [varint_decode_suffix_ok data extra k v cp hv]
+        simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
+        exact ⟨h.1, ⟨trivial, h.2.1.2⟩, h.2.2⟩
+      | .error e => rw [hv] at h; simp at h
+    · simp only [hm1, Bool.false_eq_true, ↓reduceIte] at h ⊢
+      by_cases hmn : mode < 2 + cache.sNear
+      · simp only [if_pos hmn] at h ⊢
+        match hv : Varint.decode ⟨data, k⟩ with
+        | .ok (v, c) =>
+          rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
+          have hcd := CursorReloc.varint_decodeLoop_data data k 0 5 v c
+            (by simp only [Varint.decode] at hv; exact hv)
+          obtain ⟨_, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; subst hcd
+          rw [varint_decode_suffix_ok data extra k v cp hv]
+          simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
+          exact ⟨h.1, ⟨trivial, h.2.1.2⟩, h.2.2⟩
+        | .error e => rw [hv] at h; simp at h
+      · simp only [if_neg hmn] at h ⊢
+        by_cases hms : mode < 2 + cache.sNear + cache.sSame
+        · simp only [if_pos hms] at h ⊢
+          simp only [Except.bind] at h ⊢
+          by_cases hklt : k < data.size
+          · have hrb : Varint.Cursor.readByte ⟨data, k⟩ = .ok (data[k]!, ⟨data, k + 1⟩) := by
+              unfold Varint.Cursor.readByte; simp [hklt]
+            have hrb' : Varint.Cursor.readByte ⟨data ++ extra, k⟩ =
+                .ok ((data ++ extra)[k]!, ⟨data ++ extra, k + 1⟩) := by
+              unfold Varint.Cursor.readByte
+              simp [show k < (data ++ extra).size from by rw [ByteArray.size_append]; omega]
+            rw [hrb] at h; rw [hrb']
+            have hbyte : (data ++ extra)[k]! = data[k]! := by
+              simp only [getElem!_pos, show k < (data ++ extra).size from by rw [ByteArray.size_append]; omega, hklt]
+              exact ByteArray.get_append_left hklt
+            rw [hbyte]
+            simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
+            exact ⟨h.1, ⟨trivial, h.2.1.2⟩, h.2.2⟩
+          · have hrb : Varint.Cursor.readByte ⟨data, k⟩ = .error .truncatedInput := by
+              unfold Varint.Cursor.readByte; simp [hklt]
+            rw [hrb] at h; simp at h
+        · simp only [if_neg hms] at h; simp at h
+
+-- Byte indexing: first element of concatenation
+private theorem ba_getElem_bang_append_left (a b : ByteArray) (i : Nat) (hi : i < a.size) :
+    (a ++ b)[i]! = a[i]! := by
+  have h1 : i < (a ++ b).size := by rw [ByteArray.size_append]; omega
+  simp only [getElem!_pos, h1, hi]
+  exact ByteArray.get_append_left hi
+
+-- Extract of left part from concatenation gives the left part
+private theorem ba_extract_left_full (a b : ByteArray) :
+    (a ++ b).extract 0 a.size = a := by
+  rw [bytearray_extract_append_left a b 0 a.size (le_refl _)]
+  exact bytearray_extract_full a
+
+-- encodeAddress fundamental roundtrip: decode inverts encode for any chosen mode.
+-- This follows from Phase B roundtrips for each mode. Sorry for now; provable by
+-- case analysis on which mode tryNearModes/trySameModes chose, using decode_mode0,
+-- decode_mode1, decode_near_mode, and decode_same_mode from Phase B.
+theorem encodeAddress_decode_roundtrip
+    (cache : AddressCache.State) (addr here : Nat)
+    (h_addr : addr < 2 ^ 35) :
+    let (mode, addrBytes, cache') := cache.encodeAddress addr here
+    AddressCache.decode mode here ⟨addrBytes, 0⟩ cache =
+      .ok (addr, ⟨addrBytes, addrBytes.size⟩, cache') := by
+  sorry
+
+-- Mode returned by encodeAddress is ≤ 8 (for default cache: 2 + sNear + sSame - 1 = 8)
+-- The mode is always < 2 + cache.sNear + cache.sSame
+theorem encodeAddress_mode_bound (cache : AddressCache.State) (addr here : Nat) :
+    (cache.encodeAddress addr here).1 < 2 + cache.sNear + cache.sSame := by
+  sorry
+
+-- findSingleOpcode for COPY with any mode 0..8 and immediate size 4..18
+-- opcode = (19 + mode * 16 + sz - 3).toUInt8
+private theorem findSingleOpcode_copy_immediate (sz addr mode : Nat)
+    (hSz4 : sz ≥ 4) (hSz18 : sz ≤ 18) :
+    Encoder.findSingleOpcode (.copy addr sz) mode = ((19 + mode * 16 + sz - 3).toUInt8, false) := by
+  unfold Encoder.findSingleOpcode
+  simp only [hSz4, hSz18, decide_true, Bool.and_self, ↓reduceIte]
+  congr 1
+  omega
+
+-- General execHalfInst for COPY from source window with any mode
+private theorem execHalfInst_copy_source_general
+    (modeUInt8 : UInt8) (sz : Nat)
+    (sourceWindow target : ByteArray)
+    (dataCursor : Varint.Cursor)
+    (addrAll : ByteArray) (addrPos : Nat)
+    (cache : AddressCache.State)
+    (here : Nat)
+    (addr : Nat) (addrPos' : Nat) (cache' : AddressCache.State)
+    (hAddr : addr + sz ≤ sourceWindow.size)
+    (hAddrDecode : AddressCache.decode modeUInt8.toNat here ⟨addrAll, addrPos⟩ cache =
+      .ok (addr, ⟨addrAll, addrPos'⟩, cache')) :
+    Decoder.execHalfInst ⟨.copy modeUInt8, 0⟩ sz sourceWindow target
+      dataCursor ⟨addrAll, addrPos⟩ cache here =
+    .ok (target ++ sourceWindow.extract addr (addr + sz),
+         dataCursor, ⟨addrAll, addrPos'⟩, cache') := by
+  unfold Decoder.execHalfInst
+  simp only [bind, Except.bind]
+  rw [hAddrDecode]
+  simp only []
+  have hNotGe : ¬(addr ≥ sourceWindow.size + target.size) := by omega
+  simp only [show (addr ≥ sourceWindow.size + target.size) = false from by omega, ↓reduceIte]
+  rw [copyLoop_source_only sourceWindow target addr 0 sz (by omega)]
+  simp only [show addr + 0 = addr from by omega]
+
+-- Compositional step: one encodeOneInst → decodeOneStep + relocation for remaining decodeLoop
+private theorem decodeLoop_compose_step
+    (n : Nat) (sw initTarget targetMid targetFinal : ByteArray)
+    (i1 iR d1 dR a1 aR : ByteArray)
+    (cache0 cache1 cacheFinal : AddressCache.State)
+    (h_step : decodeOneStep sw initTarget
+      ⟨i1 ++ iR, 0⟩ ⟨d1 ++ dR, 0⟩ ⟨a1 ++ aR, 0⟩ cache0 =
+      .ok (targetMid, ⟨i1 ++ iR, i1.size⟩, ⟨d1 ++ dR, d1.size⟩,
+           ⟨a1 ++ aR, a1.size⟩, cache1))
+    (h_i1_pos : i1.size ≥ 1)
+    (h_rest : decodeLoop n sw targetMid
+      ⟨iR, 0⟩ ⟨dR, 0⟩ ⟨aR, 0⟩ cache1 =
+      .ok (targetFinal, ⟨iR, iR.size⟩, ⟨dR, dR.size⟩, ⟨aR, aR.size⟩, cacheFinal)) :
+    decodeLoop (n + 1) sw initTarget
+      ⟨i1 ++ iR, 0⟩ ⟨d1 ++ dR, 0⟩ ⟨a1 ++ aR, 0⟩ cache0 =
+    .ok (targetFinal,
+         ⟨i1 ++ iR, (i1 ++ iR).size⟩,
+         ⟨d1 ++ dR, (d1 ++ dR).size⟩,
+         ⟨a1 ++ aR, (a1 ++ aR).size⟩,
+         cacheFinal) := by
+  rw [decodeLoop_step_ok sw initTarget targetMid
+      ⟨i1 ++ iR, 0⟩ ⟨d1 ++ dR, 0⟩ ⟨a1 ++ aR, 0⟩
+      ⟨i1 ++ iR, i1.size⟩ ⟨d1 ++ dR, d1.size⟩ ⟨a1 ++ aR, a1.size⟩
+      cache0 cache1 n (by rw [ByteArray.size_append]; omega) h_step]
+  have h_reloc := decodeLoop_reloc_ok_general sw i1 iR d1 dR a1 aR 0 0 0 n
+      targetMid cache1 targetFinal iR.size dR.size aR.size cacheFinal
+      (by simp only [Nat.add_zero]; exact h_rest)
+  simp only [Nat.add_zero, ByteArray.size_append] at h_reloc ⊢
+  exact h_reloc
+
+-- ============================================================================
 -- ## Main inductive roundtrip: encodeInstList → decodeLoop
 -- ============================================================================
 
--- The main compositional roundtrip theorem. States that encoding a valid
--- list of instructions via encodeInstList and then decoding via decodeLoop
--- produces the same target as the pure spec function execInstListSpec.
---
--- Proof sketch (by induction on insts):
--- - Base case: empty list → decodeLoop on empty sections = identity
--- - Inductive case:
---   1. Unfold encodeInstList to get (d ++ dR, i ++ iR, a ++ aR)
---   2. Show decodeOneStep at position 0 processes first instruction correctly
---      (using decodeOneStep_add_in_concat / _run_in_concat / _copy_mode0_in_concat)
---   3. After step, cursors are at (i.size, d.size, a.size) in concatenated sections
---   4. Apply induction hypothesis for remaining instructions at those positions
---
--- Note: The theorem is stated with cursor positions into the full concatenated
--- sections, which is how decodeLoop actually operates.
---
--- The inductive step uses cursor relocation (CursorReloc.decodeLoop_reloc_ok)
--- to bridge the gap between the IH at ⟨suffix, 0⟩ and the actual cursors
--- at ⟨prefix ++ suffix, prefix.size⟩ after processing the first instruction.
-
+-- The main compositional roundtrip theorem.
 theorem encodeInstList_decodeLoop_roundtrip
     (insts : List Encoder.RawInst)
     (sourceWindow : ByteArray)
@@ -2122,25 +2299,192 @@ theorem encodeInstList_decodeLoop_roundtrip
          finalCache) := by
   induction insts generalizing initTarget initCache with
   | nil =>
-    -- Base case: empty list → empty sections → decodeLoop identity
-    simp [encodeInstList, execInstListSpec]
-    simp [decodeLoop]
+    simp [encodeInstList, execInstListSpec, decodeLoop]
   | cons inst rest ih =>
-    -- Decompose encodeInstList for (inst :: rest)
     rw [encodeInstList_cons]
-    -- Let (d1, i1, a1, cache', pos') = encodeOneInst inst ...
-    -- Let (d2, i2, a2, cache'', pos'') = encodeInstList rest ...
-    -- Sections are (d1 ++ d2, i1 ++ i2, a1 ++ a2, cache'', pos'')
     simp only []
-    -- Validity: inst is valid, rest are valid
     have h_inst_valid : ValidInst inst sourceWindow := by
       simp [ValidInstList, List.Forall] at h_valid; exact h_valid.1
     have h_rest_valid : ValidInstList rest sourceWindow := by
       simp [ValidInstList, List.Forall] at h_valid; exact h_valid.2
-    -- Step 1: decodeLoop (n+1) unfolds to decodeOneStep + decodeLoop n
-    -- Step 2: decodeOneStep processes inst correctly (existing lemmas)
-    -- Step 3: Apply IH for rest via decodeLoop_reloc_ok
-    sorry
+    -- Name the encodeOneInst result
+    set eoi := encodeOneInst inst sourceWindow.size initCache initTarget.size with h_eoi
+    obtain ⟨d1, i1, a1, cache', pos'⟩ := eoi
+    simp only [] at h_eoi
+    -- Name the encodeInstList result for the rest
+    set eir := encodeInstList rest sourceWindow.size cache' pos' with h_eir
+    obtain ⟨dR, iR, aR, cacheFinal, posFinal⟩ := eir
+    simp only [] at h_eir
+    -- The execInstListSpec unfolds to: process inst, then rest
+    rw [execInstListSpec]
+    -- Apply decodeLoop_compose_step
+    apply decodeLoop_compose_step rest.length sourceWindow initTarget
+      (execInstSpec inst sourceWindow initTarget)
+      (execInstListSpec rest sourceWindow (execInstSpec inst sourceWindow initTarget))
+      i1 iR d1 dR a1 aR initCache cache' cacheFinal
+    · -- h_step: decodeOneStep processes inst correctly
+      rcases inst with ⟨data⟩ | ⟨addr, sz⟩ | ⟨byte, sz⟩
+      · -- ADD
+        simp only [ValidInst] at h_inst_valid
+        obtain ⟨h1, h17⟩ := h_inst_valid
+        simp only [encodeOneInst, Encoder.findSingleOpcode] at h_eoi
+        simp only [h1, h17, decide_true, Bool.and_self, ↓reduceIte,
+            Bool.false_eq_true, Prod.mk.injEq] at h_eoi
+        obtain ⟨rfl, rfl, rfl, rfl, rfl⟩ := h_eoi
+        -- Need: decodeOneStep on (#[(1+data.size).toUInt8] ++ iR, data ++ dR, ∅ ++ aR)
+        rw [bytearray_empty_append aR]
+        apply decodeOneStep_add_in_concat data.size sourceWindow initTarget
+          (ByteArray.mk #[(1 + data.size).toUInt8] ++ iR) 0
+          (data ++ dR) 0 aR 0 initCache h1 h17
+        · -- hInstBound: 0 < size
+          rw [ByteArray.size_append]; simp [ByteArray.size]; omega
+        · -- hInstByte
+          rw [ba_getElem_bang_append_left _ iR 0 (by simp [ByteArray.size])]
+        · -- hDataBound: data.size ≤ (data ++ dR).size
+          rw [ByteArray.size_append]; omega
+      · -- COPY
+        simp only [ValidInst] at h_inst_valid
+        obtain ⟨hSz4, hSz18, hAddr, hAddrBound⟩ := h_inst_valid
+        -- Unfold encodeOneInst for COPY
+        simp only [encodeOneInst] at h_eoi
+        set eaddr := initCache.encodeAddress addr (sourceWindow.size + initTarget.size) with h_eaddr
+        obtain ⟨mode, addrBytes, cacheUpd⟩ := eaddr
+        simp only [] at h_eoi
+        rw [findSingleOpcode_copy_immediate sz addr mode hSz4 hSz18] at h_eoi
+        simp only [ite_false, Prod.mk.injEq] at h_eoi
+        obtain ⟨rfl, rfl, rfl, rfl, rfl⟩ := h_eoi
+        -- Need: decodeOneStep on (inst ++ iR, ∅ ++ dR, addrBytes ++ aR)
+        rw [bytearray_empty_append dR]
+        -- The mode ≤ 8 for lookup
+        have hModeBound := encodeAddress_mode_bound initCache addr (sourceWindow.size + initTarget.size)
+        rw [show initCache.encodeAddress addr (sourceWindow.size + initTarget.size) =
+            (mode, addrBytes, cacheUpd) from h_eaddr ▸ rfl] at hModeBound
+        simp only [] at hModeBound
+        -- Prove mode ≤ 8 (for default cache: 2 + 4 + 3 = 9, so mode < 9 means mode ≤ 8)
+        have hMode8 : mode ≤ 8 := by omega
+        -- The address cache roundtrip (sorry'd):
+        have hAddrRT := encodeAddress_decode_roundtrip initCache addr
+            (sourceWindow.size + initTarget.size) (by omega)
+        rw [show initCache.encodeAddress addr (sourceWindow.size + initTarget.size) =
+            (mode, addrBytes, cacheUpd) from h_eaddr ▸ rfl] at hAddrRT
+        simp only [] at hAddrRT
+        -- Suffix extension for address decode
+        have hAddrSfx := addr_decode_suffix_ok mode
+            (sourceWindow.size + initTarget.size) addrBytes aR 0
+            initCache addr addrBytes.size cacheUpd hAddrRT
+        -- Now prove decodeOneStep
+        unfold decodeOneStep
+        simp only [bind, Except.bind]
+        -- Read opcode
+        rw [Encoder.Proofs.readByte_ok (show (0 : Nat) <
+            (ByteArray.mk #[(19 + mode * 16 + sz - 3).toUInt8] ++ iR).size
+            from by rw [ByteArray.size_append]; simp [ByteArray.size]; omega)]
+        rw [ba_getElem_bang_append_left _ iR 0 (by simp [ByteArray.size])]
+        simp only []
+        -- Lookup
+        rw [CodeTable.Proofs.lookup_copy_sized mode sz hMode8 hSz4 hSz18]
+        conv => simp only []
+        -- inst1.size = sz ≠ 0, no varint; inst1.type = .copy ... ≠ .noop
+        have hne : sz ≠ 0 := by omega
+        simp only [show (sz == 0) = false from beq_eq_false_iff_ne.mpr hne,
+          Bool.false_and,
+          show (InstType.copy mode.toUInt8 != InstType.noop) = true from by decide,
+          show (InstType.noop != InstType.noop) = false from by decide,
+          show ((0 : Nat) == 0 && false) = false from by decide,
+          ↓reduceIte]
+        -- execHalfInst for COPY
+        -- mode.toUInt8.toNat = mode since mode ≤ 8 < 256
+        have hModeRoundtrip : mode.toUInt8.toNat = mode := by omega
+        rw [hModeRoundtrip] at hAddrSfx
+        rw [execHalfInst_copy_source_general mode.toUInt8 sz sourceWindow initTarget
+            ⟨dR, 0⟩ (addrBytes ++ aR) 0 initCache
+            (sourceWindow.size + initTarget.size)
+            addr addrBytes.size cacheUpd hAddr
+            (by rw [hModeRoundtrip]; exact hAddrSfx)]
+        -- Result matches execInstSpec
+        simp only [execInstSpec, ByteArray.size, Prod.mk.injEq, Except.ok.injEq]
+        exact ⟨rfl, rfl, rfl, rfl, rfl⟩
+      · -- RUN
+        simp only [ValidInst] at h_inst_valid
+        obtain ⟨hSz, hSzBound⟩ := h_inst_valid
+        -- Unfold encodeOneInst for RUN
+        rw [encodeOneInst_run_sections] at h_eoi
+        simp only [Prod.mk.injEq] at h_eoi
+        obtain ⟨rfl, rfl, rfl, rfl, rfl⟩ := h_eoi
+        rw [bytearray_empty_append aR]
+        -- Need varint decode on (ByteArray.mk #[0] ++ Varint.encode sz ++ iR) at position 1
+        -- = varint decode on (Varint.encode sz ++ iR) at position 0 (by prefix relocation)
+        -- = varint decode on (Varint.encode sz) at position 0 (by suffix extension)
+        -- = (sz, ...) by decode_encode
+        have hSzBound35 : sz < 2 ^ 35 := by omega
+        have hDE := Varint.decode_encode sz hSzBound35
+        have hSfx := varint_decode_suffix_ok (Varint.encode sz) iR 0 sz
+            (Varint.encode sz).size hDE
+        have hPfx := CursorReloc.varint_decode_reloc_ok (ByteArray.mk #[0])
+            (Varint.encode sz ++ iR) 0 sz (Varint.encode sz).size hSfx
+        simp only [ByteArray.size, Nat.add_zero] at hPfx
+        -- Show i1 = ByteArray.mk #[0] ++ Varint.encode sz
+        -- and i1 ++ iR = ByteArray.mk #[0] ++ (Varint.encode sz ++ iR) by assoc
+        rw [bytearray_append_assoc (ByteArray.mk #[0]) (Varint.encode sz) iR]
+        apply decodeOneStep_run_in_concat byte sz sourceWindow initTarget
+          (ByteArray.mk #[0] ++ (Varint.encode sz ++ iR)) 0
+          (ByteArray.mk #[byte] ++ dR) 0 aR 0 initCache hSz hSzBound
+        · -- hInstBound
+          rw [ByteArray.size_append]; simp [ByteArray.size]; omega
+        · -- hInstByte: byte at position 0 = 0
+          rw [ba_getElem_bang_append_left _ _ 0 (by simp [ByteArray.size])]
+        · -- hVarint
+          convert hPfx using 2
+          simp [ByteArray.size_append, ByteArray.size]
+          omega
+        · -- hDataBound: 0 < (#[byte] ++ dR).size
+          rw [ByteArray.size_append]; simp [ByteArray.size]; omega
+        · -- hDataByte: byte at position 0 in data section
+          rw [ba_getElem_bang_append_left _ dR 0 (by simp [ByteArray.size])]
+    · -- h_i1_pos: i1.size ≥ 1
+      rcases inst with ⟨data⟩ | ⟨addr, sz⟩ | ⟨byte, sz⟩
+      · -- ADD: i1 = #[(1+data.size).toUInt8], size = 1
+        simp only [ValidInst] at h_inst_valid
+        simp only [encodeOneInst, Encoder.findSingleOpcode, h_inst_valid.1, h_inst_valid.2,
+            decide_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true] at h_eoi
+        simp only [Prod.mk.injEq] at h_eoi; simp [ByteArray.size, h_eoi.2.1]
+      · -- COPY: i1 = #[opcode], size = 1
+        simp only [encodeOneInst] at h_eoi
+        set eaddr := initCache.encodeAddress addr (sourceWindow.size + initTarget.size)
+        obtain ⟨mode, addrBytes, cacheUpd⟩ := eaddr
+        simp only [ValidInst] at h_inst_valid
+        rw [findSingleOpcode_copy_immediate sz addr mode h_inst_valid.1 h_inst_valid.2.1] at h_eoi
+        simp only [ite_false, Prod.mk.injEq] at h_eoi
+        simp [ByteArray.size, h_eoi.2.1]
+      · -- RUN: i1 = #[0] ++ Varint.encode sz, size ≥ 1
+        rw [encodeOneInst_run_sections] at h_eoi
+        simp only [Prod.mk.injEq] at h_eoi
+        simp [ByteArray.size_append, ByteArray.size, h_eoi.2.1]; omega
+    · -- h_rest: IH for the remaining instructions
+      -- Need: pos' = (execInstSpec inst sourceWindow initTarget).size
+      -- and cache' matches
+      have h_pos' : pos' = (execInstSpec inst sourceWindow initTarget).size := by
+        rcases inst with ⟨data⟩ | ⟨addr, sz⟩ | ⟨byte, sz⟩
+        · simp only [ValidInst] at h_inst_valid
+          simp only [encodeOneInst, Encoder.findSingleOpcode, h_inst_valid.1, h_inst_valid.2,
+              decide_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true] at h_eoi
+          simp only [Prod.mk.injEq] at h_eoi
+          rw [h_eoi.2.2.2.2]
+          simp [execInstSpec, ByteArray.size_append]
+        · simp only [ValidInst] at h_inst_valid
+          simp only [encodeOneInst] at h_eoi
+          set eaddr := initCache.encodeAddress addr (sourceWindow.size + initTarget.size)
+          obtain ⟨mode, addrBytes, cacheUpd⟩ := eaddr
+          rw [findSingleOpcode_copy_immediate sz addr mode h_inst_valid.1 h_inst_valid.2.1] at h_eoi
+          simp only [ite_false, Prod.mk.injEq] at h_eoi
+          rw [h_eoi.2.2.2.2]
+          rw [execInstSpec_copy_size addr sz sourceWindow initTarget h_inst_valid.2.2.1]
+        · rw [encodeOneInst_run_sections] at h_eoi
+          simp only [Prod.mk.injEq] at h_eoi
+          rw [h_eoi.2.2.2.2]
+          rw [execInstSpec_run_size byte sz sourceWindow initTarget]
+      rw [h_pos'] at h_eir
+      exact ih (execInstSpec inst sourceWindow initTarget) cache' h_rest_valid
 
 -- ============================================================================
 -- ## Connection to real encoder: encodeWindow ≈ encodeInstList
