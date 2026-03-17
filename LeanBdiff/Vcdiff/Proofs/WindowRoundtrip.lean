@@ -137,6 +137,38 @@ def decodeLoop : Nat → ByteArray → ByteArray →
       | .error e => .error e
 
 -- ============================================================================
+-- ## Equivalence: spec decodeOneStep/decodeLoop = Decoder versions
+-- ============================================================================
+
+-- The spec decodeOneStep is identical to Decoder.decodeOneStep
+theorem decodeOneStep_eq_decoder (sw target : ByteArray)
+    (ic dc ac : Varint.Cursor) (cache : AddressCache.State) :
+    decodeOneStep sw target ic dc ac cache =
+    Decoder.decodeOneStep sw target ic dc ac cache := by
+  rfl
+
+-- The spec decodeLoop equals Decoder.applyWindowLoop (modulo parameter order)
+theorem decodeLoop_eq_applyWindowLoop (sw : ByteArray)
+    : (fuel : Nat) → (target : ByteArray) →
+    (ic dc ac : Varint.Cursor) → (cache : AddressCache.State) →
+    decodeLoop fuel sw target ic dc ac cache =
+    Decoder.applyWindowLoop sw fuel target ic dc ac cache
+  | 0, target, ic, dc, ac, cache => by
+    simp only [decodeLoop, Decoder.applyWindowLoop]
+  | fuel + 1, target, ic, dc, ac, cache => by
+    unfold decodeLoop Decoder.applyWindowLoop
+    rw [decodeOneStep_eq_decoder]
+    split -- if ic.pos ≥ ic.data.size
+    · rfl
+    · -- match on Decoder.decodeOneStep result
+      cases h : Decoder.decodeOneStep sw target ic dc ac cache with
+      | ok result =>
+        obtain ⟨target', ic', dc', ac', cache'⟩ := result
+        simp only [h]
+        exact decodeLoop_eq_applyWindowLoop sw fuel target' ic' dc' ac' cache'
+      | error e => simp only [h]
+
+-- ============================================================================
 -- ## Concrete encodeOneInst examples
 -- ============================================================================
 
@@ -2428,6 +2460,7 @@ private theorem decodeLoop_compose_step
 -- ============================================================================
 
 -- The main compositional roundtrip theorem.
+set_option maxHeartbeats 800000 in
 theorem encodeInstList_decodeLoop_roundtrip
     (insts : List Encoder.RawInst)
     (sourceWindow : ByteArray)
@@ -2660,34 +2693,39 @@ theorem encodeWindow_eq_encodeInstList_no_pairs
 -- ## Connection to real decoder: applyWindow ≈ decodeLoop
 -- ============================================================================
 
--- The real decoder's applyWindow parses the window structure and then
--- processes instructions via a while loop. The decodeLoop spec function
--- mirrors this loop with fuel-based termination.
---
--- Key insight: applyWindow's while loop reads opcodes from instSection
--- and calls execHalfInst, exactly as decodeOneStep does.
+-- The real decoder's applyWindowLoop is exactly the spec decodeLoop
+-- (modulo parameter order). This follows from decodeOneStep being shared.
 
-theorem applyWindow_eq_decodeLoop
+-- If decodeLoop succeeds with instSection.size fuel, applyWindow succeeds too.
+theorem applyWindow_of_decodeLoop
     (win : Window) (source : ByteArray)
-    (h_nocomp : win.winIndicator &&& DeltaIndicator.reserved = 0)
-    (fuel : Nat)
-    (h_fuel : fuel ≥ win.instSection.size)  -- at most 1 opcode per byte
+    (target : ByteArray)
     (sourceSegment : ByteArray)
     (h_seg : sourceSegment =
       if win.winIndicator &&& WinIndicator.source != 0 then
         source.extract win.sourceSegOff (win.sourceSegOff + win.sourceSegLen)
-      else ByteArray.empty) :
-    ∃ target cache,
-    decodeLoop fuel sourceSegment ByteArray.empty
+      else ByteArray.empty)
+    (ic_end dc_end ac_end : Varint.Cursor)
+    (cache_end : AddressCache.State)
+    (h_loop : decodeLoop win.instSection.size sourceSegment ByteArray.empty
       ⟨win.instSection, 0⟩ ⟨win.dataSection, 0⟩
       ⟨win.addrSection, 0⟩ AddressCache.State.init =
-    .ok (target,
-         ⟨win.instSection, win.instSection.size⟩,
-         ⟨win.dataSection, win.dataSection.size⟩,
-         ⟨win.addrSection, win.addrSection.size⟩,
-         cache) ↔
+      .ok (target, ic_end, dc_end, ac_end, cache_end))
+    (h_len : target.size = win.targetLen)
+    (h_adler : win.adler32 = some (Decoder.adler32 target) ∨ win.adler32 = none) :
     Decoder.applyWindow win source = .ok target := by
-  sorry
+  simp only [Decoder.applyWindow, bind, Except.bind]
+  -- Replace the inlined sourceSegment computation with our parameter
+  conv_lhs => rw [show (if win.winIndicator &&& WinIndicator.source != 0 then
+    source.extract win.sourceSegOff (win.sourceSegOff + win.sourceSegLen)
+    else ByteArray.empty) = sourceSegment from h_seg.symm]
+  -- Convert applyWindowLoop to decodeLoop
+  rw [(decodeLoop_eq_applyWindowLoop sourceSegment win.instSection.size
+    ByteArray.empty ⟨win.instSection, 0⟩ ⟨win.dataSection, 0⟩
+    ⟨win.addrSection, 0⟩ AddressCache.State.init).symm]
+  rw [h_loop]
+  -- Simplify the do-notation artifacts and validation checks
+  rcases h_adler with had | had <;> simp [had, h_len, pure, Except.pure, bind, Except.bind]
 
 -- ============================================================================
 -- ## Top-level roundtrip: encode → decode
@@ -2803,7 +2841,10 @@ theorem concrete_roundtrip_mixed :
          ⟨instSec, instSec.size⟩,
          ⟨dataSec, dataSec.size⟩,
          ⟨addrSec, addrSec.size⟩,
-         cache') := by native_decide
+         cache') := by
+  set_option maxRecDepth 4096 in
+  set_option maxHeartbeats 400000 in
+  native_decide
 
 -- Verify execInstListSpec matches the concrete decode result
 theorem execInstListSpec_mixed :

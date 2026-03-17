@@ -176,8 +176,68 @@ def execHalfInst
     let target' := copyLoop sourceWindow target addr 0 instSize
     return (target', dataCursor, addrCursor', addrCache')
 
+/-- Decode one opcode from the instruction section, resolving sizes and executing
+    both half-instructions. Returns updated state. -/
+def decodeOneStep (sourceWindow target : ByteArray)
+    (instCursor dataCursor addrCursor : Varint.Cursor)
+    (addrCache : AddressCache.State)
+    : DecodeResult
+      (ByteArray × Varint.Cursor × Varint.Cursor ×
+       Varint.Cursor × AddressCache.State) := do
+  -- Read opcode
+  let (opcode, instCursor') ← instCursor.readByte
+  let entry := CodeTable.lookup opcode
+  -- Resolve inst1 size (0 in table means read varint)
+  let (inst1Size, instCursor'') ←
+    if entry.inst1.size == 0 && entry.inst1.type != .noop then do
+      let (sz, c) ← Varint.decode instCursor'
+      pure (sz, c)
+    else
+      pure (entry.inst1.size, instCursor')
+  -- Execute inst1
+  let here := sourceWindow.size + target.size
+  let (target', dataCursor', addrCursor', addrCache') ←
+    if entry.inst1.type != .noop then
+      execHalfInst entry.inst1 inst1Size sourceWindow target
+        dataCursor addrCursor addrCache here
+    else
+      .ok (target, dataCursor, addrCursor, addrCache)
+  -- Resolve inst2 size
+  let (inst2Size, instCursor''') ←
+    if entry.inst2.size == 0 && entry.inst2.type != .noop then do
+      let (sz, c) ← Varint.decode instCursor''
+      pure (sz, c)
+    else
+      pure (entry.inst2.size, instCursor'')
+  -- Execute inst2
+  let here' := sourceWindow.size + target'.size
+  let (target'', dataCursor'', addrCursor'', addrCache'') ←
+    if entry.inst2.type != .noop then
+      execHalfInst entry.inst2 inst2Size sourceWindow target'
+        dataCursor' addrCursor' addrCache' here'
+    else
+      .ok (target', dataCursor', addrCursor', addrCache')
+  return (target'', instCursor''', dataCursor'', addrCursor'', addrCache'')
+
+/-- Process opcodes from the instruction section, one at a time.
+    Uses fuel-based recursion (fuel = max number of opcodes to process). -/
+def applyWindowLoop (sourceSegment : ByteArray)
+    : Nat → ByteArray → Varint.Cursor → Varint.Cursor → Varint.Cursor →
+      AddressCache.State →
+      DecodeResult (ByteArray × Varint.Cursor × Varint.Cursor ×
+                    Varint.Cursor × AddressCache.State)
+  | 0, target, ic, dc, ac, cache =>
+    if ic.pos ≥ ic.data.size then .ok (target, ic, dc, ac, cache)
+    else .error .truncatedInput
+  | fuel + 1, target, ic, dc, ac, cache =>
+    if ic.pos ≥ ic.data.size then .ok (target, ic, dc, ac, cache)
+    else match decodeOneStep sourceSegment target ic dc ac cache with
+      | .ok (target', ic', dc', ac', cache') =>
+        applyWindowLoop sourceSegment fuel target' ic' dc' ac' cache'
+      | .error e => .error e
+
 /-- Apply a decoded window to produce the target bytes for that window. -/
-partial def applyWindow (win : Window) (source : ByteArray) : DecodeResult ByteArray := do
+def applyWindow (win : Window) (source : ByteArray) : DecodeResult ByteArray := do
   -- Extract source segment
   let sourceSegment :=
     if win.winIndicator &&& WinIndicator.source != 0 then
@@ -185,52 +245,10 @@ partial def applyWindow (win : Window) (source : ByteArray) : DecodeResult ByteA
     else
       ByteArray.empty
 
-  let mut target := ByteArray.empty
-  let mut instCursor : Varint.Cursor := ⟨win.instSection, 0⟩
-  let mut dataCursor : Varint.Cursor := ⟨win.dataSection, 0⟩
-  let mut addrCursor : Varint.Cursor := ⟨win.addrSection, 0⟩
-  let mut addrCache := AddressCache.State.init
-
-  while instCursor.pos < instCursor.data.size do
-    -- Read opcode
-    let (opcode, instCursor') ← instCursor.readByte
-    instCursor := instCursor'
-
-    let entry := CodeTable.lookup opcode
-
-    -- Process inst1
-    let inst1Size ← if entry.inst1.size == 0 && entry.inst1.type != .noop then do
-      let (sz, c) ← Varint.decode instCursor
-      instCursor := c
-      pure sz
-    else
-      pure entry.inst1.size
-
-    if entry.inst1.type != .noop then do
-      let here := sourceSegment.size + target.size
-      let (target', dataCursor', addrCursor', addrCache') ←
-        execHalfInst entry.inst1 inst1Size sourceSegment target dataCursor addrCursor addrCache here
-      target := target'
-      dataCursor := dataCursor'
-      addrCursor := addrCursor'
-      addrCache := addrCache'
-
-    -- Process inst2
-    let inst2Size ← if entry.inst2.size == 0 && entry.inst2.type != .noop then do
-      let (sz, c) ← Varint.decode instCursor
-      instCursor := c
-      pure sz
-    else
-      pure entry.inst2.size
-
-    if entry.inst2.type != .noop then do
-      let here := sourceSegment.size + target.size
-      let (target', dataCursor', addrCursor', addrCache') ←
-        execHalfInst entry.inst2 inst2Size sourceSegment target dataCursor addrCursor addrCache here
-      target := target'
-      dataCursor := dataCursor'
-      addrCursor := addrCursor'
-      addrCache := addrCache'
+  let (target, _, _, _, _) ← applyWindowLoop sourceSegment
+    win.instSection.size ByteArray.empty
+    ⟨win.instSection, 0⟩ ⟨win.dataSection, 0⟩
+    ⟨win.addrSection, 0⟩ AddressCache.State.init
 
   -- Verify target length
   if target.size != win.targetLen then
@@ -244,22 +262,28 @@ partial def applyWindow (win : Window) (source : ByteArray) : DecodeResult ByteA
 
   return target
 
+/-- Process windows from the delta stream using fuel-based recursion. -/
+def decodeWindows (source : ByteArray)
+    : Nat → ByteArray → Varint.Cursor → DecodeResult (ByteArray × Varint.Cursor)
+  | 0, target, c =>
+    if c.pos ≥ c.data.size then .ok (target, c)
+    else .error .truncatedInput
+  | fuel + 1, target, c =>
+    if c.pos ≥ c.data.size then .ok (target, c)
+    else match parseWindow c with
+      | .error e => .error e
+      | .ok (win, c') =>
+        match applyWindow win source with
+        | .error e => .error e
+        | .ok windowTarget =>
+          decodeWindows source fuel (target ++ windowTarget) c'
+
 /-- Decode a complete VCDIFF delta, applying it to the source to produce the target. -/
-partial def decode (delta : ByteArray) (source : ByteArray := ByteArray.empty)
+def decode (delta : ByteArray) (source : ByteArray := ByteArray.empty)
     : DecodeResult ByteArray := do
-  let mut c : Varint.Cursor := ⟨delta, 0⟩
-  let (_header, c') ← parseHeader c
-  c := c'
-
-  let mut target := ByteArray.empty
-
-  -- Process all windows
-  while c.pos < c.data.size do
-    let (win, c') ← parseWindow c
-    c := c'
-    let windowTarget ← applyWindow win source
-    target := target ++ windowTarget
-
+  let (_header, c) ← parseHeader ⟨delta, 0⟩
+  -- Use delta.size as fuel (at most one window per byte)
+  let (target, _) ← decodeWindows source delta.size ByteArray.empty c
   return target
 
 end LeanBdiff.Vcdiff.Decoder
