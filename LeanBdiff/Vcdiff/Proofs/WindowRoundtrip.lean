@@ -2861,6 +2861,96 @@ theorem applyWindow_of_decodeLoop
   rcases h_adler with had | had <;> simp [had, h_len, pure, Except.pure, bind, Except.bind]
 
 -- ============================================================================
+-- ## Helpers for parseWindow_encoded_sections
+-- ============================================================================
+
+-- Extract from the middle of a three-part concatenation
+private theorem extract_middle' (pfx mid sfx : ByteArray) :
+    (pfx ++ mid ++ sfx).extract pfx.size (pfx.size + mid.size) = mid := by
+  rw [bytearray_extract_append_left (pfx ++ mid) sfx _ _
+    (by simp [ByteArray.size_append])]
+  simp [bytearray_extract_append_right]
+
+-- Extract segment from data given a decomposition and size proof
+private theorem extract_of_eq_concat (data pfx mid sfx : ByteArray)
+    (pos : Nat) (h_data : data = pfx ++ mid ++ sfx) (h_pos : pfx.size = pos) :
+    data.extract pos (pos + mid.size) = mid := by
+  subst h_data; rw [← h_pos]; exact extract_middle' pfx mid sfx
+
+-- Proof-irrelevant getElem congr for ByteArray
+private theorem ba_getElem_congr' {a b : ByteArray} {i : Nat}
+    (h : a = b) (ha : i < a.size) (hb : i < b.size) :
+    a[i]'ha = b[i]'hb := by subst h; rfl
+
+-- If data.extract pos (pos+n) = target, then data[pos+k]! = target[k]!
+private theorem getElem_bang_of_extract (data target : ByteArray) (pos k : Nat)
+    (h_bound : pos + target.size ≤ data.size)
+    (h_extract : data.extract pos (pos + target.size) = target)
+    (hk : k < target.size) :
+    data[pos + k]! = target[k]! := by
+  have h1 : pos + k < data.size := by omega
+  have h2 : k < (data.extract pos (pos + target.size)).size := by
+    rw [ByteArray.size_extract]; omega
+  simp only [getElem!_pos, h1, hk]
+  rw [← ByteArray.get_extract h2]
+  exact ba_getElem_congr' h_extract h2 hk
+
+-- Bridge: v.toUInt8.toUInt32.toBitVec = extractLsb' + zeroExtend
+private theorem toUInt8_toUInt32_toBitVec' (v : UInt32) :
+    v.toUInt8.toUInt32.toBitVec =
+    (v.toBitVec.extractLsb' 0 8).zeroExtend 32 := by
+  simp only [UInt32.toUInt8, Nat.toUInt8, UInt8.toUInt32,
+             UInt32.toNat, UInt8.toNat, UInt8.ofNat,
+             BitVec.extractLsb', BitVec.zeroExtend,
+             BitVec.ofNat, BitVec.toNat]
+  congr 1
+
+-- UInt32 byte decomposition/reconstruction is identity
+private theorem uint32_byte_roundtrip' (v : UInt32) :
+    (v >>> 24).toUInt8.toUInt32 <<< 24 |||
+    (v >>> 16).toUInt8.toUInt32 <<< 16 |||
+    (v >>> 8).toUInt8.toUInt32 <<< 8 |||
+    v.toUInt8.toUInt32 = v := by
+  rw [← UInt32.toBitVec_inj]
+  simp only [UInt32.toBitVec_or, UInt32.toBitVec_shiftLeft, toUInt8_toUInt32_toBitVec']
+  simp only [UInt32.toBitVec_shiftRight]
+  bv_decide
+
+-- readUInt32BE at known position with known extract
+set_option maxHeartbeats 400000 in
+private theorem readUInt32BE_at_pos (v : UInt32) (data : ByteArray) (pos : Nat)
+    (h_bound : pos + 4 ≤ data.size)
+    (h_extract : data.extract pos (pos + 4) = Encoder.writeUInt32BE v) :
+    Decoder.readUInt32BE ⟨data, pos⟩ = .ok (v, ⟨data, pos + 4⟩) := by
+  simp only [Decoder.readUInt32BE, bind, Except.bind]
+  rw [Encoder.Proofs.readByte_ok (show pos < data.size from by omega)]
+  simp only [Except.bind]
+  rw [Encoder.Proofs.readByte_ok (show pos + 1 < data.size from by omega)]
+  simp only [Except.bind]
+  rw [Encoder.Proofs.readByte_ok (show pos + 2 < data.size from by omega)]
+  simp only [Except.bind]
+  rw [Encoder.Proofs.readByte_ok (show pos + 3 < data.size from by omega)]
+  simp only [pure, Except.pure]
+  have h_wu_sz : (Encoder.writeUInt32BE v).size = 4 := rfl
+  have hb0 := getElem_bang_of_extract data (Encoder.writeUInt32BE v) pos 0
+    (by rw [h_wu_sz]; exact h_bound) h_extract (by rw [h_wu_sz]; omega)
+  have hb1 := getElem_bang_of_extract data (Encoder.writeUInt32BE v) pos 1
+    (by rw [h_wu_sz]; exact h_bound) h_extract (by rw [h_wu_sz]; omega)
+  have hb2 := getElem_bang_of_extract data (Encoder.writeUInt32BE v) pos 2
+    (by rw [h_wu_sz]; exact h_bound) h_extract (by rw [h_wu_sz]; omega)
+  have hb3 := getElem_bang_of_extract data (Encoder.writeUInt32BE v) pos 3
+    (by rw [h_wu_sz]; exact h_bound) h_extract (by rw [h_wu_sz]; omega)
+  simp only [Nat.add_zero] at hb0
+  rw [hb0, hb1, hb2, hb3]
+  simp only [Encoder.writeUInt32BE, getElem!_pos,
+    show (0 : Nat) < 4 from by omega,
+    show (1 : Nat) < 4 from by omega,
+    show (2 : Nat) < 4 from by omega,
+    show (3 : Nat) < 4 from by omega]
+  congr 1; congr 1
+  exact uint32_byte_roundtrip' v
+
+-- ============================================================================
 -- ## Top-level roundtrip: encode → decode
 -- ============================================================================
 
@@ -2877,10 +2967,16 @@ theorem applyWindow_of_decodeLoop
 -- Step 1: Wire format roundtrip for a single window
 -- Given well-formed sections, serializing them into the VCDIFF wire format
 -- and parsing them back recovers the original sections.
+set_option maxHeartbeats 1600000 in
 theorem parseWindow_encoded_sections
     (source target : ByteArray)
     (dataSec instSec addrSec : ByteArray)
-    (h_source_pos : source.size > 0) :
+    (h_source_pos : source.size > 0)
+    (h_source_bound : source.size < 2 ^ 31)
+    (h_target_bound : target.size < 2 ^ 31)
+    (h_data_bound : dataSec.size < 2 ^ 31)
+    (h_inst_bound : instSec.size < 2 ^ 31)
+    (h_addr_bound : addrSec.size < 2 ^ 31) :
     let checksumBytes := Encoder.writeUInt32BE (Encoder.adler32 target)
     let targetLenEnc := Varint.encode target.size
     let dataLenEnc := Varint.encode dataSec.size
@@ -2904,7 +3000,316 @@ theorem parseWindow_encoded_sections
     win.targetLen = target.size ∧
     win.sourceSegLen = source.size ∧
     win.sourceSegOff = 0 := by
-  sorry
+  intro checksumBytes targetLenEnc dataLenEnc instLenEnc addrLenEnc
+    deltaBody encLenEnc winIndicator windowBytes
+  -- Size bounds
+  have h_v_src : (Varint.encode source.size).size ≤ 5 :=
+    Encoder.Proofs.varint_encode_size_le_5 _ (by omega)
+  have h_v_0 : (Varint.encode 0).size ≤ 5 :=
+    Encoder.Proofs.varint_encode_size_le_5 _ (by omega)
+  have h_v_tgt : targetLenEnc.size ≤ 5 :=
+    Encoder.Proofs.varint_encode_size_le_5 _ (by omega)
+  have h_v_data : dataLenEnc.size ≤ 5 :=
+    Encoder.Proofs.varint_encode_size_le_5 _ (by omega)
+  have h_v_inst : instLenEnc.size ≤ 5 :=
+    Encoder.Proofs.varint_encode_size_le_5 _ (by omega)
+  have h_v_addr : addrLenEnc.size ≤ 5 :=
+    Encoder.Proofs.varint_encode_size_le_5 _ (by omega)
+  have h_cksum_sz : checksumBytes.size = 4 := Encoder.Proofs.writeUInt32BE_size _
+  have h_delta_sz : deltaBody.size =
+    targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size +
+    checksumBytes.size + dataSec.size + instSec.size + addrSec.size := by
+    simp only [deltaBody]
+    have hmk : (ByteArray.mk #[(0x00 : UInt8)]).size = 1 := rfl
+    repeat rw [ByteArray.size_append]
+    rw [hmk]
+  have h_delta_bound : deltaBody.size < 2 ^ 35 := by
+    rw [h_delta_sz, h_cksum_sz]; omega
+  have h_v_enc : encLenEnc.size ≤ 5 :=
+    Encoder.Proofs.varint_encode_size_le_5 _ h_delta_bound
+  have h_wb_sz : windowBytes.size =
+    1 + (Varint.encode source.size).size + (Varint.encode 0).size +
+    encLenEnc.size + deltaBody.size := by
+    simp only [windowBytes]
+    have hmk : (ByteArray.mk #[winIndicator]).size = 1 := rfl
+    repeat rw [ByteArray.size_append]
+    rw [hmk]
+  -- Provide existential witnesses
+  refine ⟨⟨winIndicator, source.size, 0, target.size, dataSec, instSec, addrSec,
+           some (Encoder.adler32 target)⟩,
+         ⟨windowBytes, 1 + (Varint.encode source.size).size + (Varint.encode 0).size +
+           encLenEnc.size + targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size +
+           addrLenEnc.size + 4 + dataSec.size + instSec.size + addrSec.size⟩,
+         ?_, rfl, rfl, rfl, rfl, rfl, rfl⟩
+  -- ═══════════════════════════════════════
+  -- Flag conditions (all decidable on concrete UInt8)
+  -- ═══════════════════════════════════════
+  have hf1 : (winIndicator &&& WinIndicator.reserved != 0) = false := by
+    simp only [winIndicator]; native_decide
+  have hf2 : (winIndicator &&& WinIndicator.target != 0) = false := by
+    simp only [winIndicator]; native_decide
+  have hf3 : (winIndicator &&& WinIndicator.source != 0) = true := by
+    simp only [winIndicator]; native_decide
+  have hf4 : (winIndicator &&& WinIndicator.adler32 != 0) = true := by
+    simp only [winIndicator]; native_decide
+  have hf5 : ((0x00 : UInt8) &&& DeltaIndicator.reserved != 0) = false := by native_decide
+  have hf6 : ((0x00 : UInt8) &&&
+    (DeltaIndicator.dataComp ||| DeltaIndicator.instComp ||| DeltaIndicator.addrComp) != 0) = false := by
+    native_decide
+  -- Let-binding size equalities (needed for omega to unify varint sizes)
+  have h_enc_eq : (Varint.encode deltaBody.size).size = encLenEnc.size := rfl
+  have h_tgt_eq : (Varint.encode target.size).size = targetLenEnc.size := rfl
+  have h_dat_eq : (Varint.encode dataSec.size).size = dataLenEnc.size := rfl
+  have h_ins_eq : (Varint.encode instSec.size).size = instLenEnc.size := rfl
+  have h_adr_eq : (Varint.encode addrSec.size).size = addrLenEnc.size := rfl
+  -- ByteArray.mk size helpers (needed since ByteArray.size is opaque to omega)
+  have h_mk_wi_sz : (ByteArray.mk #[winIndicator]).size = 1 := rfl
+  have h_mk_00_sz : (ByteArray.mk #[(0x00 : UInt8)]).size = 1 := rfl
+  -- ═══════════════════════════════════════
+  -- Cursor operation results (each parse step)
+  -- ═══════════════════════════════════════
+  -- Step 1: readByte at pos 0 → winIndicator
+  have h_byte0 : windowBytes[0]! = winIndicator := by
+    have h_ext := extract_of_eq_concat windowBytes
+      ByteArray.empty (ByteArray.mk #[winIndicator])
+      (Varint.encode source.size ++ Varint.encode 0 ++ encLenEnc ++ deltaBody) 0
+      (by simp only [windowBytes, bytearray_append_assoc, bytearray_empty_append])
+      rfl
+    have hmk_sz : (ByteArray.mk #[winIndicator]).size = 1 := rfl
+    have hb := getElem_bang_of_extract windowBytes (ByteArray.mk #[winIndicator]) 0 0
+      (by rw [h_wb_sz, hmk_sz]; omega) h_ext (by rw [hmk_sz]; omega)
+    simpa using hb
+  have h_rb0 : (⟨windowBytes, 0⟩ : Varint.Cursor).readByte =
+    .ok (winIndicator, ⟨windowBytes, 1⟩) := by
+    rw [Encoder.Proofs.readByte_ok (show 0 < windowBytes.size from by rw [h_wb_sz]; omega)]
+    rw [h_byte0]
+  -- Step 2: Varint.decode at pos 1 → source.size
+  have h_vd_src : Varint.decode ⟨windowBytes, 1⟩ =
+    .ok (source.size, ⟨windowBytes, 1 + (Varint.encode source.size).size⟩) :=
+    Varint.decode_at_pos source.size (by omega) windowBytes 1
+      (by rw [h_wb_sz]; omega)
+      (extract_of_eq_concat windowBytes
+        (ByteArray.mk #[winIndicator])
+        (Varint.encode source.size)
+        (Varint.encode 0 ++ encLenEnc ++ deltaBody)
+        1
+        (by simp only [windowBytes, bytearray_append_assoc])
+        rfl)
+  -- Step 3: Varint.decode → 0 (sourceSegOff)
+  have h_vd_off : Varint.decode ⟨windowBytes, 1 + (Varint.encode source.size).size⟩ =
+    .ok (0, ⟨windowBytes, 1 + (Varint.encode source.size).size + (Varint.encode 0).size⟩) :=
+    Varint.decode_at_pos 0 (by omega) windowBytes _
+      (by rw [h_wb_sz]; omega)
+      (extract_of_eq_concat windowBytes
+        (ByteArray.mk #[winIndicator] ++ Varint.encode source.size)
+        (Varint.encode 0)
+        (encLenEnc ++ deltaBody)
+        (1 + (Varint.encode source.size).size)
+        (by simp only [windowBytes, bytearray_append_assoc])
+        (by simp only [ByteArray.size_append, h_mk_wi_sz]))
+  -- Step 4: Varint.decode → deltaBody.size (encLen)
+  have h_vd_enc : Varint.decode ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size⟩ =
+    .ok (deltaBody.size, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size⟩) :=
+    Varint.decode_at_pos deltaBody.size h_delta_bound windowBytes _
+      (by rw [h_wb_sz, h_enc_eq]; omega)
+      (extract_of_eq_concat windowBytes
+        (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0)
+        encLenEnc deltaBody
+        (1 + (Varint.encode source.size).size + (Varint.encode 0).size)
+        (by simp only [windowBytes, bytearray_append_assoc])
+        (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz]))
+  -- Step 5: Varint.decode → target.size (targetLen)
+  have h_vd_tgt : Varint.decode ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size⟩ =
+    .ok (target.size, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size⟩) :=
+    Varint.decode_at_pos target.size (by omega) windowBytes _
+      (by rw [h_wb_sz, h_delta_sz, h_tgt_eq]; omega)
+      (extract_of_eq_concat windowBytes
+        (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+          ++ encLenEnc)
+        targetLenEnc
+        (ByteArray.mk #[0x00] ++ dataLenEnc ++ instLenEnc ++ addrLenEnc
+          ++ checksumBytes ++ dataSec ++ instSec ++ addrSec)
+        (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size)
+        (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+        (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz]))
+  -- Step 6: readByte → 0x00 (deltaInd)
+  have h_byte_di : let pos := 1 + (Varint.encode source.size).size + (Varint.encode 0).size +
+      encLenEnc.size + targetLenEnc.size
+    windowBytes[pos]! = (0x00 : UInt8) := by
+    intro pos
+    have h_ext_di := extract_of_eq_concat windowBytes
+      (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+        ++ encLenEnc ++ targetLenEnc)
+      (ByteArray.mk #[0x00])
+      (dataLenEnc ++ instLenEnc ++ addrLenEnc ++ checksumBytes
+        ++ dataSec ++ instSec ++ addrSec)
+      pos
+      (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+      (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz]; rfl)
+    have h_byte := getElem_bang_of_extract windowBytes (ByteArray.mk #[(0x00 : UInt8)]) pos 0
+      (by rw [h_wb_sz]; rw [h_delta_sz]; omega) h_ext_di (by omega)
+    simpa [Nat.add_zero] using h_byte
+  have h_rb_di : (⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size⟩ : Varint.Cursor).readByte =
+    .ok (0x00, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1⟩) := by
+    rw [Encoder.Proofs.readByte_ok (show _ < windowBytes.size from by rw [h_wb_sz]; rw [h_delta_sz]; omega)]
+    rw [h_byte_di]
+  -- Step 7-9: Varint.decode × 3 (dataLen, instLen, addrLen)
+  have h_vd_data : Varint.decode ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1⟩ =
+    .ok (dataSec.size, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size⟩) :=
+    Varint.decode_at_pos dataSec.size (by omega) windowBytes _
+      (by rw [h_wb_sz, h_delta_sz, h_dat_eq]; omega)
+      (extract_of_eq_concat windowBytes
+        (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+          ++ encLenEnc ++ targetLenEnc ++ ByteArray.mk #[0x00])
+        dataLenEnc
+        (instLenEnc ++ addrLenEnc ++ checksumBytes ++ dataSec ++ instSec ++ addrSec)
+        (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+          targetLenEnc.size + 1)
+        (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+        (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz]))
+  have h_vd_inst : Varint.decode ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size⟩ =
+    .ok (instSec.size, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size⟩) :=
+    Varint.decode_at_pos instSec.size (by omega) windowBytes _
+      (by rw [h_wb_sz, h_delta_sz, h_ins_eq]; omega)
+      (extract_of_eq_concat windowBytes
+        (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+          ++ encLenEnc ++ targetLenEnc ++ ByteArray.mk #[0x00] ++ dataLenEnc)
+        instLenEnc
+        (addrLenEnc ++ checksumBytes ++ dataSec ++ instSec ++ addrSec)
+        (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+          targetLenEnc.size + 1 + dataLenEnc.size)
+        (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+        (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz]))
+  have h_vd_addr : Varint.decode ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size⟩ =
+    .ok (addrSec.size, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size⟩) :=
+    Varint.decode_at_pos addrSec.size (by omega) windowBytes _
+      (by rw [h_wb_sz, h_delta_sz, h_adr_eq]; omega)
+      (extract_of_eq_concat windowBytes
+        (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+          ++ encLenEnc ++ targetLenEnc ++ ByteArray.mk #[0x00] ++ dataLenEnc ++ instLenEnc)
+        addrLenEnc
+        (checksumBytes ++ dataSec ++ instSec ++ addrSec)
+        (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+          targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size)
+        (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+        (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz]))
+  -- Step 10: readUInt32BE → checksum
+  have h_u32 : Decoder.readUInt32BE ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size⟩ =
+    .ok (Encoder.adler32 target, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4⟩) := by
+    have h_ext_cksum := extract_of_eq_concat windowBytes
+      (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+        ++ encLenEnc ++ targetLenEnc ++ ByteArray.mk #[0x00] ++ dataLenEnc ++ instLenEnc
+        ++ addrLenEnc)
+      checksumBytes
+      (dataSec ++ instSec ++ addrSec)
+      (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+        targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size)
+      (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+      (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz])
+    exact readUInt32BE_at_pos (Encoder.adler32 target) windowBytes _
+      (by rw [h_wb_sz]; rw [h_delta_sz]; rw [h_cksum_sz]; omega)
+      h_ext_cksum
+  -- Step 11-13: readBytes × 3 (dataSec, instSec, addrSec)
+  have h_rd_data : Varint.Cursor.readBytes ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4⟩
+      dataSec.size =
+    .ok (dataSec, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4 +
+      dataSec.size⟩) := by
+    have h_ext_d := extract_of_eq_concat windowBytes
+      (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+        ++ encLenEnc ++ targetLenEnc ++ ByteArray.mk #[0x00] ++ dataLenEnc ++ instLenEnc
+        ++ addrLenEnc ++ checksumBytes)
+      dataSec
+      (instSec ++ addrSec)
+      (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+        targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4)
+      (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+      (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz, h_cksum_sz])
+    rw [Encoder.Proofs.readBytes_ok (by rw [h_wb_sz]; rw [h_delta_sz]; rw [h_cksum_sz]; omega),
+        h_ext_d]
+  have h_rd_inst : Varint.Cursor.readBytes ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4 +
+      dataSec.size⟩
+      instSec.size =
+    .ok (instSec, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4 +
+      dataSec.size + instSec.size⟩) := by
+    have h_ext_i := extract_of_eq_concat windowBytes
+      (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+        ++ encLenEnc ++ targetLenEnc ++ ByteArray.mk #[0x00] ++ dataLenEnc ++ instLenEnc
+        ++ addrLenEnc ++ checksumBytes ++ dataSec)
+      instSec
+      addrSec
+      (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+        targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4 +
+        dataSec.size)
+      (by simp only [windowBytes, deltaBody, bytearray_append_assoc])
+      (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz, h_cksum_sz])
+    rw [Encoder.Proofs.readBytes_ok (by rw [h_wb_sz]; rw [h_delta_sz]; rw [h_cksum_sz]; omega),
+        h_ext_i]
+  have h_rd_addr : Varint.Cursor.readBytes ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4 +
+      dataSec.size + instSec.size⟩
+      addrSec.size =
+    .ok (addrSec, ⟨windowBytes,
+      1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+      targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4 +
+      dataSec.size + instSec.size + addrSec.size⟩) := by
+    have h_ext_a := extract_of_eq_concat windowBytes
+      (ByteArray.mk #[winIndicator] ++ Varint.encode source.size ++ Varint.encode 0
+        ++ encLenEnc ++ targetLenEnc ++ ByteArray.mk #[0x00] ++ dataLenEnc ++ instLenEnc
+        ++ addrLenEnc ++ checksumBytes ++ dataSec ++ instSec)
+      addrSec
+      ByteArray.empty
+      (1 + (Varint.encode source.size).size + (Varint.encode 0).size + encLenEnc.size +
+        targetLenEnc.size + 1 + dataLenEnc.size + instLenEnc.size + addrLenEnc.size + 4 +
+        dataSec.size + instSec.size)
+      (by simp only [windowBytes, deltaBody, bytearray_append_assoc, bytearray_append_empty])
+      (by simp only [ByteArray.size_append, h_mk_wi_sz, h_mk_00_sz, h_cksum_sz])
+    rw [Encoder.Proofs.readBytes_ok (by rw [h_wb_sz]; rw [h_delta_sz]; rw [h_cksum_sz]; omega),
+        h_ext_a]
+  -- ═══════════════════════════════════════
+  -- Main chain: unfold parseWindow and rewrite with all steps
+  -- ═══════════════════════════════════════
+  simp only [Decoder.parseWindow,
+    bind, Except.bind, pure, Except.pure,
+    h_rb0, hf1, hf2, hf3, hf4,
+    h_vd_src, h_vd_off, h_vd_enc, h_vd_tgt,
+    h_rb_di, hf5, hf6,
+    h_vd_data, h_vd_inst, h_vd_addr,
+    h_u32, h_rd_data, h_rd_inst, h_rd_addr,
+    ite_true, ite_false, Bool.false_eq_true]
 
 -- Step 2: Full encode → decode roundtrip
 -- This is the ultimate theorem: the complete VCDIFF encode→decode pipeline
