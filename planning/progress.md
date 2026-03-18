@@ -158,9 +158,8 @@ Prove that executing the generated instructions against the source reproduces th
 - [x] `applyWindow_of_decodeLoop`: decodeLoop success implies real applyWindow success (sorry-free)
 - [x] Decoder made non-partial: `decodeOneStep`, `applyWindowLoop`, `decodeWindows`, `decode`
 - [x] Encoder partially non-partial: `encodeOneInst'`, `encodeWindowLoop`, `encodeWindow`, `serializeWindow`
-- [ ] `encodeWindow_eq_encodeInstList_no_pairs`: real encoder = spec (needs no-pairing condition)
-- [ ] `parseWindow_encoded_sections`: wire format parsing roundtrip (~20 cursor steps)
-- [ ] `encode_decode_roundtrip`: top level (needs above two)
+- [x] `parseWindow_encoded_sections`: wire format parsing roundtrip (~15 cursor steps, sorry-free)
+- [ ] `encode_decode_roundtrip`: top level (needs `encodeWindow_eq_paired`)
 
 Key techniques:
 - `native_decide` for concrete instruction execution examples
