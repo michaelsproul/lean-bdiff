@@ -2666,28 +2666,161 @@ theorem encodeInstList_decodeLoop_roundtrip
       exact ih (execInstSpec inst sourceWindow initTarget) cache' h_rest_valid
 
 -- ============================================================================
--- ## Connection to real encoder: encodeWindow ≈ encodeInstList
+-- ## Connection to real encoder: encodeWindow ≈ encodeInstListPaired
 -- ============================================================================
 
--- The real encoder's encodeWindow (which uses mutable state in a while loop)
--- produces the same sections as encodeInstList when there are no double-opcode
--- pairings. This is the key link between spec and implementation.
---
--- For ADD-only instruction lists (no pairing possible), this is exact.
--- For general lists, double-opcode pairing can combine adjacent ADD+COPY
--- or COPY+ADD into single opcodes. The proof must account for this.
+-- The real encoder's encodeWindow uses accumulator-style loops with double-opcode
+-- pairing (combining adjacent ADD+COPY or COPY+ADD into single opcodes).
+-- We define a functional spec that mirrors this pairing logic exactly,
+-- then prove the accumulator equivalence.
 
--- Simplified version: for instruction lists with no pairable neighbors
-theorem encodeWindow_eq_encodeInstList_no_pairs
-    (insts : Array Encoder.RawInst)
-    (sourceSegLen : Nat)
-    -- no adjacent ADD+COPY or COPY+ADD pairs that could be combined
-    (h_no_pairs : True) :  -- simplified; real condition is more complex
+-- ByteArray.push = append singleton
+private theorem push_eq_append_singleton (ba : ByteArray) (b : UInt8) :
+    ba.push b = ba ++ ByteArray.mk #[b] := by
+  apply ByteArray.ext
+  simp [ByteArray.data_push, ByteArray.data_append]
+
+-- Encode one instruction (with lookahead pairing), returning fresh sections.
+-- Defined as encodeOneInst' with empty accumulators.
+def encodeOneInstPaired (insts : Array Encoder.RawInst) (i : Nat) (sourceSegLen : Nat)
+    (addrCache : AddressCache.State) (targetPos : Nat)
+    : ByteArray × ByteArray × ByteArray × AddressCache.State × Nat × Nat :=
+  Encoder.encodeOneInst' insts i sourceSegLen
+    ByteArray.empty ByteArray.empty ByteArray.empty addrCache targetPos
+
+-- Encode a list of instructions with pairing, returning concatenated fresh sections.
+-- Mirrors Encoder.encodeWindowLoop but in functional style.
+def encodeInstListPaired (insts : Array Encoder.RawInst) (sourceSegLen : Nat)
+    (cache : AddressCache.State) (tp : Nat)
+    : Nat → Nat → ByteArray × ByteArray × ByteArray × AddressCache.State × Nat
+  | 0, _ => (ByteArray.empty, ByteArray.empty, ByteArray.empty, cache, tp)
+  | fuel + 1, i =>
+    if i ≥ insts.size then (ByteArray.empty, ByteArray.empty, ByteArray.empty, cache, tp)
+    else
+      let (d1, i1, a1, c', tp', skip) := encodeOneInstPaired insts i sourceSegLen cache tp
+      let (dR, iR, aR, c'', tp'') := encodeInstListPaired insts sourceSegLen c' tp' fuel (i + skip)
+      (d1 ++ dR, i1 ++ iR, a1 ++ aR, c'', tp'')
+
+-- Per-step: real encoder with accumulators = accumulators + fresh sections.
+-- encodeOneInst' is "accumulator-additive": running with (ds, is, as) equals
+-- running with (empty, empty, empty) and prepending the accumulators.
+set_option maxHeartbeats 800000 in
+theorem encodeOneInst'_eq_paired (insts : Array Encoder.RawInst) (i : Nat)
+    (sourceSegLen : Nat) (ds is as : ByteArray) (cache : AddressCache.State) (tp : Nat) :
+    Encoder.encodeOneInst' insts i sourceSegLen ds is as cache tp =
+    let (d, inst, a, c', tp', skip) := encodeOneInstPaired insts i sourceSegLen cache tp
+    (ds ++ d, is ++ inst, as ++ a, c', tp', skip) := by
+  simp only [encodeOneInstPaired]
+  unfold Encoder.encodeOneInst'
+  by_cases h : i < insts.size
+  · rw [dif_pos h, dif_pos h]; simp only []
+    match h_inst : insts[i] with
+    | .add data =>
+      simp only [h_inst]
+      by_cases h1 : i + 1 < insts.size
+      · simp only [h1, ↓reduceIte]
+        match h_next : insts[i+1]! with
+        | .copy addr sz =>
+          simp only [h_next]
+          match h_ea : cache.encodeAddress addr (sourceSegLen + tp + data.size) with
+          | (mode, addrBytes, cache') =>
+            simp only [h_ea]
+            match h_fac : Encoder.findAddCopyOpcode data.size sz mode with
+            | some opcode =>
+              simp only [h_fac, push_eq_append_singleton, bytearray_empty_append,
+                bytearray_append_empty]
+            | none =>
+              simp only [h_fac, push_eq_append_singleton, bytearray_empty_append,
+                bytearray_append_empty, bytearray_append_assoc]
+              split <;> rfl
+        | .add _ =>
+          simp only [h_next, push_eq_append_singleton, bytearray_empty_append,
+            bytearray_append_empty, bytearray_append_assoc]
+          split <;> rfl
+        | .run _ _ =>
+          simp only [h_next, push_eq_append_singleton, bytearray_empty_append,
+            bytearray_append_empty, bytearray_append_assoc]
+          split <;> rfl
+      · simp only [h1, Bool.false_eq_true, ↓reduceIte, push_eq_append_singleton,
+          bytearray_empty_append, bytearray_append_empty, bytearray_append_assoc]
+        split <;> rfl
+    | .copy addr sz =>
+      simp only [h_inst]
+      match h_ea : cache.encodeAddress addr (sourceSegLen + tp) with
+      | (mode, addrBytes, cache') =>
+        simp only [h_ea]
+        by_cases h1 : sz == 4 && i + 1 < insts.size
+        · simp only [h1, ↓reduceIte, decide_true]
+          match h_next : insts[i+1]! with
+          | .add nextData =>
+            simp only [h_next]
+            by_cases h2 : nextData.size == 1
+            · simp only [h2, ↓reduceIte, decide_true]
+              match h_fca : Encoder.findCopyAddOpcode sz mode nextData.size with
+              | some opcode =>
+                simp only [h_fca, push_eq_append_singleton, bytearray_empty_append,
+                  bytearray_append_empty]
+              | none =>
+                simp only [h_fca, push_eq_append_singleton, bytearray_empty_append,
+                  bytearray_append_empty, bytearray_append_assoc]
+                split <;> rfl
+            · simp only [h2, Bool.false_eq_true, ↓reduceIte, push_eq_append_singleton,
+                bytearray_empty_append, bytearray_append_empty, bytearray_append_assoc]
+              split <;> rfl
+          | .copy _ _ =>
+            simp only [h_next, push_eq_append_singleton, bytearray_empty_append,
+              bytearray_append_empty, bytearray_append_assoc]
+            split <;> rfl
+          | .run _ _ =>
+            simp only [h_next, push_eq_append_singleton, bytearray_empty_append,
+              bytearray_append_empty, bytearray_append_assoc]
+            split <;> rfl
+        · simp only [h1, Bool.false_eq_true, ↓reduceIte, push_eq_append_singleton,
+            bytearray_empty_append, bytearray_append_empty, bytearray_append_assoc]
+          split <;> rfl
+    | .run byte sz =>
+      simp only [h_inst, push_eq_append_singleton, bytearray_empty_append,
+        bytearray_append_empty, bytearray_append_assoc]
+      split <;> rfl
+  · rw [dif_neg h, dif_neg h]; simp [bytearray_append_empty]
+
+-- Loop equivalence: encodeWindowLoop = accumulators + encodeInstListPaired
+theorem encodeWindowLoop_eq_paired (insts : Array Encoder.RawInst) (sourceSegLen : Nat)
+    (ds is as : ByteArray) (cache : AddressCache.State) (tp : Nat)
+    (fuel i : Nat) :
+    Encoder.encodeWindowLoop insts sourceSegLen ds is as cache tp fuel i =
+    let (d, inst, a, _, _) := encodeInstListPaired insts sourceSegLen cache tp fuel i
+    (ds ++ d, is ++ inst, as ++ a) := by
+  induction fuel generalizing ds is as cache tp i with
+  | zero =>
+    simp only [Encoder.encodeWindowLoop, encodeInstListPaired, bytearray_append_empty]
+  | succ n ih =>
+    simp only [Encoder.encodeWindowLoop, encodeInstListPaired]
+    by_cases hge : i ≥ insts.size
+    · simp only [hge, ↓reduceIte, ge_iff_le, bytearray_append_empty]
+    · simp only [hge, ↓reduceIte, ge_iff_le]
+      rw [encodeOneInst'_eq_paired]
+      simp only [encodeOneInstPaired]
+      match h_step : Encoder.encodeOneInst' insts i sourceSegLen
+          ByteArray.empty ByteArray.empty ByteArray.empty cache tp with
+      | (d1, i1, a1, c', tp', skip) =>
+        simp only [h_step]
+        rw [ih]
+        match encodeInstListPaired insts sourceSegLen c' tp' n (i + skip) with
+        | (dR, iR, aR, c'', tp'') =>
+          simp only [bytearray_append_assoc]
+
+-- Top-level: encodeWindow = encodeInstListPaired with initial values
+theorem encodeWindow_eq_paired (insts : Array Encoder.RawInst) (sourceSegLen : Nat) :
     Encoder.encodeWindow insts sourceSegLen =
-    let (d, i, a, _, _) := encodeInstList insts.toList sourceSegLen
-      AddressCache.State.init 0
-    (d, i, a) := by
-  sorry
+    let (d, inst, a, _, _) := encodeInstListPaired insts sourceSegLen
+      AddressCache.State.init 0 insts.size 0
+    (d, inst, a) := by
+  simp only [Encoder.encodeWindow]
+  rw [encodeWindowLoop_eq_paired]
+  simp only [bytearray_empty_append]
+  match encodeInstListPaired insts sourceSegLen AddressCache.State.init 0 insts.size 0 with
+  | (d, inst, a, _, _) => rfl
 
 -- ============================================================================
 -- ## Connection to real decoder: applyWindow ≈ decodeLoop
