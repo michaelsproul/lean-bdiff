@@ -4,6 +4,10 @@ import LeanBdiff.Vcdiff.CodeTable
 import LeanBdiff.Vcdiff.AddressCache
 import LeanBdiff.Vcdiff.Decoder
 import LeanBdiff.Vcdiff.Encoder
-import LeanBdiff.Vcdiff.Proofs.Varint
 import LeanBdiff.Vcdiff.Proofs.AddressCache
 import LeanBdiff.Vcdiff.Proofs.CodeTable
+import LeanBdiff.Vcdiff.Proofs.CursorReloc
+import LeanBdiff.Vcdiff.Proofs.Encoder
+import LeanBdiff.Vcdiff.Proofs.InstructionSemantics
+import LeanBdiff.Vcdiff.Proofs.Varint
+import LeanBdiff.Vcdiff.Proofs.WindowRoundtrip

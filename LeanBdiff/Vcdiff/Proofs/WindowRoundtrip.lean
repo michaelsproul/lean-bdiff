@@ -29,6 +29,7 @@ import Batteries.Data.ByteArray
 import Batteries.Data.Array.Lemmas
 
 set_option linter.style.nativeDecide false
+set_option maxRecDepth 4096
 
 namespace LeanBdiff.Vcdiff.WindowRoundtrip
 
@@ -1158,8 +1159,7 @@ theorem encodeInstList_cons (inst : Encoder.RawInst)
     let (d, i, a, c', p') := encodeOneInst inst srcLen cache pos
     let (dR, iR, aR, c'', p'') := encodeInstList rest srcLen c' p'
     (d ++ dR, i ++ iR, a ++ aR, c'', p'') := by
-  unfold encodeInstList
-  rfl
+  conv_lhs => unfold encodeInstList
 
 -- ============================================================================
 -- ## Section size tracking from encodeOneInst
@@ -1174,14 +1174,15 @@ theorem encodeOneInst_run_instSec_size (b : UInt8) (sz : Nat)
     let (_, instSec, _, _, _) := encodeOneInst (.run b sz) srcLen cache tgtPos
     instSec.size = 1 + (Varint.encode sz).size := by
   rw [encodeOneInst_run_sections]
-  simp [ByteArray.size_append, ByteArray.size]
+  simp only [ByteArray.size_append]
+  rfl
 
 -- Data section size for RUN: always 1
 theorem encodeOneInst_run_dataSec_size (b : UInt8) (sz : Nat)
     (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat) :
     let (dataSec, _, _, _, _) := encodeOneInst (.run b sz) srcLen cache tgtPos
     dataSec.size = 1 := by
-  rw [encodeOneInst_run_sections]
+  rw [encodeOneInst_run_sections]; rfl
 
 -- Addr section for RUN: empty
 theorem encodeOneInst_run_addrSec_empty (b : UInt8) (sz : Nat)
@@ -1239,7 +1240,7 @@ theorem execHalfInst_run_at_pos
   unfold Decoder.execHalfInst
   simp only [bind, Except.bind]
   rw [Encoder.Proofs.readByte_ok hBound]
-  simp only [hByte, repeatByte]
+  simp only [hByte, repeatByte, pure, Except.pure]
 
 -- ============================================================================
 -- ## execHalfInst COPY mode 0 on source window
@@ -1274,7 +1275,8 @@ private theorem ByteArray.extract_cons (a : ByteArray) (start n : Nat)
   have hstart : start < a.size := by omega
   conv_lhs => rw [Array.extract_cons' a.data start n (by rwa [ByteArray.size] at h)]
   congr 1
-  · simp [ByteArray.getElem!_eq_getElem (by exact hstart)]
+  · ext1
+    simp [getElem!_pos a start hstart]
   · rfl
 
 -- copyLoop for source-only copies: all reads from sourceWindow
@@ -1289,11 +1291,8 @@ theorem copyLoop_source_only (sw tgt : ByteArray) (addr i sz : Nat)
     simp only [show addr + i < sw.size from hlt, ↓reduceIte]
     rw [ih (tgt.push sw[addr + i]!) (i + 1) (by omega)]
     -- tgt.push sw[addr+i]! ++ sw.extract (addr+i+1) (addr+i+1+n) = tgt ++ sw.extract (addr+i) (addr+i+n+1)
-    rw [show addr + (i + 1) = addr + i + 1 from by omega,
-        show addr + (i + 1) + n = addr + i + 1 + n from by omega,
-        show addr + i + (n + 1) = addr + i + (n + 1) from rfl]
+    conv_lhs => rw [show addr + i + 1 + n = addr + i + (n + 1) from by omega]
     rw [← ByteArray.extract_cons sw (addr + i) n (by omega)]
-    rw [show addr + i + 1 + n = addr + i + (n + 1) from by omega]
     -- tgt.push x ++ rest = tgt ++ (#[x] ++ rest)
     have hpush : tgt.push sw[addr + i]! = tgt ++ ByteArray.mk #[sw[addr + i]!] := by
       apply ByteArray.ext
@@ -1309,6 +1308,7 @@ theorem execHalfInst_copy_source_at_pos
     (cache : AddressCache.State)
     (here : Nat)
     (hAddr : addr + sz ≤ sourceWindow.size)
+    (hAddrLt : addr < sourceWindow.size + target.size)
     (hAddrDecode : AddressCache.decode 0 here ⟨addrAll, addrPos⟩ cache =
       .ok (addr, ⟨addrAll, addrPos + (Varint.encode addr).size⟩, cache.update addr)) :
     Decoder.execHalfInst ⟨.copy 0, 0⟩ sz sourceWindow target
@@ -1318,7 +1318,7 @@ theorem execHalfInst_copy_source_at_pos
          ⟨addrAll, addrPos + (Varint.encode addr).size⟩,
          cache.update addr) := by
   unfold Decoder.execHalfInst
-  simp only [bind, Except.bind]
+  simp only [bind, Except.bind, show UInt8.toNat 0 = 0 from rfl]
   rw [hAddrDecode]
   simp only []
   -- addr < windowSize check: addr < sw.size + target.size
@@ -1364,8 +1364,8 @@ theorem decodeOneStep_run_in_concat
   rw [lookup_run_entry]
   conv => simp only []
   -- inst1.size == 0 is true, inst1.type != .noop is true → read varint
-  simp only [show (0 : Nat) == 0 = true from by decide,
-    show (InstType.run != InstType.noop) = true from by decide,
+  simp only [show ((0 : Nat) == 0) = true from by decide,
+    show ((InstType.run != InstType.noop) = true) from by decide,
     Bool.true_and, ↓reduceIte]
   -- Decode varint for size
   rw [hVarint]
@@ -1421,14 +1421,14 @@ theorem decodeOneStep_copy_mode0_in_concat
   have hne : sz ≠ 0 := by omega
   simp only [show (sz == 0) = false from beq_eq_false_iff_ne.mpr hne,
     Bool.false_and,
-    show (InstType.copy 0 != InstType.noop) = true from by decide,
+    show ((InstType.copy 0 != InstType.noop) = true) from by decide,
     show (InstType.noop != InstType.noop) = false from by decide,
     show ((0 : Nat) == 0 && false) = false from by decide,
     ↓reduceIte]
   -- Execute COPY using execHalfInst_copy_source_at_pos
   rw [execHalfInst_copy_source_at_pos addr sz sourceWindow target
       ⟨dataAll, dataPos⟩ addrAll addrPos cache
-      (sourceWindow.size + target.size) hAddr hAddrDecode]
+      (sourceWindow.size + target.size) hAddr (by omega) hAddrDecode]
 
 -- ============================================================================
 -- ## Target size tracking through execInstSpec
@@ -1578,7 +1578,7 @@ private theorem readByte_data (c : Varint.Cursor) (b : UInt8) (c' : Varint.Curso
     (h : c.readByte = .ok (b, c')) : c'.data = c.data := by
   unfold Varint.Cursor.readByte at h
   by_cases hp : c.pos < c.data.size
-  · simp [hp] at h; exact h.2.1
+  · simp [hp] at h; rw [← h.2]
   · simp [hp] at h
 
 -- readBytes preserves .data
@@ -1586,7 +1586,7 @@ private theorem readBytes_data (c : Varint.Cursor) (n : Nat) (bs : ByteArray) (c
     (h : c.readBytes n = .ok (bs, c')) : c'.data = c.data := by
   unfold Varint.Cursor.readBytes at h
   by_cases hp : c.pos + n ≤ c.data.size
-  · simp [hp] at h; exact h.2.1
+  · simp [hp] at h; rw [← h.2]
   · simp [hp] at h
 
 -- AddressCache.decode preserves addr cursor .data
@@ -1604,7 +1604,7 @@ private theorem addr_decode_data (mode here : Nat) (ac : Varint.Cursor)
       rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
       have hcd := CursorReloc.varint_decodeLoop_data ac.data ac.pos 0 5 v c
         (by simp only [Varint.decode] at hv; exact hv)
-      rw [← h.2.1.1]; exact hcd
+      rw [← h.2.1]; exact hcd
     | .error e => rw [hv] at h; simp at h
   · simp only [hm0, Bool.false_eq_true, ↓reduceIte] at h
     by_cases hm1 : (mode == 1) = true
@@ -1614,7 +1614,7 @@ private theorem addr_decode_data (mode here : Nat) (ac : Varint.Cursor)
         rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
         have hcd := CursorReloc.varint_decodeLoop_data ac.data ac.pos 0 5 v c
           (by simp only [Varint.decode] at hv; exact hv)
-        rw [← h.2.1.1]; exact hcd
+        rw [← h.2.1]; exact hcd
       | .error e => rw [hv] at h; simp at h
     · simp only [hm1, Bool.false_eq_true, ↓reduceIte] at h
       by_cases hmn : mode < 2 + cache.sNear
@@ -1624,7 +1624,7 @@ private theorem addr_decode_data (mode here : Nat) (ac : Varint.Cursor)
           rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
           have hcd := CursorReloc.varint_decodeLoop_data ac.data ac.pos 0 5 v c
             (by simp only [Varint.decode] at hv; exact hv)
-          rw [← h.2.1.1]; exact hcd
+          rw [← h.2.1]; exact hcd
         | .error e => rw [hv] at h; simp at h
       · simp only [if_neg hmn] at h
         by_cases hms : mode < 2 + cache.sNear + cache.sSame
@@ -1633,7 +1633,7 @@ private theorem addr_decode_data (mode here : Nat) (ac : Varint.Cursor)
           match hrb : ac.readByte with
           | .ok (b, c) =>
             rw [hrb] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
-            rw [← h.2.1.1]; exact readByte_data ac b c hrb
+            rw [← h.2.1]; exact readByte_data ac b c hrb
           | .error e => rw [hrb] at h; simp at h
         · simp only [if_neg hms] at h; simp at h
 
@@ -1650,7 +1650,7 @@ private theorem execHalfInst_data_preserved
   cases ty with
   | noop =>
     simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
-    exact ⟨h.2.1.1 ▸ rfl, h.2.2.1.1 ▸ rfl⟩
+    exact ⟨h.2.1 ▸ rfl, h.2.2.1 ▸ rfl⟩
   | add =>
     simp only [bind, Except.bind] at h
     by_cases hb : (!dc.hasBytes instSize) = true
@@ -1659,14 +1659,14 @@ private theorem execHalfInst_data_preserved
       match hrb : dc.readBytes instSize with
       | .ok (bs, c) =>
         rw [hrb] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
-        exact ⟨h.2.1.1 ▸ readBytes_data dc instSize bs c hrb, h.2.2.1.1 ▸ rfl⟩
+        exact ⟨h.2.1 ▸ readBytes_data dc instSize bs c hrb, h.2.2.1 ▸ rfl⟩
       | .error e => rw [hrb] at h; simp at h
   | run =>
     simp only [bind, Except.bind] at h
     match hrb : dc.readByte with
     | .ok (b, c) =>
       rw [hrb] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
-      exact ⟨h.2.1.1 ▸ readByte_data dc b c hrb, h.2.2.1.1 ▸ rfl⟩
+      exact ⟨h.2.1 ▸ readByte_data dc b c hrb, h.2.2.1 ▸ rfl⟩
     | .error e => rw [hrb] at h; simp at h
   | copy mode =>
     simp only [bind, Except.bind] at h
@@ -1677,7 +1677,7 @@ private theorem execHalfInst_data_preserved
       · simp only [ge_iff_le, if_pos hbounds] at h; simp at h
       · simp only [ge_iff_le, if_neg hbounds, pure, Except.pure,
             Except.ok.injEq, Prod.mk.injEq] at h
-        exact ⟨h.2.1.1 ▸ rfl, h.2.2.1.1 ▸ addr_decode_data mode.toNat here ac cache addr_val ac_new cache_new had⟩
+        exact ⟨h.2.1 ▸ rfl, h.2.2.1 ▸ addr_decode_data mode.toNat here ac cache addr_val ac_new cache_new had⟩
     | .error e => rw [had] at h; simp at h
 
 -- decodeOneStep preserves all cursor .data fields
@@ -1733,7 +1733,7 @@ private theorem decodeOneStep_data_preserved
             exact execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec1
           · simp only [hn, Bool.false_eq_true, ↓reduceIte, pure, Except.pure,
                 Except.ok.injEq, Prod.mk.injEq] at hexec1
-            exact ⟨hexec1.2.1.1 ▸ rfl, hexec1.2.2.1.1 ▸ rfl⟩
+            exact ⟨hexec1.2.1 ▸ rfl, hexec1.2.2.1 ▸ rfl⟩
         -- inst2 size resolution
         match hsz2 :
           (if (CodeTable.lookup opcode).inst2.size == 0 && (CodeTable.lookup opcode).inst2.type != .noop then do
@@ -1774,8 +1774,8 @@ private theorem decodeOneStep_data_preserved
                 exact ⟨a.trans hdc1, b.trans hac1⟩
               · simp only [hn, Bool.false_eq_true, ↓reduceIte, pure, Except.pure,
                     Except.ok.injEq, Prod.mk.injEq] at hexec2
-                exact ⟨hexec2.2.1.1 ▸ hdc1, hexec2.2.2.1.1 ▸ hac1⟩
-            exact ⟨h.2.1.1 ▸ hic3, h.2.2.1.1 ▸ hdc2, h.2.2.2.1.1 ▸ hac2⟩
+                exact ⟨hexec2.2.1 ▸ hdc1, hexec2.2.2.1 ▸ hac1⟩
+            exact ⟨h.2.1 ▸ hic3, h.2.2.1 ▸ hdc2, h.2.2.2.1 ▸ hac2⟩
 
 -- ============================================================================
 -- ## Cursor relocation for decodeOneStep and decodeLoop
@@ -1803,6 +1803,7 @@ theorem decodeOneStep_reloc_ok
   have hki : ki < sfx_i.size := by
     by_contra hki
     simp only [Varint.Cursor.readByte, show ¬(ki < sfx_i.size) from hki, ↓reduceIte] at h
+    simp at h
   rw [show Varint.Cursor.readByte ⟨sfx_i, ki⟩ = .ok (sfx_i[ki]!, ⟨sfx_i, ki + 1⟩)
     from by unfold Varint.Cursor.readByte; simp [hki]] at h
   rw [CursorReloc.readByte_reloc pfx_i sfx_i ki hki]
@@ -1820,14 +1821,14 @@ theorem decodeOneStep_reloc_ok
       have hc1d : c1.data = sfx_i :=
         CursorReloc.varint_decodeLoop_data sfx_i (ki + 1) 0 5 sz1 c1
           (by simp only [Varint.decode] at hv1; exact hv1)
-      obtain ⟨_, c1p⟩ := c1; simp only [Varint.Cursor.data] at hc1d; subst hc1d
+      obtain ⟨c1d, c1p⟩ := c1; simp only [Varint.Cursor.data] at hc1d; symm at hc1d; subst hc1d
       rw [show pfx_i.size + ki + 1 = pfx_i.size + (ki + 1) from by omega]
       rw [CursorReloc.varint_decode_reloc_ok pfx_i sfx_i (ki + 1) sz1 c1p hv1]
       simp only [pure, Except.pure, Except.bind] at h ⊢
       -- Step 3: exec inst1
       -- Must be non-noop (since we entered varint branch with inst1.type != .noop)
       have h_noop1 : (entry.inst1.type != .noop) = true := by
-        have := Bool.and_eq_true.mp h_sz1_cond; exact this.2
+        have := (Bool.and_eq_true .. ▸ h_sz1_cond); exact this.2
       simp only [h_noop1, ↓reduceIte, Except.bind] at h ⊢
       match hexec1 : Decoder.execHalfInst entry.inst1 sz1 sourceWindow target
           ⟨sfx_d, kd⟩ ⟨sfx_a, ka⟩ cache (sourceWindow.size + target.size) with
@@ -1835,8 +1836,8 @@ theorem decodeOneStep_reloc_ok
       | .ok (tgt1, dc1, ac1, cache1) =>
         rw [hexec1] at h; simp only [Except.bind] at h
         have ⟨hdc1, hac1⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec1
-        obtain ⟨_, dp1⟩ := dc1; simp only [Varint.Cursor.data] at hdc1; subst hdc1
-        obtain ⟨_, ap1⟩ := ac1; simp only [Varint.Cursor.data] at hac1; subst hac1
+        obtain ⟨dc1d, dp1⟩ := dc1; simp only [Varint.Cursor.data] at hdc1; symm at hdc1; subst hdc1
+        obtain ⟨ac1d, ap1⟩ := ac1; simp only [Varint.Cursor.data] at hac1; symm at hac1; subst hac1
         rw [CursorReloc.execHalfInst_reloc_ok entry.inst1 sz1 sourceWindow target
             pfx_d sfx_d kd pfx_a sfx_a ka cache (sourceWindow.size + target.size)
             tgt1 dp1 ap1 cache1 hexec1]
@@ -1852,12 +1853,12 @@ theorem decodeOneStep_reloc_ok
             have hc2d : c2.data = sfx_i :=
               CursorReloc.varint_decodeLoop_data sfx_i c1p 0 5 sz2 c2
                 (by simp only [Varint.decode] at hv2; exact hv2)
-            obtain ⟨_, c2p⟩ := c2; simp only [Varint.Cursor.data] at hc2d; subst hc2d
+            obtain ⟨c2d, c2p⟩ := c2; simp only [Varint.Cursor.data] at hc2d; symm at hc2d; subst hc2d
             rw [CursorReloc.varint_decode_reloc_ok pfx_i sfx_i c1p sz2 c2p hv2]
             simp only [pure, Except.pure, Except.bind] at h ⊢
             -- Step 5: exec inst2
             have h_noop2 : (entry.inst2.type != .noop) = true := by
-              have := Bool.and_eq_true.mp h_sz2_cond; exact this.2
+              have := (Bool.and_eq_true .. ▸ h_sz2_cond); exact this.2
             simp only [h_noop2, ↓reduceIte, Except.bind] at h ⊢
             match hexec2 : Decoder.execHalfInst entry.inst2 sz2 sourceWindow tgt1
                 ⟨sfx_d, dp1⟩ ⟨sfx_a, ap1⟩ cache1 (sourceWindow.size + tgt1.size) with
@@ -1865,8 +1866,8 @@ theorem decodeOneStep_reloc_ok
             | .ok (tgt2, dc2, ac2, cache2) =>
               rw [hexec2] at h
               have ⟨hdc2, hac2⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec2
-              obtain ⟨_, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; subst hdc2
-              obtain ⟨_, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; subst hac2
+              obtain ⟨dc2d, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; symm at hdc2; subst hdc2
+              obtain ⟨ac2d, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; symm at hac2; subst hac2
               rw [CursorReloc.execHalfInst_reloc_ok entry.inst2 sz2 sourceWindow tgt1
                   pfx_d sfx_d dp1 pfx_a sfx_a ap1 cache1 (sourceWindow.size + tgt1.size)
                   tgt2 dp2 ap2 cache2 hexec2]
@@ -1885,8 +1886,8 @@ theorem decodeOneStep_reloc_ok
             | .ok (tgt2, dc2, ac2, cache2) =>
               rw [hexec2] at h
               have ⟨hdc2, hac2⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec2
-              obtain ⟨_, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; subst hdc2
-              obtain ⟨_, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; subst hac2
+              obtain ⟨dc2d, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; symm at hdc2; subst hdc2
+              obtain ⟨ac2d, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; symm at hac2; subst hac2
               rw [CursorReloc.execHalfInst_reloc_ok entry.inst2 entry.inst2.size sourceWindow tgt1
                   pfx_d sfx_d dp1 pfx_a sfx_a ap1 cache1 (sourceWindow.size + tgt1.size)
                   tgt2 dp2 ap2 cache2 hexec2]
@@ -1908,8 +1909,8 @@ theorem decodeOneStep_reloc_ok
       | .ok (tgt1, dc1, ac1, cache1) =>
         rw [hexec1] at h; simp only [Except.bind] at h
         have ⟨hdc1, hac1⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec1
-        obtain ⟨_, dp1⟩ := dc1; simp only [Varint.Cursor.data] at hdc1; subst hdc1
-        obtain ⟨_, ap1⟩ := ac1; simp only [Varint.Cursor.data] at hac1; subst hac1
+        obtain ⟨dc1d, dp1⟩ := dc1; simp only [Varint.Cursor.data] at hdc1; symm at hdc1; subst hdc1
+        obtain ⟨ac1d, ap1⟩ := ac1; simp only [Varint.Cursor.data] at hac1; symm at hac1; subst hac1
         rw [CursorReloc.execHalfInst_reloc_ok entry.inst1 entry.inst1.size sourceWindow target
             pfx_d sfx_d kd pfx_a sfx_a ka cache (sourceWindow.size + target.size)
             tgt1 dp1 ap1 cache1 hexec1]
@@ -1925,13 +1926,13 @@ theorem decodeOneStep_reloc_ok
             have hc2d : c2.data = sfx_i :=
               CursorReloc.varint_decodeLoop_data sfx_i (ki + 1) 0 5 sz2 c2
                 (by simp only [Varint.decode] at hv2; exact hv2)
-            obtain ⟨_, c2p⟩ := c2; simp only [Varint.Cursor.data] at hc2d; subst hc2d
+            obtain ⟨c2d, c2p⟩ := c2; simp only [Varint.Cursor.data] at hc2d; symm at hc2d; subst hc2d
             rw [show pfx_i.size + ki + 1 = pfx_i.size + (ki + 1) from by omega]
             rw [CursorReloc.varint_decode_reloc_ok pfx_i sfx_i (ki + 1) sz2 c2p hv2]
             simp only [pure, Except.pure, Except.bind] at h ⊢
             -- Step 5: exec inst2
             have h_noop2 : (entry.inst2.type != .noop) = true := by
-              have := Bool.and_eq_true.mp h_sz2_cond; exact this.2
+              have := (Bool.and_eq_true .. ▸ h_sz2_cond); exact this.2
             simp only [h_noop2, ↓reduceIte, Except.bind] at h ⊢
             match hexec2 : Decoder.execHalfInst entry.inst2 sz2 sourceWindow tgt1
                 ⟨sfx_d, dp1⟩ ⟨sfx_a, ap1⟩ cache1 (sourceWindow.size + tgt1.size) with
@@ -1939,8 +1940,8 @@ theorem decodeOneStep_reloc_ok
             | .ok (tgt2, dc2, ac2, cache2) =>
               rw [hexec2] at h
               have ⟨hdc2, hac2⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec2
-              obtain ⟨_, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; subst hdc2
-              obtain ⟨_, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; subst hac2
+              obtain ⟨dc2d, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; symm at hdc2; subst hdc2
+              obtain ⟨ac2d, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; symm at hac2; subst hac2
               rw [CursorReloc.execHalfInst_reloc_ok entry.inst2 sz2 sourceWindow tgt1
                   pfx_d sfx_d dp1 pfx_a sfx_a ap1 cache1 (sourceWindow.size + tgt1.size)
                   tgt2 dp2 ap2 cache2 hexec2]
@@ -1958,8 +1959,8 @@ theorem decodeOneStep_reloc_ok
             | .ok (tgt2, dc2, ac2, cache2) =>
               rw [hexec2] at h
               have ⟨hdc2, hac2⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec2
-              obtain ⟨_, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; subst hdc2
-              obtain ⟨_, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; subst hac2
+              obtain ⟨dc2d, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; symm at hdc2; subst hdc2
+              obtain ⟨ac2d, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; symm at hac2; subst hac2
               rw [CursorReloc.execHalfInst_reloc_ok entry.inst2 entry.inst2.size sourceWindow tgt1
                   pfx_d sfx_d dp1 pfx_a sfx_a ap1 cache1 (sourceWindow.size + tgt1.size)
                   tgt2 dp2 ap2 cache2 hexec2]
@@ -1983,13 +1984,13 @@ theorem decodeOneStep_reloc_ok
           have hc2d : c2.data = sfx_i :=
             CursorReloc.varint_decodeLoop_data sfx_i (ki + 1) 0 5 sz2 c2
               (by simp only [Varint.decode] at hv2; exact hv2)
-          obtain ⟨_, c2p⟩ := c2; simp only [Varint.Cursor.data] at hc2d; subst hc2d
+          obtain ⟨c2d, c2p⟩ := c2; simp only [Varint.Cursor.data] at hc2d; symm at hc2d; subst hc2d
           rw [show pfx_i.size + ki + 1 = pfx_i.size + (ki + 1) from by omega]
           rw [CursorReloc.varint_decode_reloc_ok pfx_i sfx_i (ki + 1) sz2 c2p hv2]
           simp only [pure, Except.pure, Except.bind] at h ⊢
           -- Step 5: exec inst2
           have h_noop2 : (entry.inst2.type != .noop) = true := by
-            have := Bool.and_eq_true.mp h_sz2_cond; exact this.2
+            have := (Bool.and_eq_true .. ▸ h_sz2_cond); exact this.2
           simp only [h_noop2, ↓reduceIte, Except.bind] at h ⊢
           match hexec2 : Decoder.execHalfInst entry.inst2 sz2 sourceWindow target
               ⟨sfx_d, kd⟩ ⟨sfx_a, ka⟩ cache (sourceWindow.size + target.size) with
@@ -1997,8 +1998,8 @@ theorem decodeOneStep_reloc_ok
           | .ok (tgt2, dc2, ac2, cache2) =>
             rw [hexec2] at h
             have ⟨hdc2, hac2⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec2
-            obtain ⟨_, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; subst hdc2
-            obtain ⟨_, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; subst hac2
+            obtain ⟨dc2d, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; symm at hdc2; subst hdc2
+            obtain ⟨ac2d, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; symm at hac2; subst hac2
             rw [CursorReloc.execHalfInst_reloc_ok entry.inst2 sz2 sourceWindow target
                 pfx_d sfx_d kd pfx_a sfx_a ka cache (sourceWindow.size + target.size)
                 tgt2 dp2 ap2 cache2 hexec2]
@@ -2016,8 +2017,8 @@ theorem decodeOneStep_reloc_ok
           | .ok (tgt2, dc2, ac2, cache2) =>
             rw [hexec2] at h
             have ⟨hdc2, hac2⟩ := execHalfInst_data_preserved _ _ _ _ _ _ _ _ _ _ _ _ hexec2
-            obtain ⟨_, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; subst hdc2
-            obtain ⟨_, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; subst hac2
+            obtain ⟨dc2d, dp2⟩ := dc2; simp only [Varint.Cursor.data] at hdc2; symm at hdc2; subst hdc2
+            obtain ⟨ac2d, ap2⟩ := ac2; simp only [Varint.Cursor.data] at hac2; symm at hac2; subst hac2
             rw [CursorReloc.execHalfInst_reloc_ok entry.inst2 entry.inst2.size sourceWindow target
                 pfx_d sfx_d kd pfx_a sfx_a ka cache (sourceWindow.size + target.size)
                 tgt2 dp2 ap2 cache2 hexec2]
@@ -2079,9 +2080,9 @@ theorem decodeLoop_reloc_ok_general
         rw [hs] at h
         -- Get data preservation for intermediate cursors
         have ⟨hid, hdd, had⟩ := decodeOneStep_data_preserved _ _ _ _ _ _ _ _ _ _ _ hs
-        obtain ⟨_, ip_mid⟩ := ic_mid; simp only [Varint.Cursor.data] at hid; subst hid
-        obtain ⟨_, dp_mid⟩ := dc_mid; simp only [Varint.Cursor.data] at hdd; subst hdd
-        obtain ⟨_, ap_mid⟩ := ac_mid; simp only [Varint.Cursor.data] at had; subst had
+        obtain ⟨icd, ip_mid⟩ := ic_mid; simp only [Varint.Cursor.data] at hid; symm at hid; subst hid
+        obtain ⟨dcd, dp_mid⟩ := dc_mid; simp only [Varint.Cursor.data] at hdd; symm at hdd; subst hdd
+        obtain ⟨acd, ap_mid⟩ := ac_mid; simp only [Varint.Cursor.data] at had; symm at had; subst had
         -- Apply relocation to decodeOneStep
         rw [decodeOneStep_reloc_ok sourceWindow target
             pfx_i sfx_i pfx_d sfx_d pfx_a sfx_a
@@ -2159,7 +2160,7 @@ private theorem addr_decode_suffix_ok (mode here : Nat) (data extra : ByteArray)
       rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
       have hcd := CursorReloc.varint_decodeLoop_data data k 0 5 v c
         (by simp only [Varint.decode] at hv; exact hv)
-      obtain ⟨_, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; subst hcd
+      obtain ⟨cd, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; symm at hcd; subst hcd
       rw [varint_decode_suffix_ok data extra k v cp hv]
       simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
       exact ⟨h.1, ⟨trivial, h.2.1.2⟩, h.2.2⟩
@@ -2172,7 +2173,7 @@ private theorem addr_decode_suffix_ok (mode here : Nat) (data extra : ByteArray)
         rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
         have hcd := CursorReloc.varint_decodeLoop_data data k 0 5 v c
           (by simp only [Varint.decode] at hv; exact hv)
-        obtain ⟨_, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; subst hcd
+        obtain ⟨cd, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; symm at hcd; subst hcd
         rw [varint_decode_suffix_ok data extra k v cp hv]
         simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
         exact ⟨h.1, ⟨trivial, h.2.1.2⟩, h.2.2⟩
@@ -2185,7 +2186,7 @@ private theorem addr_decode_suffix_ok (mode here : Nat) (data extra : ByteArray)
           rw [hv] at h; simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq] at h
           have hcd := CursorReloc.varint_decodeLoop_data data k 0 5 v c
             (by simp only [Varint.decode] at hv; exact hv)
-          obtain ⟨_, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; subst hcd
+          obtain ⟨cd, cp⟩ := c; simp only [Varint.Cursor.data] at hcd; symm at hcd; subst hcd
           rw [varint_decode_suffix_ok data extra k v cp hv]
           simp only [pure, Except.pure, Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h ⊢
           exact ⟨h.1, ⟨trivial, h.2.1.2⟩, h.2.2⟩
@@ -2567,7 +2568,7 @@ theorem encodeInstList_decodeLoop_roundtrip
         have hne : sz ≠ 0 := by omega
         simp only [show (sz == 0) = false from beq_eq_false_iff_ne.mpr hne,
           Bool.false_and,
-          show (InstType.copy mode.toUInt8 != InstType.noop) = true from by decide,
+          show ((InstType.copy mode.toUInt8 != InstType.noop) = true) from by decide,
           show (InstType.noop != InstType.noop) = false from by decide,
           show ((0 : Nat) == 0 && false) = false from by decide,
           ↓reduceIte]
@@ -3365,8 +3366,8 @@ theorem encode_decode_roundtrip
     applyWindow_of_decodeLoop win source target source
       (by -- h_seg: source = sourceSegment computation
         rw [h_wi]
-        simp only [show (WinIndicator.source ||| WinIndicator.adler32) &&&
-          WinIndicator.source != 0 = true from by native_decide, ↓reduceIte]
+        simp only [show (((WinIndicator.source ||| WinIndicator.adler32) &&&
+          WinIndicator.source) != 0) = true from by native_decide, ↓reduceIte]
         rw [h_so, h_sl, Nat.zero_add]
         exact (bytearray_extract_full source).symm)
       ⟨instSec, instSec.size⟩ ⟨dataSec, dataSec.size⟩ ⟨addrSec, addrSec.size⟩ cache
