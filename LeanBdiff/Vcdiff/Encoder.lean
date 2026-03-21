@@ -108,7 +108,7 @@ def extendMatch (source : ByteArray) (sourcePos : Nat)
   { sourcePos := sourcePos - back, targetPos := targetPos - back, length := len + back }
 
 /-- Find the best match at a given target position. Returns none if no match >= MIN_MATCH. -/
-partial def findBestMatch (idx : SourceIndex) (target : ByteArray) (targetPos : Nat)
+def findBestMatch (idx : SourceIndex) (target : ByteArray) (targetPos : Nat)
     (maxChain : Nat := 8) : Option Match := Id.run do
   if targetPos + hashWindow > target.size then
     return none
@@ -172,13 +172,14 @@ def lazyThreshold : Nat := 2
 /-- Scan the target and produce a sequence of raw instructions.
     Uses lazy matching: after finding a match, checks if a better match
     exists at the next position. -/
-partial def generateInstructions (idx : SourceIndex) (target : ByteArray)
+def generateInstructions (idx : SourceIndex) (target : ByteArray)
     : Array RawInst := Id.run do
   let mut insts : Array RawInst := #[]
   let mut pos := 0
   let mut pendingAdd := ByteArray.empty
 
-  while pos < target.size do
+  for _ in [:target.size] do
+    if pos >= target.size then break
     match findBestMatch idx target pos with
     | some m =>
       -- Lazy matching: check if next position has a better match
@@ -389,7 +390,7 @@ def serializeWindow (source target : ByteArray)
   window
 
 /-- Encode a complete VCDIFF delta from source and target ByteArrays. -/
-partial def encode (source : ByteArray) (target : ByteArray) : ByteArray :=
+def encode (source : ByteArray) (target : ByteArray) : ByteArray :=
   let idx := buildSourceIndex source
   let insts := generateInstructions idx target
   let (dataSection, instSection, addrSection) := encodeWindow insts source.size

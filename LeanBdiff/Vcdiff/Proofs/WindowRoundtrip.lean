@@ -3486,6 +3486,128 @@ theorem encode_decode_roundtrip
       (by left; rw [h_ad, encoder_decoder_adler32_eq])⟩
 
 -- ============================================================================
+-- ## Encoder-integrated roundtrip
+-- ============================================================================
+
+-- Now that Encoder.encode is non-partial, we can state roundtrip theorems
+-- that reference the encoder's actual computed sections. This ties the full
+-- pipeline (buildSourceIndex → generateInstructions → encodeWindow →
+-- serializeWindow → parseWindow → applyWindow) together in a single theorem.
+--
+-- The h_loop hypothesis still requires that the encoder's sections decode
+-- correctly. Eliminating it entirely would require proving that
+-- generateInstructions always produces a ValidInstList — a future Phase G.
+
+theorem encode_window_roundtrip
+    (source target : ByteArray)
+    (h_source_pos : source.size > 0)
+    (h_source_bound : source.size < 2 ^ 31)
+    (h_target_bound : target.size < 2 ^ 31)
+    (h_data_bound :
+      (Encoder.encodeWindow
+        (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+        source.size).1.size < 2 ^ 31)
+    (h_inst_bound :
+      (Encoder.encodeWindow
+        (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+        source.size).2.1.size < 2 ^ 31)
+    (h_addr_bound :
+      (Encoder.encodeWindow
+        (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+        source.size).2.2.size < 2 ^ 31)
+    (h_loop :
+      let secs := Encoder.encodeWindow
+        (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+        source.size
+      ∃ cache,
+        decodeLoop secs.2.1.size source ByteArray.empty
+          ⟨secs.2.1, 0⟩ ⟨secs.1, 0⟩ ⟨secs.2.2, 0⟩ AddressCache.State.init =
+          .ok (target, ⟨secs.2.1, secs.2.1.size⟩, ⟨secs.1, secs.1.size⟩,
+               ⟨secs.2.2, secs.2.2.size⟩, cache)) :
+    let secs := Encoder.encodeWindow
+      (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+      source.size
+    ∃ win rest,
+      Decoder.parseWindow
+        ⟨Encoder.serializeWindow source target secs.1 secs.2.1 secs.2.2, 0⟩ =
+        .ok (win, rest) ∧
+      Decoder.applyWindow win source = .ok target := by
+  exact encode_decode_roundtrip source target _ _ _
+    h_source_pos h_source_bound h_target_bound
+    h_data_bound h_inst_bound h_addr_bound h_loop
+
+-- Indexing into left side of a ByteArray append
+private theorem ba_getElem_bang_left (a b : ByteArray) (i : Nat) (hi : i < a.size) :
+    (a ++ b)[i]! = a[i]! := by
+  have hab : i < (a ++ b).size := by rw [ByteArray.size_append]; omega
+  simp only [getElem!_pos, hab, hi]
+  exact ByteArray.get_append_left hi
+
+-- Extract from left side of a ByteArray append
+private theorem ba_extract_left (a b : ByteArray) (i j : Nat) (hj : j ≤ a.size) :
+    (a ++ b).extract i j = a.extract i j := by
+  ext1
+  rw [ByteArray.data_extract, ByteArray.data_extract, ByteArray.data_append]
+  exact Array.extract_append_of_stop_le_size_left (by rwa [ByteArray.size] at hj)
+
+-- parseHeader succeeds on any ByteArray of the form hdr5 ++ rest where
+-- hdr5 = [0xD6, 0xC3, 0xC4, 0x00, 0x00].
+private def hdr5 : ByteArray := ByteArray.mk #[0xD6, 0xC3, 0xC4, 0x00, 0x00]
+private theorem hdr5_size : hdr5.size = 5 := rfl
+
+set_option maxHeartbeats 400000 in
+private theorem parseHeader_hdr5_append (w : ByteArray) :
+    Decoder.parseHeader ⟨hdr5 ++ w, 0⟩ =
+      .ok (⟨0x00, none⟩, ⟨hdr5 ++ w, 5⟩) := by
+  have hsz : 5 ≤ (hdr5 ++ w).size := by
+    rw [ByteArray.size_append, hdr5_size]; omega
+  have h_extract : (hdr5 ++ w).extract 0 3 = magic := by
+    rw [ba_extract_left _ _ _ _ (by rw [hdr5_size]; omega)]
+    show hdr5.extract 0 3 = magic; unfold hdr5 magic; rfl
+  have h3 : (hdr5 ++ w)[3]! = 0x00 := by
+    rw [ba_getElem_bang_left _ _ _ (by rw [hdr5_size]; omega)]; rfl
+  have h4 : (hdr5 ++ w)[4]! = 0x00 := by
+    rw [ba_getElem_bang_left _ _ _ (by rw [hdr5_size]; omega)]; rfl
+  unfold Decoder.parseHeader
+  simp only [bind, Except.bind]
+  have h_hasBytes : Varint.Cursor.hasBytes ⟨hdr5 ++ w, 0⟩ 5 = true := by
+    unfold Varint.Cursor.hasBytes
+    simp only [Nat.zero_add, decide_eq_true_eq]; exact hsz
+  simp only [h_hasBytes, Bool.not_true, Bool.false_eq_true, ↓reduceIte]
+  rw [Encoder.Proofs.readBytes_ok (show 0 + 3 ≤ (hdr5 ++ w).size by omega)]
+  simp only [Except.bind, Nat.zero_add, h_extract, bne_self_eq_false,
+    Bool.false_eq_true, ↓reduceIte]
+  rw [Encoder.Proofs.readByte_ok (show 3 < (hdr5 ++ w).size by omega)]
+  simp only [Except.bind, h3]
+  have : ((0x00 : UInt8) != 0) = false := by native_decide
+  simp only [this, Bool.false_eq_true, ↓reduceIte]
+  rw [Encoder.Proofs.readByte_ok (show 4 < (hdr5 ++ w).size by omega)]
+  simp only [Except.bind, h4]
+  have hr : ((0x00 : UInt8) &&& HdrIndicator.reserved != 0) = false := by native_decide
+  have hs : ((0x00 : UInt8) &&& HdrIndicator.secondary != 0) = false := by native_decide
+  have hc : ((0x00 : UInt8) &&& HdrIndicator.codeTable != 0) = false := by native_decide
+  have ha : ((0x00 : UInt8) &&& HdrIndicator.appData != 0) = false := by native_decide
+  simp only [hr, Bool.false_eq_true, ↓reduceIte]
+  simp only [hs, Bool.false_eq_true, ↓reduceIte]
+  simp only [hc, Bool.false_eq_true, ↓reduceIte]
+  simp only [ha, Bool.false_eq_true, ↓reduceIte]
+  rfl
+
+-- parseHeader succeeds on Encoder.encode output, positioning the cursor
+-- at the start of the window bytes.
+theorem parseHeader_encode_ok (source target : ByteArray) :
+    Decoder.parseHeader ⟨Encoder.encode source target, 0⟩ =
+      .ok (⟨0x00, none⟩, ⟨Encoder.encode source target, 5⟩) := by
+  have h_eq : Encoder.encode source target = hdr5 ++ (
+    let secs := Encoder.encodeWindow
+      (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+      source.size
+    Encoder.serializeWindow source target secs.1 secs.2.1 secs.2.2) := by
+    unfold Encoder.encode hdr5 magic; ext1; simp [ByteArray.data_append]
+  rw [h_eq]
+  exact parseHeader_hdr5_append _
+
+-- ============================================================================
 -- ## Concrete full roundtrip examples (sanity checks via native_decide)
 -- ============================================================================
 
