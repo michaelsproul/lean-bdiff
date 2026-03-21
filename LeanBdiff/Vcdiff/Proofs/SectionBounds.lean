@@ -186,9 +186,11 @@ private theorem trySameModes_mono (s : AddressCache.State) (addr bestMode : Nat)
           addr != 0) = true) from h1, ↓reduceIte]
       exact ih bestMode bestEnc h_pos
 
--- Main: encodeAddress returns addrBytes with size ≤ 5
+-- Main: encodeAddress returns addrBytes with size ≤ 5.
+-- Only needs addr < 2^35 (not here < 2^35) because encodeAddress picks the
+-- minimum encoding, and mode 0 (VCD_SELF) always gives ≤ 5 bytes.
 theorem encodeAddress_bytes_le_5 (s : AddressCache.State) (addr here : Nat)
-    (h_addr : addr < 2 ^ 35) (h_here : here < 2 ^ 35) :
+    (h_addr : addr < 2 ^ 35) :
     (s.encodeAddress addr here).2.1.size ≤ 5 := by
   unfold AddressCache.State.encodeAddress
   set enc0 := Varint.encode addr
@@ -201,12 +203,11 @@ theorem encodeAddress_bytes_le_5 (s : AddressCache.State) (addr here : Nat)
     by_cases h_gt : here > addr
     · simp only [h_gt, ↓reduceIte]
       set enc1 := Varint.encode (here - addr)
-      have h_enc1_le : enc1.size ≤ 5 :=
-        Encoder.Proofs.varint_encode_size_le_5 (here - addr) (by omega)
       have h_enc1_ge : enc1.size ≥ 1 :=
         Nat.one_le_of_lt (Encoder.Proofs.varint_encode_nonempty (here - addr))
       by_cases h_lt : enc1.size < enc0.size
-      · simp only [h_lt, ↓reduceIte]; exact h 1 enc1 h_enc1_le h_enc1_ge
+      · -- enc1 < enc0 ≤ 5, so enc1 ≤ 4 ≤ 5
+        simp only [h_lt, ↓reduceIte]; exact h 1 enc1 (by omega) h_enc1_ge
       · simp only [show ¬(enc1.size < enc0.size) from h_lt, ↓reduceIte]
         exact h 0 enc0 h_enc0_le h_enc0_ge
     · simp only [show ¬(here > addr) from h_gt, ↓reduceIte]
@@ -236,41 +237,59 @@ theorem instDataWeightAt_le_total (insts : Array Encoder.RawInst) (i : Nat) :
     simp only [getElem!_pos, h]; omega
   · simp [h]
 
--- Per-step growth: encodeOneInst' grows sections by at most IDW(i) + IDW(i+1) + 11.
--- Each branch: data ≤ IDW(consumed), inst ≤ 6, addr ≤ 5.
-theorem encodeOneInst'_total_growth
+-- Telescoping per-step bound: one step of encodeOneInst' grows sections,
+-- but TDW decreases by at least the growth minus 11.
+-- Formally: r.sizes + TDW(i + skip) ≤ base.sizes + TDW(i) + 11.
+theorem encodeOneInst'_telescoping
     (insts : Array Encoder.RawInst) (i ssl : Nat)
     (ds is as : ByteArray) (cache : AddressCache.State) (tp : Nat)
-    (h_here : ssl + tp < 2 ^ 35)
     (h_bounds : ∀ (j : Nat) (hj : j < insts.size), match insts[j] with
       | .add data => data.size < 2 ^ 35
       | .copy addr sz => addr < 2 ^ 35 ∧ sz < 2 ^ 35
       | .run _ sz => sz < 2 ^ 35) :
     let r := Encoder.encodeOneInst' insts i ssl ds is as cache tp
-    r.1.size + r.2.1.size + r.2.2.1.size ≤
+    r.1.size + r.2.1.size + r.2.2.1.size +
+      totalDataWeightFrom insts (i + r.2.2.2.2.2) ≤
       ds.size + is.size + as.size +
-      instDataWeightAt insts i +
-      instDataWeightAt insts (i + 1) +
-      11 := by
+      totalDataWeightFrom insts i + 11 := by
   sorry
 
 -- ============================================================================
 -- ## Inductive bound for encodeWindowLoop
 -- ============================================================================
 
--- Growth ≤ 3 * totalDataWeightFrom(i) + 11 * fuel.
+-- Growth ≤ totalDataWeightFrom(i) + 11 * fuel (factor 1 via telescoping).
 theorem encodeWindowLoop_bound
     (insts : Array Encoder.RawInst) (ssl : Nat)
     (ds is as : ByteArray) (cache : AddressCache.State) (tp fuel i : Nat)
-    (h_here : ssl + tp < 2 ^ 35)
     (h_bounds : ∀ (j : Nat) (hj : j < insts.size), match insts[j] with
       | .add data => data.size < 2 ^ 35
       | .copy addr sz => addr < 2 ^ 35 ∧ sz < 2 ^ 35
       | .run _ sz => sz < 2 ^ 35) :
     let (d, inst, a) := Encoder.encodeWindowLoop insts ssl ds is as cache tp fuel i
     d.size + inst.size + a.size ≤
-      ds.size + is.size + as.size + 3 * totalDataWeightFrom insts i + 11 * fuel := by
-  sorry
+      ds.size + is.size + as.size + totalDataWeightFrom insts i + 11 * fuel := by
+  induction fuel generalizing ds is as cache tp i with
+  | zero =>
+    simp only [Encoder.encodeWindowLoop]; omega
+  | succ n ih =>
+    simp only [Encoder.encodeWindowLoop]
+    by_cases hge : i ≥ insts.size
+    · simp only [hge, ↓reduceIte, ge_iff_le]
+      rw [show totalDataWeightFrom insts i = 0 from by
+        rw [totalDataWeightFrom_unfold]; simp [show ¬(i < insts.size) from by omega]]
+      omega
+    · simp only [show ¬(i ≥ insts.size) from hge, ↓reduceIte, ge_iff_le]
+      set r := Encoder.encodeOneInst' insts i ssl ds is as cache tp with h_r
+      have h_step := encodeOneInst'_telescoping insts i ssl ds is as cache tp h_bounds
+      simp only [← h_r] at h_step
+      have h_ih := ih r.1 r.2.1 r.2.2.1 r.2.2.2.1 r.2.2.2.2.1 (i + r.2.2.2.2.2)
+      -- Unify the encodeWindowLoop expression in h_ih and goal
+      generalize Encoder.encodeWindowLoop insts ssl r.1 r.2.1 r.2.2.1
+        r.2.2.2.1 r.2.2.2.2.1 n (i + r.2.2.2.2.2) = w at h_ih ⊢
+      obtain ⟨d, inst, a⟩ := w
+      simp only [] at h_ih ⊢
+      omega
 
 -- ============================================================================
 -- ## encodeWindow bound
@@ -278,16 +297,15 @@ theorem encodeWindowLoop_bound
 
 theorem encodeWindow_bound
     (insts : Array Encoder.RawInst) (ssl : Nat)
-    (h_here : ssl < 2 ^ 35)
     (h_bounds : ∀ (j : Nat) (hj : j < insts.size), match insts[j] with
       | .add data => data.size < 2 ^ 35
       | .copy addr sz => addr < 2 ^ 35 ∧ sz < 2 ^ 35
       | .run _ sz => sz < 2 ^ 35) :
     let (d, inst, a) := Encoder.encodeWindow insts ssl
-    d.size + inst.size + a.size ≤ 3 * totalDataWeightFrom insts 0 + 11 * insts.size := by
+    d.size + inst.size + a.size ≤ totalDataWeightFrom insts 0 + 11 * insts.size := by
   unfold Encoder.encodeWindow
   have := encodeWindowLoop_bound insts ssl ByteArray.empty ByteArray.empty ByteArray.empty
-    AddressCache.State.init 0 insts.size 0 (by omega) h_bounds
+    AddressCache.State.init 0 insts.size 0 h_bounds
   set r := Encoder.encodeWindowLoop insts ssl ByteArray.empty ByteArray.empty ByteArray.empty
     AddressCache.State.init 0 insts.size 0 with hr
   obtain ⟨d, inst, a⟩ := r
@@ -300,9 +318,10 @@ theorem encodeWindow_bound
 -- ## Final section bound
 -- ============================================================================
 
+-- TDW + 11*size ≤ cov + 11*cov = 12*cov ≤ 12*T
+-- 12 * 2^31 + 30 = 25769803806 < 34359738368 = 2^35 ✓
 theorem encoder_section_bound
     (insts : Array Encoder.RawInst) (ssl : Nat)
-    (h_here : ssl < 2 ^ 35)
     (h_bounds : ∀ (j : Nat) (hj : j < insts.size), match insts[j] with
       | .add data => data.size < 2 ^ 35
       | .copy addr sz => addr < 2 ^ 35 ∧ sz < 2 ^ 35
@@ -312,7 +331,7 @@ theorem encoder_section_bound
     (h_T : T < 2 ^ 31) :
     let (d, inst, a) := Encoder.encodeWindow insts ssl
     d.size + inst.size + a.size + 30 < 2 ^ 35 := by
-  have h_ew := encodeWindow_bound insts ssl h_here h_bounds
+  have h_ew := encodeWindow_bound insts ssl h_bounds
   have h_dw := totalDataWeightFrom_le_coverage insts 0
     (fun j hj _ => h_each j hj)
   have h_cnt := size_le_totalCoverage insts h_each
@@ -320,6 +339,8 @@ theorem encoder_section_bound
   obtain ⟨d, inst, a⟩ := result
   simp only [h_result] at h_ew
   simp only []
+  -- TDW(0) + 11*size ≤ cov + 11*cov = 12*cov ≤ 12*T
+  -- 12*T + 30 < 12*2^31 + 30 = 25769803806 < 34359738368 = 2^35
   omega
 
 end LeanBdiff.Vcdiff.SectionBounds
