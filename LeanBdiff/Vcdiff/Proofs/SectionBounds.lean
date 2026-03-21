@@ -240,6 +240,7 @@ theorem instDataWeightAt_le_total (insts : Array Encoder.RawInst) (i : Nat) :
 -- Telescoping per-step bound: one step of encodeOneInst' grows sections,
 -- but TDW decreases by at least the growth minus 11.
 -- Formally: r.sizes + TDW(i + skip) ≤ base.sizes + TDW(i) + 11.
+set_option maxHeartbeats 1600000 in
 theorem encodeOneInst'_telescoping
     (insts : Array Encoder.RawInst) (i ssl : Nat)
     (ds is as : ByteArray) (cache : AddressCache.State) (tp : Nat)
@@ -252,7 +253,156 @@ theorem encodeOneInst'_telescoping
       totalDataWeightFrom insts (i + r.2.2.2.2.2) ≤
       ds.size + is.size + as.size +
       totalDataWeightFrom insts i + 11 := by
-  sorry
+  simp only []
+  unfold Encoder.encodeOneInst'
+  by_cases hi : i < insts.size
+  · rw [dif_pos hi]
+    have h_tdw_i : totalDataWeightFrom insts i =
+        instDataWeight insts[i] + totalDataWeightFrom insts (i + 1) := by
+      rw [totalDataWeightFrom_unfold]; simp [hi]
+    match h_inst : insts[i] with
+    | .add data =>
+      simp only [h_inst]
+      have h_data_bound := h_bounds i hi
+      rw [show insts[i] = .add data from h_inst] at h_data_bound
+      have h_idw_i : instDataWeight insts[i] = data.size := by
+        rw [h_inst]; simp [instDataWeight]
+      by_cases h1 : i + 1 < insts.size
+      · simp only [h1, ↓reduceIte]
+        have h_tdw_i1 : totalDataWeightFrom insts (i + 1) =
+            instDataWeight insts[i + 1] + totalDataWeightFrom insts (i + 2) := by
+          rw [totalDataWeightFrom_unfold]; simp [h1]
+        match h_next : insts[i + 1]! with
+        | .copy addr sz =>
+          simp only [h_next]
+          have h_next_bound := h_bounds (i + 1) h1
+          rw [show insts[i + 1] = insts[i + 1]! from by simp [getElem!_pos, h1],
+              h_next] at h_next_bound
+          obtain ⟨h_addr_bound, _⟩ := h_next_bound
+          have h_idw_i1 : instDataWeight insts[i + 1] = 0 := by
+            rw [show insts[i + 1] = insts[i + 1]! from by simp [getElem!_pos, h1],
+                h_next]; simp [instDataWeight]
+          match h_ea : cache.encodeAddress addr (ssl + tp + data.size) with
+          | (mode, addrBytes, cache') =>
+            simp only [h_ea]
+            have h_addr_le : addrBytes.size ≤ 5 := by
+              have := encodeAddress_bytes_le_5 cache addr (ssl + tp + data.size) h_addr_bound
+              rw [h_ea] at this; exact this
+            match h_fac : Encoder.findAddCopyOpcode data.size sz mode with
+            | some opcode =>
+              simp only [h_fac]
+              simp only [ByteArray.size_push, ByteArray.size_append]
+              rw [h_tdw_i, h_idw_i, h_tdw_i1, h_idw_i1]; omega
+            | none =>
+              simp only [h_fac]; split
+              · simp only [ByteArray.size_append, ByteArray.size_push]
+                have := Encoder.Proofs.varint_encode_size_le_5 data.size h_data_bound
+                rw [h_tdw_i, h_idw_i]; omega
+              · simp only [ByteArray.size_push, ByteArray.size_append]
+                rw [h_tdw_i, h_idw_i]; omega
+        | .add _ =>
+          simp only [h_next]; split
+          · simp only [ByteArray.size_append, ByteArray.size_push]
+            have := Encoder.Proofs.varint_encode_size_le_5 data.size h_data_bound
+            rw [h_tdw_i, h_idw_i]; omega
+          · simp only [ByteArray.size_push, ByteArray.size_append]
+            rw [h_tdw_i, h_idw_i]; omega
+        | .run _ _ =>
+          simp only [h_next]; split
+          · simp only [ByteArray.size_append, ByteArray.size_push]
+            have := Encoder.Proofs.varint_encode_size_le_5 data.size h_data_bound
+            rw [h_tdw_i, h_idw_i]; omega
+          · simp only [ByteArray.size_push, ByteArray.size_append]
+            rw [h_tdw_i, h_idw_i]; omega
+      · simp only [h1, Bool.false_eq_true, ↓reduceIte]; split
+        · simp only [ByteArray.size_append, ByteArray.size_push]
+          have := Encoder.Proofs.varint_encode_size_le_5 data.size h_data_bound
+          rw [h_tdw_i, h_idw_i]; omega
+        · simp only [ByteArray.size_push, ByteArray.size_append]
+          rw [h_tdw_i, h_idw_i]; omega
+    | .copy addr sz =>
+      simp only [h_inst]
+      have h_copy_bound := h_bounds i hi
+      rw [show insts[i] = .copy addr sz from h_inst] at h_copy_bound
+      obtain ⟨h_addr_bound, h_sz_bound⟩ := h_copy_bound
+      have h_idw_i : instDataWeight insts[i] = 0 := by
+        rw [h_inst]; simp [instDataWeight]
+      match h_ea : cache.encodeAddress addr (ssl + tp) with
+      | (mode, addrBytes, cache') =>
+        simp only [h_ea]
+        have h_addr_le : addrBytes.size ≤ 5 := by
+          have := encodeAddress_bytes_le_5 cache addr (ssl + tp) h_addr_bound
+          rw [h_ea] at this; exact this
+        by_cases h1 : sz == 4 && i + 1 < insts.size
+        · simp only [h1, ↓reduceIte, decide_true]
+          have h_i1 : i + 1 < insts.size := by
+            have := h1; simp [Bool.and_eq_true] at this; exact this.2
+          have h_tdw_i1 : totalDataWeightFrom insts (i + 1) =
+              instDataWeight insts[i + 1] + totalDataWeightFrom insts (i + 2) := by
+            rw [totalDataWeightFrom_unfold]; simp [h_i1]
+          match h_next : insts[i + 1]! with
+          | .add nextData =>
+            simp only [h_next]
+            have h_idw_i1 : instDataWeight insts[i + 1] = nextData.size := by
+              rw [show insts[i + 1] = insts[i + 1]! from by simp [getElem!_pos, h_i1],
+                  h_next]; simp [instDataWeight]
+            by_cases h2 : nextData.size == 1
+            · simp only [h2, ↓reduceIte, decide_true]
+              match h_fca : Encoder.findCopyAddOpcode sz mode nextData.size with
+              | some opcode =>
+                simp only [h_fca]
+                simp only [ByteArray.size_push, ByteArray.size_append]
+                rw [h_tdw_i, h_idw_i, h_tdw_i1, h_idw_i1]; omega
+              | none =>
+                simp only [h_fca]; split
+                · simp only [ByteArray.size_append, ByteArray.size_push]
+                  have := Encoder.Proofs.varint_encode_size_le_5 sz h_sz_bound
+                  rw [h_tdw_i, h_idw_i]; omega
+                · simp only [ByteArray.size_push, ByteArray.size_append]
+                  rw [h_tdw_i, h_idw_i]; omega
+            · simp only [h2, Bool.false_eq_true, ↓reduceIte]; split
+              · simp only [ByteArray.size_append, ByteArray.size_push]
+                have := Encoder.Proofs.varint_encode_size_le_5 sz h_sz_bound
+                rw [h_tdw_i, h_idw_i]; omega
+              · simp only [ByteArray.size_push, ByteArray.size_append]
+                rw [h_tdw_i, h_idw_i]; omega
+          | .copy _ _ =>
+            simp only [h_next]; split
+            · simp only [ByteArray.size_append, ByteArray.size_push]
+              have := Encoder.Proofs.varint_encode_size_le_5 sz h_sz_bound
+              rw [h_tdw_i, h_idw_i]; omega
+            · simp only [ByteArray.size_push, ByteArray.size_append]
+              rw [h_tdw_i, h_idw_i]; omega
+          | .run _ _ =>
+            simp only [h_next]; split
+            · simp only [ByteArray.size_append, ByteArray.size_push]
+              have := Encoder.Proofs.varint_encode_size_le_5 sz h_sz_bound
+              rw [h_tdw_i, h_idw_i]; omega
+            · simp only [ByteArray.size_push, ByteArray.size_append]
+              rw [h_tdw_i, h_idw_i]; omega
+        · simp only [h1, Bool.false_eq_true, ↓reduceIte]; split
+          · simp only [ByteArray.size_append, ByteArray.size_push]
+            have := Encoder.Proofs.varint_encode_size_le_5 sz h_sz_bound
+            rw [h_tdw_i, h_idw_i]; omega
+          · simp only [ByteArray.size_push, ByteArray.size_append]
+            rw [h_tdw_i, h_idw_i]; omega
+    | .run byte size =>
+      simp only [h_inst]
+      have h_run_bound := h_bounds i hi
+      rw [show insts[i] = .run byte size from h_inst] at h_run_bound
+      have h_idw_i : instDataWeight insts[i] = 1 := by
+        rw [h_inst]; simp [instDataWeight]
+      split
+      · simp only [ByteArray.size_append, ByteArray.size_push]
+        have := Encoder.Proofs.varint_encode_size_le_5 size h_run_bound
+        rw [h_tdw_i, h_idw_i]; omega
+      · simp only [ByteArray.size_push]
+        rw [h_tdw_i, h_idw_i]; omega
+  · rw [dif_neg hi]; simp only []
+    have h0 : totalDataWeightFrom insts i = 0 := by
+      rw [totalDataWeightFrom_unfold]; simp [hi]
+    have h1 : i + 0 = i := by omega
+    rw [h1, h0]; omega
 
 -- ============================================================================
 -- ## Inductive bound for encodeWindowLoop
