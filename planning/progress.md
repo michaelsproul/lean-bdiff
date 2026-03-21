@@ -200,42 +200,39 @@ theorem encode_decode_roundtrip_final
 
 **Completed Steps:**
 - [x] Step 1: Generalize `ValidInst` to support all modes/sizes, update `encodeInstList_decodeLoop_roundtrip`
+- [x] Step 2: Prove section size bounds — `SectionBounds.lean` (sorry-free)
 - [x] Step 3: Prove `source.size = 0` case — `parseWindow_encoded_sections_no_source`, `encode_decode_roundtrip'`
+- [x] Step 5: Bridge `encodeWindowLoop` ↔ `encodeInstListPaired` — `PairedRoundtrip.lean` (sorry-free)
+  - `encodeOneInstPaired_decode_step`: per-step encoder→decoder correctness (ADD/COPY/RUN, all sub-cases including double opcodes)
+  - `encodeInstListPaired_decodeLoop_roundtrip`: inductive paired roundtrip over instruction array
+  - `encodeWindow_eq_paired`: real encoder loop equals accumulated paired results
+- [x] Step 6: Compose to eliminate `h_loop` — `h_loop_discharge` in `PairedRoundtrip.lean` (sorry-free)
+  - `full_encode_decode_roundtrip'`: cleaner version with only `ValidInstArray` + `execInstArraySpec` hypotheses
 
-**Remaining hypothesis: `h_sec_bound`** (section size < 2^35)
-- [~] Step 2: Prove section size bounds
-- Approach: prove `encodeWindow` output size ≤ target.size + O(n) overhead
-- Need to trace through `encodeWindowLoop` and bound section growth
-- Difficulty: **Medium**
+**Current theorem** (`PairedRoundtrip.lean`, sorry-free):
+```lean
+theorem full_encode_decode_roundtrip'
+    (source target : ByteArray)
+    (h_source_bound : source.size < 2 ^ 31)
+    (h_target_bound : target.size < 2 ^ 31)
+    (h_sec_bound : ...)
+    (h_valid : ValidInstArray (Encoder.generateInstructions ...) sourceWindow)
+    (h_exec : execInstArraySpec (Encoder.generateInstructions ...) sourceWindow ByteArray.empty 0 insts.size = target) :
+    Decoder.decode (Encoder.encode source target) source = .ok target
+```
 
-**Remaining hypothesis: `h_loop`** (encoder sections decode correctly)
-- This is the main semantic correctness hypothesis. Eliminating it requires proving that the encoder's output instruction sections, when decoded, reproduce `target`
-- Decomposes into three sub-problems:
-
+**Remaining hypothesis: `h_valid` + `h_exec`** (encoder semantic correctness)
 - [ ] Step 4: Prove `generateInstructions` produces semantically correct instructions
-  - Must prove: executing the raw instruction list against `source` produces `target`
+  - Must prove two things:
+    1. `ValidInstArray (generateInstructions ...)` — all generated instructions are valid (addresses in bounds, modes ≤ 8, sizes correct)
+    2. `execInstArraySpec (generateInstructions ...) ... = target` — executing instructions reproduces target
   - `generateInstructions` uses hash matching, lazy matching, run detection — complex imperative loops with mutable state
   - Key invariant: at each loop iteration, `target[0..pos]` = result of executing all emitted instructions + pending ADD bytes
   - Needs: loop invariant tracking `pos`, `pendingAdd`, and the instruction list
   - Difficulty: **Very Hard** — the hardest remaining piece
 
-- [ ] Step 5: Bridge `encodeWindowLoop` ↔ `encodeInstList`
-  - Must prove: `encodeWindowLoop` (real encoder, Array-based with double-instruction optimization) produces the same sections as `encodeInstList` (spec function, List-based)
-  - `encodeOneInst'` does ADD+COPY / COPY+ADD pairing; `encodeInstList` does too but as a spec function
-  - Approach: inductive proof over instruction array, show each step matches
-  - Difficulty: **Hard** — double-instruction pairing adds case complexity
-
-- [ ] Step 6: Compose Steps 4-5 with `encodeInstList_decodeLoop_roundtrip`
-  - Once Steps 4-5 are done, compose: generateInstructions correct → encodeWindowLoop = encodeInstList → encodeInstList decodes correctly (existing theorem) → h_loop holds
-  - Difficulty: **Easy** (given Steps 4-5)
-
-**Dependencies:** Step 2 is independent. Steps 4-6 are sequential (each builds on the previous). Steps 2 and 4-6 are independent of each other.
-
-**Recommended attack order:**
-1. Step 2 (section bounds) — quick win, reduces to 2 hypotheses → 1
-2. Step 5 (encodeWindowLoop ↔ encodeInstList bridge) — more tractable than Step 4
-3. Step 4 (generateInstructions correctness) — hardest, most impactful
-4. Step 6 (composition) — final assembly
+**Recommended next step:**
+Step 4 (generateInstructions correctness) — the only remaining piece to reach the final theorem with just size bounds
 
 ### Remaining Potential Work (non-verification)
 - [ ] Windowed processing for very large files (>100MB)
