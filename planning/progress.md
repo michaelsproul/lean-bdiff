@@ -159,7 +159,8 @@ Prove that executing the generated instructions against the source reproduces th
 - [x] Decoder made non-partial: `decodeOneStep`, `applyWindowLoop`, `decodeWindows`, `decode`
 - [x] Encoder partially non-partial: `encodeOneInst'`, `encodeWindowLoop`, `encodeWindow`, `serializeWindow`
 - [x] `parseWindow_encoded_sections`: wire format parsing roundtrip (~15 cursor steps, sorry-free)
-- [ ] `encode_decode_roundtrip`: top level (needs `encodeWindow_eq_paired`)
+- [x] `parseWindow_reloc`: parseWindow cursor relocation (sorry-free)
+- [x] `full_encode_decode_roundtrip`: **`Decoder.decode (Encoder.encode source target) source = .ok target`** (sorry-free)
 
 Key techniques:
 - `native_decide` for concrete instruction execution examples
@@ -167,11 +168,74 @@ Key techniques:
 - `deriving instance DecidableEq for` on `DecodeError`, `Varint.Cursor`, `AddressCache.State`
 - `interval_cases` + `native_decide` for ADD opcode properties over ranges
 
-#### Phase F: Full Composition
+#### Phase F: Full Composition — COMPLETE
 Compose all layers into the top-level `roundtrip` theorem.
 
-- [ ] Compose wire format + instruction + section roundtrips
-- [ ] Handle Adler32 checksum verification
+- [x] Compose wire format + instruction + section roundtrips
+- [x] Handle Adler32 checksum verification
+- [x] `full_encode_decode_roundtrip`: top-level `Decoder.decode (Encoder.encode s t) s = .ok t`
+
+#### Phase G: Hypothesis Elimination - IN PROGRESS
+Remove remaining assumptions from `full_encode_decode_roundtrip`.
+
+**Current theorem** (sorry-free, in `WindowRoundtrip.lean`):
+```lean
+theorem full_encode_decode_roundtrip
+    (source target : ByteArray)
+    (h_source_bound : source.size < 2 ^ 31)
+    (h_target_bound : target.size < 2 ^ 31)
+    (h_sec_bound : -- encoder section sizes sum + 30 < 2^35)
+    (h_loop :      -- encoder sections decode correctly to target) :
+    Decoder.decode (Encoder.encode source target) source = .ok target
+```
+
+**Goal:** eliminate `h_sec_bound` and `h_loop` to reach:
+```lean
+theorem encode_decode_roundtrip_final
+    (source target : ByteArray)
+    (h_source_bound : source.size < 2 ^ 31)
+    (h_target_bound : target.size < 2 ^ 31) :
+    Decoder.decode (Encoder.encode source target) source = .ok target
+```
+
+**Completed Steps:**
+- [x] Step 1: Generalize `ValidInst` to support all modes/sizes, update `encodeInstList_decodeLoop_roundtrip`
+- [x] Step 3: Prove `source.size = 0` case — `parseWindow_encoded_sections_no_source`, `encode_decode_roundtrip'`
+
+**Remaining hypothesis: `h_sec_bound`** (section size < 2^35)
+- [~] Step 2: Prove section size bounds
+- Approach: prove `encodeWindow` output size ≤ target.size + O(n) overhead
+- Need to trace through `encodeWindowLoop` and bound section growth
+- Difficulty: **Medium**
+
+**Remaining hypothesis: `h_loop`** (encoder sections decode correctly)
+- This is the main semantic correctness hypothesis. Eliminating it requires proving that the encoder's output instruction sections, when decoded, reproduce `target`
+- Decomposes into three sub-problems:
+
+- [ ] Step 4: Prove `generateInstructions` produces semantically correct instructions
+  - Must prove: executing the raw instruction list against `source` produces `target`
+  - `generateInstructions` uses hash matching, lazy matching, run detection — complex imperative loops with mutable state
+  - Key invariant: at each loop iteration, `target[0..pos]` = result of executing all emitted instructions + pending ADD bytes
+  - Needs: loop invariant tracking `pos`, `pendingAdd`, and the instruction list
+  - Difficulty: **Very Hard** — the hardest remaining piece
+
+- [ ] Step 5: Bridge `encodeWindowLoop` ↔ `encodeInstList`
+  - Must prove: `encodeWindowLoop` (real encoder, Array-based with double-instruction optimization) produces the same sections as `encodeInstList` (spec function, List-based)
+  - `encodeOneInst'` does ADD+COPY / COPY+ADD pairing; `encodeInstList` does too but as a spec function
+  - Approach: inductive proof over instruction array, show each step matches
+  - Difficulty: **Hard** — double-instruction pairing adds case complexity
+
+- [ ] Step 6: Compose Steps 4-5 with `encodeInstList_decodeLoop_roundtrip`
+  - Once Steps 4-5 are done, compose: generateInstructions correct → encodeWindowLoop = encodeInstList → encodeInstList decodes correctly (existing theorem) → h_loop holds
+  - Difficulty: **Easy** (given Steps 4-5)
+
+**Dependencies:** Step 2 is independent. Steps 4-6 are sequential (each builds on the previous). Steps 2 and 4-6 are independent of each other.
+
+**Recommended attack order:**
+1. Step 2 (section bounds) — quick win, reduces to 2 hypotheses → 1
+2. Step 5 (encodeWindowLoop ↔ encodeInstList bridge) — more tractable than Step 4
+3. Step 4 (generateInstructions correctness) — hardest, most impactful
+4. Step 6 (composition) — final assembly
 
 ### Remaining Potential Work (non-verification)
 - [ ] Windowed processing for very large files (>100MB)

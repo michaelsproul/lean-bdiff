@@ -320,6 +320,61 @@ theorem execHalfInst_reloc_ok
         simp only [Except.bind, ge_iff_le, if_neg hbounds, pure, Except.pure]
     | .error e => rw [hd] at h; simp at h
 
+-- ============================================================================
+-- ## Decoder.readUInt32BE relocation
+-- ============================================================================
+
+theorem readUInt32BE_reloc_ok (pfx sfx : ByteArray) (k : Nat)
+    (val : UInt32) (pos : Nat)
+    (h : Decoder.readUInt32BE ⟨sfx, k⟩ = .ok (val, ⟨sfx, pos⟩)) :
+    Decoder.readUInt32BE ⟨pfx ++ sfx, pfx.size + k⟩ =
+      .ok (val, ⟨pfx ++ sfx, pfx.size + pos⟩) := by
+  -- Extract bounds from h by unfolding readByte in the hypothesis
+  unfold Decoder.readUInt32BE at h
+  simp only [bind, Except.bind] at h
+  -- Byte 0 in h
+  have hk0 : k < sfx.size := by
+    by_contra hc; unfold Varint.Cursor.readByte at h; simp [show ¬(k < sfx.size) from hc] at h
+  have h_rb0 : Varint.Cursor.readByte ⟨sfx, k⟩ = .ok (sfx[k]!, ⟨sfx, k + 1⟩) := by
+    unfold Varint.Cursor.readByte; simp [hk0]
+  rw [h_rb0] at h; simp only [Except.bind] at h
+  -- Byte 1 in h
+  have hk1 : k + 1 < sfx.size := by
+    by_contra hc; unfold Varint.Cursor.readByte at h; simp [show ¬(k + 1 < sfx.size) from hc] at h
+  have h_rb1 : Varint.Cursor.readByte ⟨sfx, k + 1⟩ = .ok (sfx[k + 1]!, ⟨sfx, k + 2⟩) := by
+    unfold Varint.Cursor.readByte; simp [hk1]
+  rw [h_rb1] at h; simp only [Except.bind] at h
+  -- Byte 2 in h
+  have hk2 : k + 2 < sfx.size := by
+    by_contra hc; unfold Varint.Cursor.readByte at h; simp [show ¬(k + 2 < sfx.size) from hc] at h
+  have h_rb2 : Varint.Cursor.readByte ⟨sfx, k + 2⟩ = .ok (sfx[k + 2]!, ⟨sfx, k + 3⟩) := by
+    unfold Varint.Cursor.readByte; simp [hk2]
+  rw [h_rb2] at h; simp only [Except.bind] at h
+  -- Byte 3 in h
+  have hk3 : k + 3 < sfx.size := by
+    by_contra hc; unfold Varint.Cursor.readByte at h; simp [show ¬(k + 3 < sfx.size) from hc] at h
+  have h_rb3 : Varint.Cursor.readByte ⟨sfx, k + 3⟩ = .ok (sfx[k + 3]!, ⟨sfx, k + 4⟩) := by
+    unfold Varint.Cursor.readByte; simp [hk3]
+  rw [h_rb3] at h; simp only [pure, Except.pure] at h
+  -- Now h : (.ok (val_expr, ⟨sfx, k+4⟩)) = .ok (val, ⟨sfx, pos⟩)
+  simp only [Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq] at h
+  -- Prove goal
+  unfold Decoder.readUInt32BE
+  simp only [bind, Except.bind]
+  rw [readByte_reloc pfx sfx k hk0]
+  simp only [Except.bind]
+  rw [show pfx.size + k + 1 = pfx.size + (k + 1) from by omega]
+  rw [readByte_reloc pfx sfx (k + 1) hk1]
+  simp only [Except.bind]
+  rw [show pfx.size + (k + 1) + 1 = pfx.size + (k + 2) from by omega]
+  rw [readByte_reloc pfx sfx (k + 2) hk2]
+  simp only [Except.bind]
+  rw [show pfx.size + (k + 2) + 1 = pfx.size + (k + 3) from by omega]
+  rw [readByte_reloc pfx sfx (k + 3) hk3]
+  simp only [pure, Except.pure]
+  simp only [Except.ok.injEq, Prod.mk.injEq, Varint.Cursor.mk.injEq]
+  exact ⟨h.1, trivial, by have := h.2.2; omega⟩
+
 -- The higher-level relocation lemmas (decodeOneStep, decodeLoop) are in
 -- WindowRoundtrip.lean since they depend on definitions from that file.
 
