@@ -2304,7 +2304,7 @@ private theorem varint_decode_suffix_ok (data extra : ByteArray) (k v pos : Nat)
   exact varint_decodeLoop_suffix_ok data extra k 0 v pos 5 h
 
 -- Address cache decode suffix extension
-private theorem addr_decode_suffix_ok (mode here : Nat) (data extra : ByteArray) (k : Nat)
+theorem addr_decode_suffix_ok (mode here : Nat) (data extra : ByteArray) (k : Nat)
     (cache : AddressCache.State) (addr pos : Nat) (cache' : AddressCache.State)
     (h : AddressCache.decode mode here ⟨data, k⟩ cache = .ok (addr, ⟨data, pos⟩, cache')) :
     AddressCache.decode mode here ⟨data ++ extra, k⟩ cache =
@@ -2372,7 +2372,7 @@ private theorem addr_decode_suffix_ok (mode here : Nat) (data extra : ByteArray)
         · simp only [if_neg hms] at h; simp at h
 
 -- Byte indexing: first element of concatenation
-private theorem ba_getElem_bang_append_left (a b : ByteArray) (i : Nat) (hi : i < a.size) :
+theorem ba_getElem_bang_append_left (a b : ByteArray) (i : Nat) (hi : i < a.size) :
     (a ++ b)[i]! = a[i]! := by
   have h1 : i < (a ++ b).size := by rw [ByteArray.size_append]; omega
   simp only [getElem!_pos, h1, hi]
@@ -2568,7 +2568,7 @@ private theorem findSingleOpcode_copy_varint (sz addr mode : Nat)
   simp only [Bool.false_eq_true, ↓reduceIte]
 
 -- General execHalfInst for COPY from source window with any mode
-private theorem execHalfInst_copy_source_general
+theorem execHalfInst_copy_source_general
     (modeUInt8 : UInt8) (instSz sz : Nat)
     (sourceWindow target : ByteArray)
     (dataCursor : Varint.Cursor)
@@ -2593,7 +2593,7 @@ private theorem execHalfInst_copy_source_general
   simp only [show addr + 0 = addr from by omega]
 
 -- Compositional step: one encodeOneInst → decodeOneStep + relocation for remaining decodeLoop
-private theorem decodeLoop_compose_step
+theorem decodeLoop_compose_step
     (n : Nat) (sw initTarget targetMid targetFinal : ByteArray)
     (i1 iR d1 dR a1 aR : ByteArray)
     (cache0 cache1 cacheFinal : AddressCache.State)
@@ -2625,23 +2625,23 @@ private theorem decodeLoop_compose_step
 -- ## Main inductive roundtrip: encodeInstList → decodeLoop
 -- ============================================================================
 
-private theorem update_preserves_sNear (s : AddressCache.State) (addr : Nat) :
+theorem update_preserves_sNear (s : AddressCache.State) (addr : Nat) :
     (s.update addr).sNear = s.sNear := by
   unfold AddressCache.State.update; dsimp only []
   split <;> (split <;> rfl)
 
-private theorem update_preserves_sSame (s : AddressCache.State) (addr : Nat) :
+theorem update_preserves_sSame (s : AddressCache.State) (addr : Nat) :
     (s.update addr).sSame = s.sSame := by
   unfold AddressCache.State.update; dsimp only []
   split <;> (split <;> rfl)
 
-private theorem encodeAddress_preserves_cache_size (s : AddressCache.State) (addr here : Nat) :
+theorem encodeAddress_preserves_cache_size (s : AddressCache.State) (addr here : Nat) :
     (s.encodeAddress addr here).2.2.sNear + (s.encodeAddress addr here).2.2.sSame =
     s.sNear + s.sSame := by
   simp only [AddressCache.State.encodeAddress]
   rw [update_preserves_sNear, update_preserves_sSame]
 
-private theorem encodeOneInst_preserves_cache_size (inst : Encoder.RawInst) (srcLen : Nat)
+theorem encodeOneInst_preserves_cache_size (inst : Encoder.RawInst) (srcLen : Nat)
     (cache : AddressCache.State) (tgtPos : Nat) :
     (encodeOneInst inst srcLen cache tgtPos).2.2.2.1.sNear +
     (encodeOneInst inst srcLen cache tgtPos).2.2.2.1.sSame =
