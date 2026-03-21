@@ -2297,7 +2297,7 @@ private theorem varint_decodeLoop_suffix_ok (data extra : ByteArray) (k acc v po
         exact varint_decodeLoop_suffix_ok data extra (k + 1) _ v pos remaining h
     · rw [dif_neg hk] at h; simp at h
 
-private theorem varint_decode_suffix_ok (data extra : ByteArray) (k v pos : Nat)
+theorem varint_decode_suffix_ok (data extra : ByteArray) (k v pos : Nat)
     (h : Varint.decode ⟨data, k⟩ = .ok (v, ⟨data, pos⟩)) :
     Varint.decode ⟨data ++ extra, k⟩ = .ok (v, ⟨data ++ extra, pos⟩) := by
   simp only [Varint.decode] at h ⊢
@@ -2550,7 +2550,7 @@ theorem encodeAddress_decode_roundtrip
 
 -- findSingleOpcode for COPY with any mode 0..8 and immediate size 4..18
 -- opcode = (19 + mode * 16 + sz - 3).toUInt8
-private theorem findSingleOpcode_copy_immediate (sz addr mode : Nat)
+theorem findSingleOpcode_copy_immediate (sz addr mode : Nat)
     (hSz4 : sz ≥ 4) (hSz18 : sz ≤ 18) :
     Encoder.findSingleOpcode (.copy addr sz) mode = ((19 + mode * 16 + sz - 3).toUInt8, false) := by
   unfold Encoder.findSingleOpcode
@@ -2559,7 +2559,7 @@ private theorem findSingleOpcode_copy_immediate (sz addr mode : Nat)
   congr 1; omega
 
 -- COPY varint opcode: when size is outside 4..18 range
-private theorem findSingleOpcode_copy_varint (sz addr mode : Nat)
+theorem findSingleOpcode_copy_varint (sz addr mode : Nat)
     (h : ¬(sz ≥ 4 ∧ sz ≤ 18)) :
     Encoder.findSingleOpcode (.copy addr sz) mode = ((19 + mode * 16 : Nat).toUInt8, true) := by
   unfold Encoder.findSingleOpcode
