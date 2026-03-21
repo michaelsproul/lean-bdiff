@@ -885,4 +885,87 @@ theorem encodeInstListPaired_decodeLoop_roundtrip
       simp only [h_step_eq, h_rest_eq]
       exact ⟨nR + 1, by simp [ByteArray.size_append]; omega, h_composed⟩
 
+-- ============================================================================
+-- ## Bridge: discharge h_loop from full_encode_decode_roundtrip
+-- ============================================================================
+
+-- Initial cache satisfies bound
+private theorem init_cache_bound :
+    AddressCache.State.init.sNear + AddressCache.State.init.sSame ≤ 7 := by
+  native_decide
+
+-- Bridge: if instructions are valid and execute to target, h_loop holds
+theorem h_loop_discharge
+    (insts : Array Encoder.RawInst)
+    (sourceWindow : ByteArray)
+    (target : ByteArray)
+    (h_valid : ValidInstArray insts sourceWindow)
+    (h_exec : execInstArraySpec insts sourceWindow ByteArray.empty 0 insts.size = target) :
+    let secs := Encoder.encodeWindow insts sourceWindow.size
+    ∃ cache,
+      decodeLoop secs.2.1.size sourceWindow ByteArray.empty
+        ⟨secs.2.1, 0⟩ ⟨secs.1, 0⟩ ⟨secs.2.2, 0⟩ AddressCache.State.init =
+      .ok (target, ⟨secs.2.1, secs.2.1.size⟩, ⟨secs.1, secs.1.size⟩,
+           ⟨secs.2.2, secs.2.2.size⟩, cache) := by
+  -- Rewrite encodeWindow to encodeInstListPaired
+  rw [encodeWindow_eq_paired]
+  -- Destructure the paired result
+  match h_paired : encodeInstListPaired insts sourceWindow.size
+      AddressCache.State.init 0 insts.size 0 with
+  | (dataSec, instSec, addrSec, finalCache, _finalPos) =>
+  simp only []
+  -- Apply the inductive roundtrip theorem
+  have h_rt := encodeInstListPaired_decodeLoop_roundtrip insts sourceWindow
+    ByteArray.empty AddressCache.State.init h_valid init_cache_bound
+    insts.size 0 (by omega)
+  rw [show ByteArray.empty.size = 0 from rfl] at h_rt
+  rw [h_paired] at h_rt
+  simp only [] at h_rt
+  obtain ⟨n, h_n_le, h_decode⟩ := h_rt
+  -- Rewrite execInstArraySpec to target
+  rw [h_exec] at h_decode
+  -- Extend fuel from n to instSec.size
+  have h_fuel := decodeLoop_fuel_add sourceWindow ByteArray.empty
+    ⟨instSec, 0⟩ ⟨dataSec, 0⟩ ⟨addrSec, 0⟩ AddressCache.State.init
+    n (instSec.size - n)
+    (target, ⟨instSec, instSec.size⟩, ⟨dataSec, dataSec.size⟩,
+     ⟨addrSec, addrSec.size⟩, finalCache)
+    h_decode
+  rw [show n + (instSec.size - n) = instSec.size from by omega] at h_fuel
+  exact ⟨finalCache, h_fuel⟩
+
+-- srcWin size equals source size
+private theorem srcWin_size (source : ByteArray) :
+    (if source.size > 0 then source else ByteArray.empty).size = source.size := by
+  split
+  · rfl
+  · rename_i h; push_neg at h
+    have hsz : source.size = 0 := by omega
+    rw [show ByteArray.empty.size = 0 from rfl, hsz]
+
+-- Stronger full roundtrip: h_loop replaced by instruction validity + execution
+theorem full_encode_decode_roundtrip'
+    (source target : ByteArray)
+    (h_source_bound : source.size < 2 ^ 31)
+    (h_target_bound : target.size < 2 ^ 31)
+    (h_sec_bound :
+      let secs := Encoder.encodeWindow
+        (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+        source.size
+      secs.1.size + secs.2.1.size + secs.2.2.size + 30 < 2 ^ 35)
+    (h_valid : ValidInstArray
+      (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+      (if source.size > 0 then source else ByteArray.empty))
+    (h_exec : execInstArraySpec
+      (Encoder.generateInstructions (Encoder.buildSourceIndex source) target)
+      (if source.size > 0 then source else ByteArray.empty)
+      ByteArray.empty 0
+      (Encoder.generateInstructions (Encoder.buildSourceIndex source) target).size
+      = target) :
+    Decoder.decode (Encoder.encode source target) source = .ok target := by
+  have h_loop := h_loop_discharge _ _ _ h_valid h_exec
+  rw [srcWin_size] at h_loop
+  exact full_encode_decode_roundtrip source target
+    h_source_bound h_target_bound h_sec_bound h_loop
+
 end LeanBdiff.Vcdiff.PairedRoundtrip
