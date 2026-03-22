@@ -92,41 +92,59 @@ structure Match where
   length : Nat
   deriving Repr
 
+/-- Count consecutive matching bytes forwards from a given offset. -/
+def extendForward (source : ByteArray) (sp : Nat)
+    (target : ByteArray) (tp : Nat) (len : Nat) : Nat :=
+  if sp + len < source.size ∧ tp + len < target.size ∧
+     (source[sp + len]! == target[tp + len]!) = true then
+    extendForward source sp target tp (len + 1)
+  else len
+termination_by source.size - (sp + len)
+
+/-- Count consecutive matching bytes backwards from a given offset. -/
+def extendBackward (source : ByteArray) (sp : Nat)
+    (target : ByteArray) (tp : Nat) (back : Nat) : Nat :=
+  if sp > back ∧ tp > back ∧
+     (source[sp - back - 1]! == target[tp - back - 1]!) = true then
+    extendBackward source sp target tp (back + 1)
+  else back
+termination_by sp - back
+
 /-- Extend a match forwards and backwards to find the longest match. -/
 def extendMatch (source : ByteArray) (sourcePos : Nat)
-    (target : ByteArray) (targetPos : Nat) : Match := Id.run do
-  -- Extend forward
-  let mut len := 0
-  while sourcePos + len < source.size && targetPos + len < target.size &&
-        source[sourcePos + len]! == target[targetPos + len]! do
-    len := len + 1
-  -- Extend backward
-  let mut back := 0
-  while sourcePos > back && targetPos > back &&
-        source[sourcePos - back - 1]! == target[targetPos - back - 1]! do
-    back := back + 1
+    (target : ByteArray) (targetPos : Nat) : Match :=
+  let len := extendForward source sourcePos target targetPos 0
+  let back := extendBackward source sourcePos target targetPos 0
   { sourcePos := sourcePos - back, targetPos := targetPos - back, length := len + back }
+
+/-- Recursive helper: scan candidate list for best match. -/
+def findBestMatchRec (source : ByteArray) (target : ByteArray) (targetPos : Nat)
+    (candidates : List Nat) (maxChain : Nat) (best : Option Match) (checked : Nat)
+    : Option Match :=
+  match candidates with
+  | [] => best
+  | cand :: rest =>
+    if checked >= maxChain then best
+    else
+      let best' :=
+        if cand + hashWindow <= source.size then
+          let m := extendMatch source cand target targetPos
+          if m.length >= hashWindow then
+            match best with
+            | none => some m
+            | some prev => if m.length > prev.length then some m else best
+          else best
+        else best
+      findBestMatchRec source target targetPos rest maxChain best' (checked + 1)
 
 /-- Find the best match at a given target position. Returns none if no match >= MIN_MATCH. -/
 def findBestMatch (idx : SourceIndex) (target : ByteArray) (targetPos : Nat)
-    (maxChain : Nat := 8) : Option Match := Id.run do
-  if targetPos + hashWindow > target.size then
-    return none
-  let h := hashBytes target targetPos hashWindow
-  let candidates := idx.lookup h
-  let mut best : Option Match := none
-  let mut checked := 0
-  for cand in candidates do
-    if checked >= maxChain then break
-    checked := checked + 1
-    -- Verify the hash hit is a real match
-    if cand + hashWindow <= idx.sourceData.size then
-      let m := extendMatch idx.sourceData cand target targetPos
-      if m.length >= hashWindow then
-        match best with
-        | none => best := some m
-        | some prev => if m.length > prev.length then best := some m
-  best
+    (maxChain : Nat := 8) : Option Match :=
+  if targetPos + hashWindow > target.size then none
+  else
+    let h := hashBytes target targetPos hashWindow
+    let candidates := idx.lookup h
+    findBestMatchRec idx.sourceData target targetPos candidates maxChain none 0
 
 -- ## Instruction Generation
 
@@ -140,89 +158,109 @@ inductive RawInst where
 /-- Minimum run length to emit a RUN instruction instead of ADD. -/
 def minRunLength : Nat := 4
 
+/-- Count consecutive bytes equal to `b` starting at position `start`. -/
+def countRun (data : ByteArray) (start : Nat) (b : UInt8) (runLen : Nat) : Nat :=
+  if start + runLen < data.size ∧ (data[start + runLen]! == b) = true then
+    countRun data start b (runLen + 1)
+  else runLen
+termination_by data.size - (start + runLen)
+
+theorem countRun_ge (data : ByteArray) (start : Nat) (b : UInt8) (runLen : Nat) :
+    runLen ≤ countRun data start b runLen := by
+  induction runLen using countRun.induct data start b with
+  | case1 k h ih => rw [countRun, if_pos h]; omega
+  | case2 k h => rw [countRun, if_neg h]; omega
+
 /-- Emit ADD data, splitting out RUN sequences of repeated bytes. -/
 def emitAddWithRuns (insts : Array RawInst) (data : ByteArray)
-    : Array RawInst := Id.run do
-  let mut result := insts
-  let mut i := 0
-  let mut addStart := 0
-  while i < data.size do
-    -- Count run of identical bytes
-    let b := data[i]!
-    let mut runLen := 1
-    while i + runLen < data.size && data[i + runLen]! == b do
-      runLen := runLen + 1
-    if runLen >= minRunLength then
-      -- Flush preceding ADD bytes
-      if i > addStart then
-        result := result.push (.add (data.extract addStart i))
-      result := result.push (.run b runLen)
-      i := i + runLen
-      addStart := i
+    : Array RawInst :=
+  emitAddWithRunsRec insts data 0 0
+where
+  /-- Recursive helper for emitAddWithRuns. -/
+  emitAddWithRunsRec (result : Array RawInst) (data : ByteArray)
+      (i addStart : Nat) : Array RawInst :=
+    if h_i : i < data.size then
+      let b := data[i]!
+      let runLen := countRun data i b 1
+      have h_runLen_ge : runLen ≥ 1 := countRun_ge data i b 1
+      have h_dec : data.size - (i + runLen) < data.size - i := by omega
+      if runLen >= minRunLength then
+        let result := if i > addStart then result.push (.add (data.extract addStart i)) else result
+        let result := result.push (.run b runLen)
+        emitAddWithRunsRec result data (i + runLen) (i + runLen)
+      else
+        emitAddWithRunsRec result data (i + runLen) addStart
     else
-      i := i + runLen
-  -- Flush remaining ADD bytes
-  if addStart < data.size then
-    result := result.push (.add (data.extract addStart data.size))
-  result
+      if addStart < data.size then result.push (.add (data.extract addStart data.size))
+      else result
+  termination_by data.size - i
 
 /-- Lazy matching threshold: a later match must be this much longer to prefer it. -/
 def lazyThreshold : Nat := 2
+
+/-- Try lazy matching: look ahead 1-3 positions for a better match. -/
+def lazyBestMatch (idx : SourceIndex) (target : ByteArray) (pos : Nat) (m : Match)
+    : Match :=
+  if m.length >= 64 then m
+  else
+    let best := match (if pos + 1 < target.size then findBestMatch idx target (pos + 1) else none) with
+      | some m2 => if m2.length > m.length + lazyThreshold then m2 else m
+      | none => m
+    let best := match (if pos + 2 < target.size then findBestMatch idx target (pos + 2) else none) with
+      | some m2 => if m2.length > best.length + lazyThreshold then m2 else best
+      | none => best
+    match (if pos + 3 < target.size then findBestMatch idx target (pos + 3) else none) with
+    | some m2 => if m2.length > best.length + lazyThreshold then m2 else best
+    | none => best
+
+/-- Trim a match so it doesn't extend before `pos`. -/
+def trimMatch (m : Match) (pos : Nat) : Match :=
+  if m.targetPos < pos then
+    let trim := pos - m.targetPos
+    { sourcePos := m.sourcePos + trim, targetPos := pos,
+      length := if m.length > trim then m.length - trim else 0 }
+  else m
+
+theorem trimMatch_targetPos_ge (m : Match) (pos : Nat) :
+    (trimMatch m pos).targetPos ≥ pos := by
+  unfold trimMatch; split <;> simp_all <;> omega
+
+/-- Recursive helper for generateInstructions. -/
+def generateInstructionsLoop (idx : SourceIndex) (target : ByteArray)
+    (pos : Nat) (pendingAdd : ByteArray) (insts : Array RawInst)
+    : Array RawInst :=
+  if h_pos : pos < target.size then
+    match findBestMatch idx target pos with
+    | some m =>
+      let bestMatch := lazyBestMatch idx target pos m
+      let bestMatch := trimMatch bestMatch pos
+      if h_short : bestMatch.length < hashWindow then
+        generateInstructionsLoop idx target (pos + 1) (pendingAdd.push target[pos]!) insts
+      else
+        let pendingAdd' := if bestMatch.targetPos > pos then
+          pendingAdd ++ target.extract pos bestMatch.targetPos
+        else pendingAdd
+        let insts' := if pendingAdd'.size > 0 then emitAddWithRuns insts pendingAdd' else insts
+        let insts' := insts'.push (.copy bestMatch.sourcePos bestMatch.length)
+        have : target.size - (bestMatch.targetPos + bestMatch.length) < target.size - pos := by
+          have h1 : bestMatch.targetPos ≥ pos :=
+            trimMatch_targetPos_ge (lazyBestMatch idx target pos m) pos
+          have h2 : bestMatch.length ≥ hashWindow := Nat.not_lt.mp h_short
+          simp only [hashWindow] at h2; omega
+        generateInstructionsLoop idx target (bestMatch.targetPos + bestMatch.length)
+          ByteArray.empty insts'
+    | none =>
+      generateInstructionsLoop idx target (pos + 1) (pendingAdd.push target[pos]!) insts
+  else
+    if pendingAdd.size > 0 then emitAddWithRuns insts pendingAdd else insts
+termination_by target.size - pos
 
 /-- Scan the target and produce a sequence of raw instructions.
     Uses lazy matching: after finding a match, checks if a better match
     exists at the next position. -/
 def generateInstructions (idx : SourceIndex) (target : ByteArray)
-    : Array RawInst := Id.run do
-  let mut insts : Array RawInst := #[]
-  let mut pos := 0
-  let mut pendingAdd := ByteArray.empty
-
-  for _ in [:target.size] do
-    if pos >= target.size then break
-    match findBestMatch idx target pos with
-    | some m =>
-      -- Lazy matching: check if next position has a better match
-      let mut bestMatch := m
-      let mut lazySkip := 0
-      if bestMatch.length < 64 then  -- don't bother for long matches
-        for delta in [1:4] do  -- look ahead up to 3 positions
-          if pos + delta < target.size then
-            match findBestMatch idx target (pos + delta) with
-            | some m2 =>
-              if m2.length > bestMatch.length + lazyThreshold then
-                bestMatch := m2
-                lazySkip := delta
-            | none => pure ()
-      -- Constrain match: don't let backward extension go before current pos
-      if bestMatch.targetPos < pos then
-        let trim := pos - bestMatch.targetPos
-        bestMatch := { bestMatch with
-          sourcePos := bestMatch.sourcePos + trim,
-          targetPos := pos,
-          length := if bestMatch.length > trim then bestMatch.length - trim else 0 }
-      -- If trimmed match is too short, treat as no match
-      if bestMatch.length < hashWindow then
-        pendingAdd := pendingAdd.push target[pos]!
-        pos := pos + 1
-      else
-        -- Add unmatched bytes between current pos and match start to pending ADD
-        if bestMatch.targetPos > pos then
-          pendingAdd := pendingAdd ++ target.extract pos bestMatch.targetPos
-        if pendingAdd.size > 0 then
-          insts := emitAddWithRuns insts pendingAdd
-          pendingAdd := ByteArray.empty
-        insts := insts.push (.copy bestMatch.sourcePos bestMatch.length)
-        pos := bestMatch.targetPos + bestMatch.length
-    | none =>
-      pendingAdd := pendingAdd.push target[pos]!
-      pos := pos + 1
-
-  -- Flush remaining ADD
-  if pendingAdd.size > 0 then
-    insts := emitAddWithRuns insts pendingAdd
-
-  insts
+    : Array RawInst :=
+  generateInstructionsLoop idx target 0 ByteArray.empty #[]
 
 -- ## VCDIFF Encoding
 

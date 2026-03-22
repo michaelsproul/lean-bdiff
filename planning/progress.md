@@ -121,7 +121,7 @@ Key techniques:
 - `readByte_ok` chain with `simp only [Except.bind]` for cursor stepping
 - `native_decide` for concrete flag properties
 
-#### Phase E: Instruction Semantics - IN PROGRESS
+#### Phase E: Instruction Semantics - COMPLETE
 Prove that executing the generated instructions against the source reproduces the target.
 
 - [x] `DecidableEq` instances for `DecodeError`, `Varint.Cursor`, `AddressCache.State`
@@ -175,23 +175,12 @@ Compose all layers into the top-level `roundtrip` theorem.
 - [x] Handle Adler32 checksum verification
 - [x] `full_encode_decode_roundtrip`: top-level `Decoder.decode (Encoder.encode s t) s = .ok t`
 
-#### Phase G: Hypothesis Elimination - IN PROGRESS
+#### Phase G: Hypothesis Elimination - COMPLETE
 Remove remaining assumptions from `full_encode_decode_roundtrip`.
 
-**Current theorem** (sorry-free, in `WindowRoundtrip.lean`):
+**Final theorem** (`GenerateInstructions.lean`, sorry-free):
 ```lean
-theorem full_encode_decode_roundtrip
-    (source target : ByteArray)
-    (h_source_bound : source.size < 2 ^ 31)
-    (h_target_bound : target.size < 2 ^ 31)
-    (h_sec_bound : -- encoder section sizes sum + 30 < 2^35)
-    (h_loop :      -- encoder sections decode correctly to target) :
-    Decoder.decode (Encoder.encode source target) source = .ok target
-```
-
-**Goal:** eliminate `h_sec_bound` and `h_loop` to reach:
-```lean
-theorem encode_decode_roundtrip_final
+theorem full_encode_decode_roundtrip_final
     (source target : ByteArray)
     (h_source_bound : source.size < 2 ^ 31)
     (h_target_bound : target.size < 2 ^ 31) :
@@ -202,37 +191,22 @@ theorem encode_decode_roundtrip_final
 - [x] Step 1: Generalize `ValidInst` to support all modes/sizes, update `encodeInstList_decodeLoop_roundtrip`
 - [x] Step 2: Prove section size bounds — `SectionBounds.lean` (sorry-free)
 - [x] Step 3: Prove `source.size = 0` case — `parseWindow_encoded_sections_no_source`, `encode_decode_roundtrip'`
+- [x] Step 4: Prove `generateInstructions` correctness — `GenerateInstructions.lean` (sorry-free)
+  - `extendMatch_bytes_eq`: matched bytes are equal in source and target
+  - `findBestMatch_good`: findBestMatch produces GoodMatch (bytes equal + bounds)
+  - `lazyBestMatch_good`: lazy matching preserves GoodMatch
+  - `trimMatch_bytes_eq`: trimming preserves byte equality
+  - `emitAddWithRuns_exec`: executing emitAddWithRuns = appending original data
+  - `emitAddWithRuns_valid`: all emitAddWithRuns instructions are valid
+  - `generateInstructionsLoop_spec`: main execution invariant (fuel-based induction)
+  - `generateInstructionsLoop_valid`: main validity invariant (fuel-based induction)
+  - `generateInstructions_exec`: executing generated instructions reproduces target
+  - `generateInstructions_valid`: all generated instructions are valid
+  - `totalCoverage_eq_target_size`: total coverage = target.size
+  - `derive_sec_bound`: section size bound from input size bounds
 - [x] Step 5: Bridge `encodeWindowLoop` ↔ `encodeInstListPaired` — `PairedRoundtrip.lean` (sorry-free)
-  - `encodeOneInstPaired_decode_step`: per-step encoder→decoder correctness (ADD/COPY/RUN, all sub-cases including double opcodes)
-  - `encodeInstListPaired_decodeLoop_roundtrip`: inductive paired roundtrip over instruction array
-  - `encodeWindow_eq_paired`: real encoder loop equals accumulated paired results
 - [x] Step 6: Compose to eliminate `h_loop` — `h_loop_discharge` in `PairedRoundtrip.lean` (sorry-free)
-  - `full_encode_decode_roundtrip'`: cleaner version with only `ValidInstArray` + `execInstArraySpec` hypotheses
-
-**Current theorem** (`PairedRoundtrip.lean`, sorry-free):
-```lean
-theorem full_encode_decode_roundtrip'
-    (source target : ByteArray)
-    (h_source_bound : source.size < 2 ^ 31)
-    (h_target_bound : target.size < 2 ^ 31)
-    (h_sec_bound : ...)
-    (h_valid : ValidInstArray (Encoder.generateInstructions ...) sourceWindow)
-    (h_exec : execInstArraySpec (Encoder.generateInstructions ...) sourceWindow ByteArray.empty 0 insts.size = target) :
-    Decoder.decode (Encoder.encode source target) source = .ok target
-```
-
-**Remaining hypothesis: `h_valid` + `h_exec`** (encoder semantic correctness)
-- [ ] Step 4: Prove `generateInstructions` produces semantically correct instructions
-  - Must prove two things:
-    1. `ValidInstArray (generateInstructions ...)` — all generated instructions are valid (addresses in bounds, modes ≤ 8, sizes correct)
-    2. `execInstArraySpec (generateInstructions ...) ... = target` — executing instructions reproduces target
-  - `generateInstructions` uses hash matching, lazy matching, run detection — complex imperative loops with mutable state
-  - Key invariant: at each loop iteration, `target[0..pos]` = result of executing all emitted instructions + pending ADD bytes
-  - Needs: loop invariant tracking `pos`, `pendingAdd`, and the instruction list
-  - Difficulty: **Very Hard** — the hardest remaining piece
-
-**Recommended next step:**
-Step 4 (generateInstructions correctness) — the only remaining piece to reach the final theorem with just size bounds
+- [x] Step 7: Final composition — `full_encode_decode_roundtrip_final` (sorry-free)
 
 ### Remaining Potential Work (non-verification)
 - [ ] Windowed processing for very large files (>100MB)
