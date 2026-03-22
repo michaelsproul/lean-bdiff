@@ -11,3 +11,6 @@ import LeanBdiff.Vcdiff.Proofs.Encoder
 import LeanBdiff.Vcdiff.Proofs.InstructionSemantics
 import LeanBdiff.Vcdiff.Proofs.Varint
 import LeanBdiff.Vcdiff.Proofs.WindowRoundtrip
+import LeanBdiff.Vcdiff.Proofs.SectionBounds
+import LeanBdiff.Vcdiff.Proofs.PairedRoundtrip
+import LeanBdiff.Vcdiff.Proofs.GenerateInstructions
