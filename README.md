@@ -1,13 +1,16 @@
 # lean-bdiff
 
-## GitHub configuration
+Lean4 port of the xdelta3 binary diff algorithm.
 
-To set up your new GitHub repository, follow these steps:
+There is a full proof of correctness in this lemma:
 
-* Under your repository name, click **Settings**.
-* In the **Actions** section of the sidebar, click "General".
-* Check the box **Allow GitHub Actions to create and approve pull requests**.
-* Click the **Pages** section of the settings sidebar.
-* In the **Source** dropdown menu, select "GitHub Actions".
+```
+theorem full_encode_decode_roundtrip_final
+    (source target : ByteArray)
+    (h_source_bound : source.size < 2 ^ 31)
+    (h_target_bound : target.size < 2 ^ 31) :
+    Decoder.decode (Encoder.encode source target) source = .ok target
+```
 
-After following the steps above, you can remove this section from the README file.
+Miracuously, the entire implementation and formal verification effort was completed by Claude Code
+using Opus 4.6. Around ~4M tokens were used.
