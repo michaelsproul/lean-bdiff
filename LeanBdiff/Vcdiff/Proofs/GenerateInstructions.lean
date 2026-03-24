@@ -80,7 +80,7 @@ theorem bytearray_extract_empty_range' (ba : ByteArray) (i : Nat) :
   apply ByteArray.ext
   simp [ByteArray.data_extract, Array.size_extract]
 
-theorem bytearray_extract_empty_range (ba : ByteArray) (i : Nat) (h : i ≤ ba.size) :
+theorem bytearray_extract_empty_range (ba : ByteArray) (i : Nat) :
     ba.extract i i = ByteArray.empty :=
   bytearray_extract_empty_range' ba i
 
@@ -583,7 +583,7 @@ private theorem emitAddWithRunsRec_empty_exec_aux (data : ByteArray) :
       have h_sz : (#[] : Array Encoder.RawInst).size = 0 := rfl
       rw [h_sz, execInstArraySpec_base _ _ _ 0 0 (by omega)]
       have h_aseq : addStart = data.size := by omega
-      rw [h_aseq, bytearray_extract_empty_range data data.size (by omega), bytearray_append_empty]
+      rw [h_aseq, bytearray_extract_empty_range data data.size, bytearray_append_empty]
   | succ m ihm =>
     intro i addStart src tgt hn h_as h_i
     by_cases h_ni : i < data.size
@@ -658,7 +658,7 @@ private theorem emitAddWithRunsRec_empty_exec_aux (data : ByteArray) :
         simp only [Array.size, List.length]
         rw [execInstArraySpec_base _ _ _ 0 0 (by omega)]
         have h_aseq' : addStart = data.size := by omega
-        rw [h_aseq', bytearray_extract_empty_range data data.size (by omega), bytearray_append_empty]
+        rw [h_aseq', bytearray_extract_empty_range data data.size, bytearray_append_empty]
 
 private theorem emitAddWithRunsRec_empty_exec (data : ByteArray)
     (i addStart : Nat) (src tgt : ByteArray)
@@ -961,11 +961,10 @@ private theorem add_extract_valid (data : ByteArray) (src : ByteArray)
 -- RUN countRun validity: rl has 1 ≤ size < 2^31
 private theorem run_countRun_valid (data : ByteArray) (src : ByteArray) (i : Nat) (b : UInt8)
     (h_bound : data.size < 2 ^ 31) (h_i : i < data.size)
-    (h_ge : Encoder.countRun data i b 1 ≥ Encoder.minRunLength) :
-    ValidInst (.run b (Encoder.countRun data i b 1)) src := by
+    : ValidInst (.run b (Encoder.countRun data i b 1)) src := by
   have h_rl_bound := countRun_bound data i b 1 (by omega)
   constructor
-  · have := Encoder.countRun_ge data i b 1; simp [Encoder.minRunLength] at h_ge; omega
+  · have := Encoder.countRun_ge data i b 1; omega
   · omega
 
 -- emitAddWithRunsRec validity with invariant
@@ -1001,10 +1000,10 @@ private theorem emitAddWithRunsRec_valid_aux (data : ByteArray) (src : ByteArray
           apply ihm _ _ _ (by omega) (by omega) (by omega)
           apply validInstArray_push _ _ _
             (validInstArray_push _ _ _ h_valid (add_extract_valid data src h_bound addStart i h_add (by omega)))
-          exact run_countRun_valid data src i data[i]! h_bound h_ni h_run
+          exact run_countRun_valid data src i data[i]! h_bound h_ni
         · simp only [h_add, ite_false]
           apply ihm _ _ _ (by omega) (by omega) (by omega)
-          exact validInstArray_push _ _ _ h_valid (run_countRun_valid data src i data[i]! h_bound h_ni h_run)
+          exact validInstArray_push _ _ _ h_valid (run_countRun_valid data src i data[i]! h_bound h_ni)
       · simp only [ge_iff_le, h_run, ite_false]
         exact ihm (i + rl) addStart result (by omega) (by omega) (by omega) h_valid
     · rw [Encoder.emitAddWithRuns.emitAddWithRunsRec, dif_neg h_ni]
@@ -1044,9 +1043,7 @@ private theorem sourceWindow_eq_sourceData (source : ByteArray) :
 private theorem loop_base_case
     (idx : Encoder.SourceIndex) (target src : ByteArray) (pendingAdd : ByteArray)
     (insts : Array Encoder.RawInst) (tgt₀ : ByteArray)
-    (h_pa_le : pendingAdd.size ≤ target.size)
-    (h_pa_eq : pendingAdd = target.extract (target.size - pendingAdd.size) target.size) :
-    execInstArraySpec (Encoder.generateInstructionsLoop idx target target.size pendingAdd insts) src tgt₀ 0
+    : execInstArraySpec (Encoder.generateInstructionsLoop idx target target.size pendingAdd insts) src tgt₀ 0
       (Encoder.generateInstructionsLoop idx target target.size pendingAdd insts).size =
     execInstArraySpec insts src tgt₀ 0 insts.size ++ pendingAdd ++ target.extract target.size target.size := by
   rw [bytearray_extract_empty_range' target target.size, bytearray_append_empty]
@@ -1136,7 +1133,7 @@ private theorem generateInstructionsLoop_spec
     intro pos pendingAdd insts tgt₀ h_fuel h_pos h_pa_le h_pa_eq
     have h_pos_eq : pos = target.size := by omega
     subst h_pos_eq
-    exact loop_base_case idx target src pendingAdd insts tgt₀ h_pa_le h_pa_eq
+    exact loop_base_case idx target src pendingAdd insts tgt₀
   | succ n ih =>
     intro pos pendingAdd insts tgt₀ h_fuel h_pos h_pa_le h_pa_eq
     by_cases h_pos_lt : pos < target.size
@@ -1239,11 +1236,10 @@ private theorem generateInstructionsLoop_spec
     · -- pos >= target.size: same as base case
       have h_pos_eq : pos = target.size := by omega
       subst h_pos_eq
-      exact loop_base_case idx target src pendingAdd insts tgt₀ h_pa_le h_pa_eq
+      exact loop_base_case idx target src pendingAdd insts tgt₀
 
 -- generateInstructions execution reproduces the target
 theorem generateInstructions_exec (source target : ByteArray)
-    (h_source_bound : source.size < 2 ^ 31)
     (h_target_bound : target.size < 2 ^ 31) :
     let insts := Encoder.generateInstructions (Encoder.buildSourceIndex source) target
     execInstArraySpec insts (sourceWindow source) ByteArray.empty 0 insts.size = target := by
@@ -1429,7 +1425,7 @@ private theorem totalCoverage_eq_target_size (source target : ByteArray)
     let insts := Encoder.generateInstructions (Encoder.buildSourceIndex source) target
     totalCoverageFrom insts 0 = target.size := by
   set insts := Encoder.generateInstructions (Encoder.buildSourceIndex source) target
-  have h_exec := generateInstructions_exec source target h_source_bound h_target_bound
+  have h_exec := generateInstructions_exec source target h_target_bound
   simp only [] at h_exec
   have h_valid := generateInstructions_valid source target h_source_bound h_target_bound
   have h_size := execInstArraySpec_totalCoverage insts (sourceWindow source)
@@ -1487,6 +1483,6 @@ theorem full_encode_decode_roundtrip_final
     h_source_bound h_target_bound
     (derive_sec_bound source target h_source_bound h_target_bound)
     (generateInstructions_valid source target h_source_bound h_target_bound)
-    (generateInstructions_exec source target h_source_bound h_target_bound)
+    (generateInstructions_exec source target h_target_bound)
 
 end LeanBdiff.Vcdiff.GenerateInstructions

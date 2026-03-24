@@ -492,10 +492,10 @@ theorem encodeOneInstPaired_decode_step
                     (by rw [ByteArray.size_append]; omega)
                     hAddr'
                     (by rw [hModeRT]
-                        convert hAddrSfx using 2 <;>
+                        convert hAddrSfx using 2
                         simp only [ByteArray.size_append, Nat.zero_add,
                             bytearray_extract_append_left data dR 0 data.size (le_refl _),
-                            bytearray_extract_full] <;> omega)]
+                            bytearray_extract_full]; omega)]
                 simp only [Nat.zero_add,
                     bytearray_extract_append_left data dR 0 data.size (le_refl _),
                     bytearray_extract_full, hMkSz]
@@ -512,10 +512,10 @@ theorem encodeOneInstPaired_decode_step
                     (by rw [ByteArray.size_append]; omega)
                     hAddr'
                     (by rw [hModeRT]
-                        convert hAddrSfx using 2 <;>
+                        convert hAddrSfx using 2
                         simp only [ByteArray.size_append, Nat.zero_add,
                             bytearray_extract_append_left data dR 0 data.size (le_refl _),
-                            bytearray_extract_full] <;> omega)]
+                            bytearray_extract_full]; omega)]
                 simp only [Nat.zero_add,
                     bytearray_extract_append_left data dR 0 data.size (le_refl _),
                     bytearray_extract_full, hMkSz]
@@ -575,7 +575,7 @@ theorem encodeOneInstPaired_decode_step
             simp only [ByteArray.size, Nat.add_zero] at hPfx
             rw [decodeOneStep_add_varint_in_concat data.size sourceWindow initTarget
                 (ByteArray.mk #[(1 : UInt8)] ++ (Varint.encode data.size ++ iR)) 0
-                (data ++ dR) 0 aR 0 initCache hDataSz hDataSzBound
+                (data ++ dR) 0 aR 0 initCache
                 (by rw [ByteArray.size_append, hMk1Sz]; omega)
                 (by rw [ba_getElem_bang_append_left _ _ 0 (by rw [hMk1Sz]; omega)]; rfl)
                 (by convert hPfx using 2)
@@ -801,7 +801,7 @@ theorem encodeOneInstPaired_decode_step
             bytearray_empty_append aR]
         rw [decodeOneStep_run_in_concat byte sz sourceWindow initTarget
             (ByteArray.mk #[0] ++ (Varint.encode sz ++ iR)) 0
-            (ByteArray.mk #[byte] ++ dR) 0 aR 0 initCache hSz hSzBound
+            (ByteArray.mk #[byte] ++ dR) 0 aR 0 initCache
             (by rw [ByteArray.size_append, hMk0Sz]; omega)
             (by rw [ba_getElem_bang_append_left _ _ 0 (by rw [hMk0Sz]; omega)]; rfl)
             (by convert hPfx using 2)

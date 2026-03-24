@@ -1125,7 +1125,6 @@ theorem decodeOneStep_add_varint_in_concat
     (dataAll : ByteArray) (dataPos : Nat)
     (addrAll : ByteArray) (addrPos : Nat)
     (cache : AddressCache.State)
-    (h1 : n ≥ 1) (hBound : n < 2 ^ 31)
     (hInstBound : instPos < instData.size)
     (hInstByte : instData[instPos]! = 1)
     (hVarint : Varint.decode ⟨instData, instPos + 1⟩ =
@@ -1361,7 +1360,7 @@ theorem copyLoop_source_only (sw tgt : ByteArray) (addr i sz : Nat)
     rw [ih (tgt.push (sw[addr + i]!)) (i + 1) (by omega)]
     conv_rhs => rw [ByteArray.extract_cons sw (addr + i) n (by omega)]
     rw [← bytearray_append_assoc, ← push_eq_append_singleton']
-    congr 1 <;> omega
+    congr 1
 
 -- COPY mode 0 from source window: when address is within source and
 -- the addr section has the encoded address at the right position.
@@ -1404,7 +1403,6 @@ theorem decodeOneStep_run_in_concat
     (dataAll : ByteArray) (dataPos : Nat)
     (addrAll : ByteArray) (addrPos : Nat)
     (cache : AddressCache.State)
-    (hSz : sz ≥ 1) (hSzBound : sz < 2 ^ 31)
     (hInstBound : instPos < instData.size)
     (hInstByte : instData[instPos]! = 0)
     (hVarint : Varint.decode ⟨instData, instPos + 1⟩ =
@@ -1455,7 +1453,7 @@ theorem decodeOneStep_copy_mode0_in_concat
     (addrAll : ByteArray) (addrPos : Nat)
     (cache : AddressCache.State)
     (hSz4 : sz ≥ 4) (hSz18 : sz ≤ 18)
-    (hAddr : addr + sz ≤ sourceWindow.size) (hAddrBound : addr < 2 ^ 35)
+    (hAddr : addr + sz ≤ sourceWindow.size)
     (hInstBound : instPos < instData.size)
     (hInstByte : instData[instPos]! = (sz + 16).toUInt8)
     (hAddrDecode : AddressCache.decode 0
@@ -1657,7 +1655,7 @@ theorem encodeOneInst_copy_mode0_sections (addr sz : Nat)
     (srcLen : Nat) (cache : AddressCache.State) (tgtPos : Nat)
     (hSz4 : sz ≥ 4) (hSz18 : sz ≤ 18)
     (hMode : (cache.encodeAddress addr (srcLen + tgtPos)).1 = 0) :
-    let (mode, addrBytes, cache') := cache.encodeAddress addr (srcLen + tgtPos)
+    let (_mode, addrBytes, cache') := cache.encodeAddress addr (srcLen + tgtPos)
     encodeOneInst (.copy addr sz) srcLen cache tgtPos =
     (ByteArray.empty, ByteArray.mk #[(sz + 16).toUInt8],
      addrBytes, cache', tgtPos + sz) := by
@@ -2742,7 +2740,7 @@ theorem encodeInstList_decodeLoop_roundtrip
           rw [bytearray_append_assoc (ByteArray.mk #[1]) (Varint.encode d1.size) iR]
           have h_add := decodeOneStep_add_varint_in_concat d1.size sourceWindow initTarget
             (ByteArray.mk #[1] ++ (Varint.encode d1.size ++ iR)) 0
-            (d1 ++ dR) 0 aR 0 cache' h1 hBound
+            (d1 ++ dR) 0 aR 0 cache'
             (by rw [ByteArray.size_append]
                 have : (ByteArray.mk #[1] : ByteArray).size = 1 := rfl; omega)
             (by rw [ba_getElem_bang_append_left _ _ 0
@@ -2881,7 +2879,7 @@ theorem encodeInstList_decodeLoop_roundtrip
         -- After rfl, `initCache` → `cache'` (RUN passes cache through unchanged)
         have h_run := decodeOneStep_run_in_concat byte sz sourceWindow initTarget
           (ByteArray.mk #[0] ++ (Varint.encode sz ++ iR)) 0
-          (ByteArray.mk #[byte] ++ dR) 0 aR 0 cache' hSz hSzBound
+          (ByteArray.mk #[byte] ++ dR) 0 aR 0 cache'
           (by rw [ByteArray.size_append]
               have : (ByteArray.mk #[0] : ByteArray).size = 1 := rfl; omega)
           (by rw [ba_getElem_bang_append_left _ _ 0

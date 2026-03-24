@@ -526,7 +526,7 @@ private theorem encode_data_eq (n : Nat) (hn : n ≠ 0) :
 -- Helper: extract from a ByteArray matches a sublist via List.drop/take
 private theorem list_drop_take_eq_of_extract
     (data : ByteArray) (pos len : Nat)
-    (expected : ByteArray) (h_bound : pos + len ≤ data.size)
+    (expected : ByteArray)
     (h_extract : data.extract pos (pos + len) = expected) :
     (data.data.toList.drop pos).take len = expected.data.toList := by
   subst h_extract
@@ -536,7 +536,6 @@ private theorem list_drop_take_eq_of_extract
 -- The key drop decomposition: when extract matches, drop pos = encoded ++ rest
 private theorem list_drop_decompose
     (data : ByteArray) (pos : Nat) (encoded : List UInt8)
-    (h_bound : pos + encoded.length ≤ data.size)
     (h_take : (data.data.toList.drop pos).take encoded.length = encoded) :
     data.data.toList.drop pos = encoded ++ data.data.toList.drop (pos + encoded.length) := by
   conv_lhs => rw [← List.take_append_drop encoded.length (data.data.toList.drop pos)]
@@ -615,10 +614,9 @@ theorem decode_at_pos (n : Nat) (h : n < 2 ^ 35)
   have hdla := decodeListAux_encode n h
   -- The bytes at [pos, pos+encSize) in data match the encoded bytes
   have h_take : (dataList.drop pos).take encBytes.length = encBytes :=
-    list_drop_take_eq_of_extract data pos (encode n).size (encode n) h_bound h_extract
+    list_drop_take_eq_of_extract data pos (encode n).size (encode n) h_extract
   -- Decompose: dataList.drop pos = encBytes ++ suffix
-  have h_bound_list : pos + encBytes.length ≤ data.size := by rw [← henc_size]; exact h_bound
-  have hdrop := list_drop_decompose data pos encBytes h_bound_list h_take
+  have hdrop := list_drop_decompose data pos encBytes h_take
   -- Extend decodeListAux to the full data
   let suffix := dataList.drop (pos + encBytes.length)
   have hdla_data : decodeListAux (dataList.drop pos) 0 5 = some (n, suffix) := by
