@@ -1,0 +1,11 @@
+[package]
+name = "lean-bdiff"
+version = "0.1.0"
+edition = "2021"
+description = "VCDIFF binary diff (RFC 3284), powered by formally verified Lean 4"
+license = "MIT"
+
+[build-dependencies]
+cc = "1"
+
+[dev-dependencies]
