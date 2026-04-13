@@ -6,6 +6,12 @@ mod sys;
 
 use std::fmt;
 
+/// Initialize the Lean runtime. Call this early to avoid paying startup cost on the first
+/// encode/decode call. Safe to call multiple times (no-op after the first).
+pub fn init() {
+    sys::ensure_init();
+}
+
 /// Error type for encode/decode operations.
 #[derive(Debug, Clone)]
 pub enum Error {
