@@ -14,25 +14,25 @@ structure Cursor where
   pos  : Nat
   deriving Repr
 
-def Cursor.remaining (c : Cursor) : Nat :=
+@[inline] def Cursor.remaining (c : Cursor) : Nat :=
   c.data.size - c.pos
 
-def Cursor.hasBytes (c : Cursor) (n : Nat) : Bool :=
+@[inline] def Cursor.hasBytes (c : Cursor) (n : Nat) : Bool :=
   c.pos + n ≤ c.data.size
 
-def Cursor.readByte (c : Cursor) : DecodeResult (UInt8 × Cursor) :=
+@[inline] def Cursor.readByte (c : Cursor) : DecodeResult (UInt8 × Cursor) :=
   if c.pos < c.data.size then
     .ok (c.data[c.pos]!, { c with pos := c.pos + 1 })
   else
     .error .truncatedInput
 
-def Cursor.readBytes (c : Cursor) (n : Nat) : DecodeResult (ByteArray × Cursor) :=
+@[inline] def Cursor.readBytes (c : Cursor) (n : Nat) : DecodeResult (ByteArray × Cursor) :=
   if c.pos + n ≤ c.data.size then
     .ok (c.data.extract c.pos (c.pos + n), { c with pos := c.pos + n })
   else
     .error .truncatedInput
 
-def Cursor.skip (c : Cursor) (n : Nat) : DecodeResult Cursor :=
+@[inline] def Cursor.skip (c : Cursor) (n : Nat) : DecodeResult Cursor :=
   if c.pos + n ≤ c.data.size then
     .ok { c with pos := c.pos + n }
   else
@@ -80,7 +80,7 @@ def decodeLoop (data : ByteArray) (pos : Nat) (acc : Nat) (remaining : Nat)
       .error .truncatedInput
 
 /-- Decode a base-128 varint, returning the value and updated cursor. Max 5 bytes (32-bit). -/
-def decode (c : Cursor) : DecodeResult (Nat × Cursor) :=
+@[inline] def decode (c : Cursor) : DecodeResult (Nat × Cursor) :=
   decodeLoop c.data c.pos 0 5
 
 -- ## Size computation

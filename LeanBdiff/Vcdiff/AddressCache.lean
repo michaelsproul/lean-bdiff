@@ -40,7 +40,7 @@ def State.init (sNear := defaultNearSize) (sSame := defaultSameSize) : State :=
 def State.numModes (s : State) : Nat := 2 + s.sNear + s.sSame
 
 /-- Update the cache after decoding an address. -/
-def State.update (s : State) (addr : Nat) : State :=
+@[inline] def State.update (s : State) (addr : Nat) : State :=
   let s := if s.sNear > 0 then
     { s with
       near := s.near.set! s.nearIdx addr,
@@ -95,7 +95,7 @@ def State.encodeAddress (s : State) (addr : Nat) (here : Nat)
 
 -- Decode a COPY address given the mode, address cursor, and current "here" position.
 -- Returns the decoded address and updated cursor and cache state.
-def decode (mode : Nat) (here : Nat) (addrCursor : Varint.Cursor) (cache : State)
+@[inline] def decode (mode : Nat) (here : Nat) (addrCursor : Varint.Cursor) (cache : State)
     : DecodeResult (Nat × Varint.Cursor × State) := do
   if mode == 0 then
     -- VCD_SELF: absolute address

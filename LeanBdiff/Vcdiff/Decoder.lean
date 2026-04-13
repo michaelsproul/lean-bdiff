@@ -136,7 +136,7 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
     copyLoop sourceWindow (target.push b) addr (i + 1) n
 
 /-- Optimized copy: bulk memcpy when possible, byte-by-byte only for overlapping self-copies. -/
-def copyBytes (sourceWindow target : ByteArray) (addr n : Nat) : ByteArray :=
+@[inline] def copyBytes (sourceWindow target : ByteArray) (addr n : Nat) : ByteArray :=
   if addr + n ≤ sourceWindow.size then
     -- Entire copy is from the source segment: bulk extract + append
     target ++ sourceWindow.extract addr (addr + n)
@@ -174,7 +174,7 @@ def copyBytes (sourceWindow target : ByteArray) (addr n : Nat) : ByteArray :=
 /-- Execute a single half-instruction, returning updated state.
     `sourceWindow` is the concatenation of source segment + target decoded so far
     (for COPY within the combined window). -/
-def execHalfInst
+@[inline] def execHalfInst
     (inst : HalfInst)
     (instSize : Nat)  -- resolved size (never 0)
     (sourceWindow : ByteArray)
@@ -214,7 +214,7 @@ def execHalfInst
 
 /-- Decode one opcode from the instruction section, resolving sizes and executing
     both half-instructions. Returns updated state. -/
-def decodeOneStep (sourceWindow target : ByteArray)
+@[inline] def decodeOneStep (sourceWindow target : ByteArray)
     (instCursor dataCursor addrCursor : Varint.Cursor)
     (addrCache : AddressCache.State)
     : DecodeResult

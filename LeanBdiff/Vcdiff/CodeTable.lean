@@ -71,7 +71,7 @@ private def buildDefaultTable : Array CodeTableEntry := Id.run do
 def defaultTable : Array CodeTableEntry := buildDefaultTable
 
 /-- Look up an opcode in the default code table. -/
-def lookup (opcode : UInt8) : CodeTableEntry :=
+@[inline] def lookup (opcode : UInt8) : CodeTableEntry :=
   defaultTable[opcode.toNat]!
 
 end LeanBdiff.Vcdiff.CodeTable
