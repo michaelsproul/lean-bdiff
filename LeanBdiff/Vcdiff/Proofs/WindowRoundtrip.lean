@@ -1362,6 +1362,13 @@ theorem copyLoop_source_only (sw tgt : ByteArray) (addr i sz : Nat)
     rw [← bytearray_append_assoc, ← push_eq_append_singleton']
     congr 1
 
+-- copyBytes for source-only copies: first branch fires directly
+theorem copyBytes_source_only (sw tgt : ByteArray) (addr sz : Nat)
+    (h : addr + sz ≤ sw.size) :
+    Decoder.copyBytes sw tgt addr sz = tgt ++ sw.extract addr (addr + sz) := by
+  unfold Decoder.copyBytes
+  simp only [if_pos h]
+
 -- COPY mode 0 from source window: when address is within source and
 -- the addr section has the encoded address at the right position.
 theorem execHalfInst_copy_source_at_pos
@@ -1386,9 +1393,8 @@ theorem execHalfInst_copy_source_at_pos
   simp only [pure, Except.pure, bind, Except.bind]
   -- addr < windowSize check: addr < sw.size + target.size
   rw [if_neg (show ¬(addr ≥ sourceWindow.size + target.size) from by omega)]
-  -- copyLoop gives the right result
-  rw [copyLoop_source_only sourceWindow target addr 0 sz (by omega)]
-  simp only [show addr + 0 = addr from by omega]
+  -- copyBytes gives the right result
+  rw [copyBytes_source_only sourceWindow target addr sz (by omega)]
 
 -- ============================================================================
 -- ## decodeOneStep for RUN on concatenated sections
@@ -1543,8 +1549,7 @@ theorem decodeOneStep_copy_varint_in_concat
   rw [hModeRoundtrip, hAddrDecode]
   simp only [pure, Except.pure, bind, Except.bind]
   rw [if_neg (show ¬(addr ≥ sourceWindow.size + target.size) from by omega)]
-  rw [copyLoop_source_only sourceWindow target addr 0 sz (by omega)]
-  simp only [show addr + 0 = addr from by omega]
+  rw [copyBytes_source_only sourceWindow target addr sz (by omega)]
 
 -- ============================================================================
 -- ## Target size tracking through execInstSpec
@@ -2587,8 +2592,7 @@ theorem execHalfInst_copy_source_general
   rw [hAddrDecode]
   simp only [pure, Except.pure, bind, Except.bind]
   rw [if_neg (show ¬(addr ≥ sourceWindow.size + target.size) from by omega)]
-  rw [copyLoop_source_only sourceWindow target addr 0 sz (by omega)]
-  simp only [show addr + 0 = addr from by omega]
+  rw [copyBytes_source_only sourceWindow target addr sz (by omega)]
 
 -- Compositional step: one encodeOneInst → decodeOneStep + relocation for remaining decodeLoop
 theorem decodeLoop_compose_step
@@ -3163,6 +3167,7 @@ theorem applyWindow_of_decodeLoop
     source.extract win.sourceSegOff (win.sourceSegOff + win.sourceSegLen)
     else ByteArray.empty) = sourceSegment from h_seg.symm]
   -- Convert applyWindowLoop to decodeLoop
+  rw [show ByteArray.emptyWithCapacity win.targetLen = ByteArray.empty from rfl]
   rw [(decodeLoop_eq_applyWindowLoop sourceSegment win.instSection.size
     ByteArray.empty ⟨win.instSection, 0⟩ ⟨win.dataSection, 0⟩
     ⟨win.addrSection, 0⟩ AddressCache.State.init).symm]

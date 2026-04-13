@@ -135,6 +135,42 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
       target[srcPos - sourceWindow.size]!
     copyLoop sourceWindow (target.push b) addr (i + 1) n
 
+/-- Optimized copy: bulk memcpy when possible, byte-by-byte only for overlapping self-copies. -/
+def copyBytes (sourceWindow target : ByteArray) (addr n : Nat) : ByteArray :=
+  if addr + n ≤ sourceWindow.size then
+    -- Entire copy is from the source segment: bulk extract + append
+    target ++ sourceWindow.extract addr (addr + n)
+  else if addr ≥ sourceWindow.size then
+    -- Entire copy is from the target region
+    let tgtOff := addr - sourceWindow.size
+    if tgtOff + n ≤ target.size then
+      -- Non-overlapping: all bytes already exist in target, bulk extract
+      target ++ target.extract tgtOff (tgtOff + n)
+    else
+      -- Overlapping self-copy: must go byte-by-byte
+      Id.run do
+        let mut t := target
+        for i in [:n] do
+          let srcPos := tgtOff + i
+          t := t.push t[srcPos]!
+        t
+  else
+    -- Copy straddles source/target boundary
+    let fromSrc := sourceWindow.size - addr
+    let rest := n - fromSrc
+    let t := target ++ sourceWindow.extract addr sourceWindow.size
+    -- The remaining bytes come from target region starting at offset 0
+    if rest ≤ t.size - sourceWindow.size then
+      t ++ t.extract sourceWindow.size (sourceWindow.size + rest)
+    else
+      Id.run do
+        let mut t' := t
+        for i in [:rest] do
+          let srcPos := sourceWindow.size + i
+          t' := t'.push (if srcPos < sourceWindow.size then sourceWindow[srcPos]!
+                         else t'[srcPos - sourceWindow.size]!)
+        t'
+
 /-- Execute a single half-instruction, returning updated state.
     `sourceWindow` is the concatenation of source segment + target decoded so far
     (for COPY within the combined window). -/
@@ -173,7 +209,7 @@ def execHalfInst
       throw (.copyOutOfBounds addr instSize windowSize)
     -- Copy byte by byte to handle overlapping copies (where addr is in target region
     -- and we're copying bytes we're currently producing)
-    let target' := copyLoop sourceWindow target addr 0 instSize
+    let target' := copyBytes sourceWindow target addr instSize
     return (target', dataCursor, addrCursor', addrCache')
 
 /-- Decode one opcode from the instruction section, resolving sizes and executing
@@ -246,7 +282,7 @@ def applyWindow (win : Window) (source : ByteArray) : DecodeResult ByteArray := 
       ByteArray.empty
 
   let (target, _, _, _, _) ← applyWindowLoop sourceSegment
-    win.instSection.size ByteArray.empty
+    win.instSection.size (ByteArray.emptyWithCapacity win.targetLen)
     ⟨win.instSection, 0⟩ ⟨win.dataSection, 0⟩
     ⟨win.addrSection, 0⟩ AddressCache.State.init
 
