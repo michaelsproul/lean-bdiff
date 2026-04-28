@@ -176,6 +176,44 @@ Reordered priorities:
 | 2026-04-28 | Step 1.4 (partial): RawInst.add carries indices, not ByteArray | 2981 ms | 5.41x |
 | 2026-04-28 | Decode opts (unboxed AddressCache, batched-mod Adler32, isNoop tag check, ADD via copySlice) | 2830 ms / 44 ms decode / 13 ms synthetic decode | encode 5.10x / decode case01 4.49x / decode synthetic 28.6x |
 | 2026-04-28 | Decode opts 2 (scalar cursors in applyWindowFast, per-case exec helpers) | 2830 ms / 36 ms decode / 9.6 ms synthetic decode | encode 5.10x / decode case01 3.67x / decode synthetic 21.1x |
+| 2026-04-28 | Decode opts 3 (USize-free varint, addr-cache decodePos, CPS-style afterInst1) | 2830 ms / 31 ms decode / 7.9 ms synthetic decode | encode 5.10x / decode case01 3.16x / decode synthetic 17.3x |
+
+### Decode optimisation notes (round 3)
+
+Three further changes landed:
+
+7. **`Varint.decodeLoopPos`** returns `(value, newPos)` instead of
+   `(value, Cursor)`. Skips one Cursor allocation per varint decode in
+   the hot path. Case01 36 → 35 ms.
+8. **`AddressCache.decodePos`** takes `addrSec + aPos` directly as a
+   scalar pair, skips Cursor construction. Called once per COPY opcode
+   from `execCopy`. Case01 35 → 35 ms (within noise); synthetic decode
+   9.6 → 9.3 ms.
+9. **CPS-style `afterInst1` inline continuation**: previously the post-
+   inst1 state was boxed as `DecodeResult (ByteArray × Nat × Nat ×
+   AddressCache.State)` between inst1 and inst2. Rewritten with a local
+   closure that takes the 4 fields as bound args; Lean inlines it at
+   each inst1 case (noop/add/run/copy) so the state lives in variables
+   rather than a heap tuple. Case01 35 → 31 ms (11%); synthetic 9.3 →
+   7.9 ms (15%).
+
+**Decode summary after all three rounds:**
+
+| Workload | Pre-opt | Current | Total speedup | Direct-Lean ratio |
+|---|---|---|---|---|
+| case01 decode | 54 ms | **31 ms** | 43% | **3.16x** vs xdelta3 |
+| synthetic decode | 19 ms | **7.9 ms** | 58% | 17.3x vs xdelta3 |
+
+In-process (via FFI):
+
+| Workload | xdelta3 | lean-bdiff | Ratio |
+|---|---|---|---|
+| case01 decode | 9.1 ms | 42 ms | **4.66x** |
+| synthetic decode | 0.41 ms | 9.9 ms | 24.2x |
+
+Case01 decode is now at ~3x direct-Lean vs xdelta3, close to the 2x
+Stage 1 target. Synthetic is still dominated by per-call Lean runtime
+overhead (setup/initialisation + FFI ByteArray copy-in).
 
 ### Decode optimisation notes (round 2)
 
