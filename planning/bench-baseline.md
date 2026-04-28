@@ -2,14 +2,21 @@
 
 Captured 2026-04-28 on `geralt` (Linux 6.8.0-110-generic, x86_64) with:
 
-- xdelta3 3.0.11 (system package)
+- xdelta3 3.0.11 (system package `libxdelta` + CLI)
+- `xdelta3-rs` 0.1.5 — Rust bindings, statically linked libxdelta3.a
 - Lean 4 v4.29.0-rc6, lean-bdiff at commit `bbb384b`
 - Iterations: 5 per measurement, median reported, 1 warmup run
+- Release build (`cargo --release`)
 
 Reproduce:
 ```
-scripts/bench-xdelta3.sh 5
+# In-process comparison (authoritative — eliminates process/IO overhead)
+cd rust && cargo run --release --bin bench-compare --features bench -- all 5
+
+# Lean-only numbers (same timing harness as bench-compare for lean side)
 .lake/build/bin/bench-vcdiff all 5     # after `lake build bench-vcdiff`
+
+# Profile
 scripts/profile.sh case01-encode       # writes planning/profile-*-<workload>.txt
 ```
 
@@ -21,50 +28,78 @@ scripts/profile.sh case01-encode       # writes planning/profile-*-<workload>.tx
 | `case01-decode` | same source | same target via `test-data/case01/state_diff_bytes.bin` (8.4 MiB, xdelta3-produced) | Straight decode of the shipped diff |
 | `synthetic-1MB` | 1 MB pseudo-random, seed=42 | same bytes with every 10th byte +1 | 10% modification rate |
 
-## Results
+## Results — in-process (authoritative)
+
+Both sides timed with `std::time::Instant` around single function calls —
+no process startup, no file I/O, inputs pre-loaded into memory.
+
+`xdelta3` is called via raw FFI with `XD3_COMPLEVEL_6` to match CLI default
+(`xd3_encode_memory` with `flags=0` would use level 3, which is faster but
+worse compression — not apples-to-apples).
 
 ### case01 encode
 
-| Tool | Median time | Ratio | Patch size | Notes |
-|---|---|---|---|---|
-| xdelta3 | 462 ms | 1.00x | 8,820,977 B (56%) | |
-| lean-bdiff | **5,779 ms** | **12.51x** | 11,593,659 B (73%) | **north-star metric** |
+| Tool | Median time | Ratio | Patch size |
+|---|---|---|---|
+| xdelta3 -6 (libxdelta3.a) | 551 ms | 1.00x | 8,807,950 B (56%) |
+| lean-bdiff (via Rust FFI) | **8,354 ms** | **15.16x** | 11,593,659 B (73%) |
+| lean-bdiff (direct, no FFI memcpy) | 5,920 ms | 10.74x | 11,593,659 B |
 
 ### case01 decode
 
-| Tool | Median time | Ratio | Notes |
-|---|---|---|---|
-| xdelta3 (repo diff) | 35 ms | 1.00x | |
-| xdelta3 (own diff, 8.8 MB) | 39 ms | 1.11x | |
-| lean-bdiff (repo diff) | **49.9 ms** | **1.43x** | Already close to target ratio |
+| Tool | Median time | Ratio |
+|---|---|---|
+| xdelta3 (libxdelta3.a) | **9.2 ms** | 1.00x |
+| lean-bdiff (via Rust FFI) | 69.1 ms | 7.49x |
+| lean-bdiff (direct) | 49.9 ms | 5.40x |
 
 ### synthetic 1MB 10%-mod
 
 | Tool | Encode | Decode | Encode ratio | Decode ratio |
 |---|---|---|---|---|
-| xdelta3 | 58 ms | 5 ms | 1.00x | 1.00x |
-| lean-bdiff | 429 ms | 19 ms | 7.40x | 3.87x |
+| xdelta3 | 40.5 ms | **0.42 ms** | 1.00x | 1.00x |
+| lean-bdiff (via Rust FFI) | 528 ms | 24.6 ms | 13.04x | **58.67x** |
+| lean-bdiff (direct) | 429 ms | 19.3 ms | 10.59x | 45.94x |
 
-### Process-startup floor
+### Rust FFI overhead
 
-The xdelta3 numbers measure full `xdelta3 ...` invocations including process
-launch, file-open, and file-write. `strace` on an empty `xdelta3 -e` shows
-~10 ms of syscall floor. For case01 encode (462 ms) this is 2% noise; for
-synthetic decode (5 ms) it's half the measurement. Ratios on small decode
-workloads are therefore approximate upper bounds on the real ratio.
+The 40%+ slowdown when calling lean-bdiff through the Rust FFI
+(`lean_bdiff::encode`) is from `byte_array_from_slice`: it memcpys the
+input bytes into a fresh Lean `ByteArray` on every call. For case01
+encode that's 23 MB of memcpy per iteration (~2.4 s total per 5 iters).
+The direct-Lean numbers are what a Lean caller would see and are the
+relevant ones for evaluating our optimisation progress. The FFI numbers
+are relevant for a Rust-calling-lean-bdiff use case and would be improved
+by a zero-copy ByteArray-from-slice path, which is out of scope for this
+plan.
 
-The lean-bdiff numbers come from `timeMedian` which wraps `Encoder.encode` /
-`Decoder.decode` directly and excludes file I/O. So the quoted ratios are
-**conservative** — the lean-bdiff cost is purely compute.
+### Earlier CLI numbers (replaced)
+
+An earlier version of this file listed numbers from `xdelta3` CLI
+invocations measured with `time`. Those are **misleading** because process
+launch + file I/O adds ~10–30 ms per call — overwhelming decode entirely.
+The in-process numbers above are authoritative.
+
+For reference, the process-invocation numbers were:
+
+| Workload | xdelta3 CLI | ratio (wrong) | xdelta3 in-proc | ratio (correct) |
+|---|---|---|---|---|
+| case01 encode | 462 ms | 12.81x | 551 ms | 10.74x |
+| case01 decode | 35 ms | 1.43x | 9.2 ms | 5.40x |
+| synthetic decode | 5 ms | 3.87x | 0.42 ms | 45.94x |
 
 ## North-star metric
 
-**`case01-encode` median time**, target ratio ≤ 2.0x. Baseline 12.51x.
+**`case01-encode` direct-Lean median time**, target ratio ≤ 2.0x vs in-proc
+xdelta3. Baseline **10.74x** (5920 ms vs 551 ms).
 
-Rationale: (1) encode is the outlier; decode is already acceptable; (2) the
+Rationale: (1) encode is the outlier and touches every hot path; (2) the
 case01 target is representative of intended usage (15 MiB real data); (3)
-encode spans every hot path (source index, rolling hash, match extend,
-section emission), so optimisations targeting it will also lift decode.
+using direct-Lean timing (not FFI) isolates the optimisation target from
+Rust-interop concerns.
+
+Secondary metric: **`case01-decode` direct-Lean**, currently 5.40x. Once
+encode is in range, revisit decode.
 
 ## Profile summary (baseline)
 
@@ -107,8 +142,9 @@ rather than `Decoder.decode` itself. Excluding that:
 |  1.3% | `mi_malloc_small` |
 |  1.3% | `lean_byte_array_copy_slice` |
 
-Decode is already within 1.43x of xdelta3; we don't need to micro-optimise
-it at this stage.
+With the corrected in-process numbers, decode is 5.40x slower than xdelta3
+on case01 and 46x slower on synthetic — **not** close to parity, and
+deserves attention once encode is in range.
 
 ## Implications for Stage 1 ordering
 
@@ -131,6 +167,6 @@ Reordered priorities:
 
 ## History
 
-| Date | Change | case01-encode median | Ratio vs xdelta3 |
+| Date | Change | case01-encode median (direct) | Ratio vs xdelta3 in-proc |
 |---|---|---|---|
-| 2026-04-28 | baseline (bbb384b) | 5779 ms | 12.51x |
+| 2026-04-28 | baseline (bbb384b) | 5920 ms | 10.74x |

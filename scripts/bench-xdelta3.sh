@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Benchmark xdelta3 reference implementation for comparison with lean-bdiff.
+# Benchmark xdelta3 CLI (process-invocation) for sanity-checking the
+# in-process numbers from `rust/bin/bench-compare.rs`. Authoritative
+# numbers come from bench-compare — this script includes ~10-30ms of
+# process launch + file I/O overhead, which is significant on decode.
 #
 # Usage:
 #   scripts/bench-xdelta3.sh [iters]

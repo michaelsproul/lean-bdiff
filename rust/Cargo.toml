@@ -9,3 +9,14 @@ license = "MIT"
 cc = "1"
 
 [dev-dependencies]
+
+[[bin]]
+name = "bench-compare"
+path = "bin/bench-compare.rs"
+required-features = ["bench"]
+
+[features]
+bench = ["dep:xdelta3"]
+
+[dependencies]
+xdelta3 = { version = "0.1", optional = true }
