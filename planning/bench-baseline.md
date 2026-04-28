@@ -175,6 +175,43 @@ Reordered priorities:
 | 2026-04-28 | Step 1.6 ext: hashBytes + no-alloc findBestMatchRec | 3042 ms | 5.52x |
 | 2026-04-28 | Step 1.4 (partial): RawInst.add carries indices, not ByteArray | 2981 ms | 5.41x |
 | 2026-04-28 | Decode opts (unboxed AddressCache, batched-mod Adler32, isNoop tag check, ADD via copySlice) | 2830 ms / 44 ms decode / 13 ms synthetic decode | encode 5.10x / decode case01 4.49x / decode synthetic 28.6x |
+| 2026-04-28 | Decode opts 2 (scalar cursors in applyWindowFast, per-case exec helpers) | 2830 ms / 36 ms decode / 9.6 ms synthetic decode | encode 5.10x / decode case01 3.67x / decode synthetic 21.1x |
+
+### Decode optimisation notes (round 2)
+
+Two further changes landed:
+
+5. **`applyWindowFast` with scalar positions**: replaced `Cursor` struct
+   triples in the main decode loop with bare `Nat` positions
+   (`iPos`, `dPos`, `aPos`). The three section ByteArrays are passed as
+   fixed args that never change. Eliminates 3-6 Cursor struct allocations
+   per opcode. Case01 44 → 43 ms; synthetic unchanged at 13 ms.
+6. **Per-case exec helpers (`execAdd`, `execRun`, `execCopy`)**: replaced
+   the unified `execHalfInstFast : DecodeResult (ByteArray × Nat × Nat ×
+   State)` with three helpers whose return types match exactly what each
+   case updates (ADD/RUN: `ByteArray × Nat`; COPY: `ByteArray × Nat ×
+   State`; NOOP: no exec call at all). This let the Lean compiler elide
+   the per-case 4-tuple + Except.ok wrapping that previously cost ~5
+   allocations per half-instruction. Case01 43 → 36 ms (16%); synthetic
+   13 → 9.6 ms (26%).
+
+**Decode summary after both rounds:**
+
+| Workload | Pre-opt | Current | Total speedup | Direct-Lean ratio |
+|---|---|---|---|---|
+| case01 decode | 54 ms | **36 ms** | 33% | **3.67x** vs xdelta3 |
+| synthetic decode | 19 ms | **9.6 ms** | 49% | 21.1x vs xdelta3 |
+
+In-process (via FFI, comparable measurement with xdelta3):
+
+| Workload | xdelta3 in-proc | lean-bdiff in-proc | Ratio |
+|---|---|---|---|
+| case01 decode | 9.6 ms | 51 ms | **5.31x** |
+| synthetic decode | 0.44 ms | 14 ms | 32.3x |
+
+Case01 decode is now in the 3.7–5.3x range vs xdelta3, substantially closer
+to the 2x target than the encoder's 5.1–7.5x. Synthetic decode still bears
+per-call Lean runtime overhead that dominates at tiny workloads.
 
 ### Decode optimisation notes
 
