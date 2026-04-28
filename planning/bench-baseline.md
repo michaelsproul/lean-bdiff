@@ -174,6 +174,52 @@ Reordered priorities:
 | 2026-04-28 | Step 1.6 USize extend loops | 3253 ms | 5.90x |
 | 2026-04-28 | Step 1.6 ext: hashBytes + no-alloc findBestMatchRec | 3042 ms | 5.52x |
 | 2026-04-28 | Step 1.4 (partial): RawInst.add carries indices, not ByteArray | 2981 ms | 5.41x |
+| 2026-04-28 | Decode opts (unboxed AddressCache, batched-mod Adler32, isNoop tag check, ADD via copySlice) | 2830 ms / 44 ms decode / 13 ms synthetic decode | encode 5.10x / decode case01 4.49x / decode synthetic 28.6x |
+
+### Decode optimisation notes
+
+Series of small decode-targeted changes:
+
+1. **`AddressCache.State.near/.same : Array UInt32`** (was `Array Nat`). Each
+   cache update previously boxed the address via gmp; now stays as unboxed
+   scalars. Decode 54 → 50 ms.
+2. **Batched-modulus Adler32 with USize index** (`Decoder.adler32`). Follows
+   RFC 1950's standard technique of running 5552 byte accumulations between
+   modulus applications. Inner loop is now tight USize arithmetic. Synthetic
+   decode 20% of samples were in the old Adler32; now 5%. Synthetic decode
+   19 → 15 ms.
+3. **`InstType.isNoop` tag check** replacing `!= .noop`. Eliminates the
+   derived-BEq switch from decodeOneStep's noop checks. Synthetic decode
+   5.6% of samples were in `instBEqInstType_beq`; now 0%.
+4. **ADD via direct `copySlice`** (was `readBytes + ++`). Previously did
+   two allocations + two memcpys per ADD; now one memcpy direct from the
+   data section into target at offset `target.size`. Case01 decode 50 → 44
+   ms; synthetic 15 → 14 ms.
+
+**Decode at this point:** case01 direct-Lean 44 ms (4.49x vs xdelta3
+in-process 9.8 ms); synthetic 13 ms (28.6x vs xdelta3 0.45 ms).
+
+The case01 in-process ratio via FFI is 6.18x (60 ms vs xdelta3's 9.8 ms),
+inflated by the ByteArray FFI copy-in overhead.
+
+The synthetic 28-40x decode gap reflects per-call Lean runtime overhead
+being significant for tiny workloads (<20 ms). Reduced but still
+dominant; fundamental improvements there would need streaming-level
+optimisations.
+
+### Skipped decode optimisations
+
+- **`copyBytes` via `copySlice target tgtOff target ...` for self-copies**:
+  unexpectedly regressed case01 decode from 44 → 52 ms despite being the
+  theoretically-faster path. Suspected reason: `copySlice src=target dest=target`
+  has different RC semantics in the extern than `target ++ target.extract ...`
+  where the `extract` creates a small fresh RC=1 buffer. Kept the original.
+- **`runPush` for RUN**: byte-by-byte push was slower than
+  `target ++ ByteArray.mk (Array.replicate n b)` for large runs. Kept the
+  bulk-replicate approach.
+- **Compute `here` only when needed in decodeOneStep**: no measurable
+  effect because `sourceWindow.size + target.size` is already scalar-tag-arithmetic
+  for our working sizes. Kept the simple version.
 
 ### Step 1.4 notes (partial: index-based RawInst.add)
 
