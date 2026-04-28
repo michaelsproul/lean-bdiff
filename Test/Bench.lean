@@ -86,39 +86,51 @@ def fmtTime (ns : Nat) : String :=
 
 -- ## Synthetic encode+decode workload
 
-def benchSynthetic (iters : Nat) : IO Unit := do
-  let name := "1MB 10%mod"
-  let srcSize := 1_000_000
-  let tgtSize := 1_000_000
-  let modRate := 10
-  let source := genData srcSize 42
-  let base := genData tgtSize 42
+def mkSynthetic : IO (ByteArray × ByteArray) := do
+  let size := 1_000_000
+  let source := genData size 42
+  let base := genData size 42
   let mut target := ByteArray.empty
-  for i in [:tgtSize] do
-    if modRate > 0 ∧ i % modRate == 0 then
+  for i in [:size] do
+    if i % 10 == 0 then
       target := target.push ((base[i]!.toNat + 1) % 256).toUInt8
     else
       target := target.push base[i]!
-
   IO.FS.writeBinFile "/tmp/bench_src.bin" source
   IO.FS.writeBinFile "/tmp/bench_tgt.bin" target
   let src ← IO.FS.readBinFile "/tmp/bench_src.bin"
   let tgt ← IO.FS.readBinFile "/tmp/bench_tgt.bin"
+  pure (src, tgt)
 
+def benchSynthetic (iters : Nat) : IO Unit := do
+  let (src, tgt) ← mkSynthetic
   let (encNs, patch) ← timeMedian iters (doEncode src tgt)
   let (decNs, decoded) ← timeMedian iters (doDecode patch src)
-
   IO.FS.writeBinFile "/tmp/bench_patch.bin" patch
-
   match decoded with
   | .ok r =>
     if r == tgt then
-      IO.println s!"{name}: encode {fmtTime encNs} median, decode {fmtTime decNs} median, \
-patch {patch.size}B ({(patch.size * 100) / tgtSize}%)  [iters={iters}]"
+      IO.println s!"1MB 10%mod: encode {fmtTime encNs} median, decode {fmtTime decNs} median, \
+patch {patch.size}B ({(patch.size * 100) / tgt.size}%)  [iters={iters}]"
     else
-      IO.println s!"{name}: MISMATCH! decoded {r.size}B vs target {tgtSize}B"
+      IO.println s!"1MB 10%mod: MISMATCH! decoded {r.size}B vs target {tgt.size}B"
   | .error e =>
-    IO.println s!"{name}: DECODE ERROR: {e}"
+    IO.println s!"1MB 10%mod: DECODE ERROR: {e}"
+
+def benchSyntheticDecode (iters : Nat) : IO Unit := do
+  let (src, tgt) ← mkSynthetic
+  let patch := Encoder.encode src tgt
+  -- Stress-test for profiling: run decode `iters * 100` times so profile
+  -- samples mostly come from the decode hot path.
+  let (decNs, decoded) ← timeMedian (iters * 100) (doDecode patch src)
+  match decoded with
+  | .ok r =>
+    if r == tgt then
+      IO.println s!"1MB 10%mod decode-only: {fmtTime decNs} median  [iters={iters * 100}]"
+    else
+      IO.println s!"1MB 10%mod: MISMATCH! decoded {r.size}B vs target {tgt.size}B"
+  | .error e =>
+    IO.println s!"1MB 10%mod: DECODE ERROR: {e}"
 
 -- ## case01 decode workload
 
@@ -186,6 +198,10 @@ def main (args : List String) : IO Unit := do
 
   if mode == "synthetic" ∨ mode == "encode" ∨ mode == "all" then
     benchSynthetic iters
+    IO.println ""
+
+  if mode == "synthetic-decode" then
+    benchSyntheticDecode iters
     IO.println ""
 
   IO.println "Done."

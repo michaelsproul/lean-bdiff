@@ -10,17 +10,38 @@ namespace LeanBdiff.Vcdiff.Decoder
 
 open LeanBdiff.Vcdiff
 
-/-- Compute Adler32 checksum over a ByteArray. -/
+/-- Inner loop for Adler32: accumulates `a` and `b` over a contiguous run
+    of bytes without taking the modulus. The caller bounds the run length
+    so the accumulators can't overflow before the mod is applied. -/
+def adler32Run (data : ByteArray) (idx : USize) (a b : UInt32)
+    : Nat → UInt32 × UInt32
+  | 0 => (a, b)
+  | n + 1 =>
+    let byte := if h : idx.toNat < data.size then data.uget idx h else 0
+    let a' := a + byte.toUInt32
+    let b' := b + a'
+    adler32Run data (idx + 1) a' b' n
+
+/-- Outer driver: consumes `data` in chunks of at most `adlerNMax` bytes,
+    applying the modulus once per chunk. Matches the standard RFC 1950
+    batched-mod technique. -/
+def adler32Chunks (data : ByteArray) (idx : USize) (a b : UInt32)
+    : Nat → UInt32
+  | 0 => (b <<< 16) ||| a
+  | remaining + 1 =>
+    -- Largest N such that max byte contribution (255) × N stays within
+    -- UInt32 when added to a starting b < 65521 and a < 65521 respectively.
+    -- RFC 1950 uses 5552; we use the same.
+    let chunkSize := min (remaining + 1) 5552
+    let (a', b') := adler32Run data idx a b chunkSize
+    let modAdler : UInt32 := 65521
+    adler32Chunks data (idx + chunkSize.toUSize) (a' % modAdler) (b' % modAdler)
+      (remaining + 1 - chunkSize)
+termination_by r => r
+
+/-- Compute Adler32 checksum over a ByteArray (RFC 1950). -/
 def adler32 (data : ByteArray) : UInt32 :=
-  let modAdler : UInt32 := 65521
-  let (a, b) := Id.run do
-    let mut a : UInt32 := 1
-    let mut b : UInt32 := 0
-    for i in [:data.size] do
-      a := (a + data[i]!.toUInt32) % modAdler
-      b := (b + a) % modAdler
-    (a, b)
-  (b <<< 16) ||| a
+  adler32Chunks data 0 1 0 data.size
 
 /-- Read a big-endian UInt32 from cursor. -/
 def readUInt32BE (c : Varint.Cursor) : DecodeResult (UInt32 × Varint.Cursor) := do

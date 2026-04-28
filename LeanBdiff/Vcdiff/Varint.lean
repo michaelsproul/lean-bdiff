@@ -62,8 +62,8 @@ def encode (n : Nat) : ByteArray :=
 
 -- ## Decoding
 
-/-- Recursive varint decode loop. Reads up to `remaining` bytes from `data` starting at `pos`,
-    accumulating the result in `acc`. -/
+/-- Recursive varint decode loop. Reads up to `remaining` bytes from `data`
+    starting at `pos`, accumulating the result in `acc`. -/
 def decodeLoop (data : ByteArray) (pos : Nat) (acc : Nat) (remaining : Nat)
     : DecodeResult (Nat × Cursor) :=
   match remaining with
