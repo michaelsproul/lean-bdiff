@@ -1,0 +1,66 @@
+# perf report for bench-vcdiff (case01-decode)
+# generated 2026-04-28T14:44:16+10:00
+# toolchain: leanprover/lean4:v4.29.0-rc6
+# uname: Linux geralt 6.8.0-110-generic #110-Ubuntu SMP PREEMPT_DYNAMIC Thu Mar 19 15:09:20 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+
+## Top 30 (flat, self time)
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 2K of event 'cycles:P'
+# Event count (approx.): 2460570092
+#
+# Overhead       Samples  Symbol                                                                                                                                                      IPC   [IPC Coverage]
+# ........  ............  ..........................................................................................................................................................  ....................
+#
+    16.63%           363  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Decoder_applyWindowLoop                                                                                               -      -            
+    11.35%           247  [.] lean_dec_ref_cold                                                                                                                                       -      -            
+     5.41%           118  [.] __memmove_avx_unaligned_erms                                                                                                                            -      -            
+     3.67%            80  [.] lean_byte_array_copy_slice                                                                                                                              -      -            
+     3.40%            74  [k] 0xffffffffa93d3c07                                                                                                                                      -      -            
+     2.85%            62  [.] lean_byte_array_data                                                                                                                                    -      -            
+     2.85%            62  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop                                                                                                     -      -            
+     2.61%            57  [.] mi_free                                                                                                                                                 -      -            
+     2.37%            51  [.] l_Array_isEqvAux___at___00ByteArray_instBEq_beq_spec__0___redArg                                                                                        -      -            
+     1.65%            36  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instBEqInstType_beq                                                                                                   -      -            
+     1.61%            35  [k] 0xffffffffa8a72a08                                                                                                                                      -      -            
+     1.57%            34  [.] mi_malloc_small                                                                                                                                         -      -            
+     1.43%            31  [.] lean_mk_array                                                                                                                                           -      -            
+     1.29%            28  [.] lean_byte_array_mk                                                                                                                                      -      -            
+     1.28%            28  [.] __gmpz_mul_2exp                                                                                                                                         -      -            
+     1.20%            26  [.] _int_free                                                                                                                                               -      -            
+     1.16%            25  [.] lean_nat_shiftl                                                                                                                                         -      -            
+     1.15%            25  [.] lean_ctor_release                                                                                                                                       -      -            
+     1.15%            25  [.] malloc                                                                                                                                                  -      -            
+     1.05%            23  [.] cfree@GLIBC_2.2.5                                                                                                                                       -      -            
+     1.01%            22  [.] realloc                                                                                                                                                 -      -            
+     0.96%            21  [.] mi_free_size                                                                                                                                            -      -            
+     0.83%            18  [.] __gmpz_add                                                                                                                                              -      -            
+     0.64%            14  [k] 0xffffffffa960128c                                                                                                                                      -      -            
+     0.64%            14  [.] lean_inc_heartbeat                                                                                                                                      -      -            
+     0.60%            13  [k] 0xffffffffa9704109                                                                                                                                      -      -            
+     0.54%            12  [k] 0xffffffffa9600ba0                                                                                                                                      -      -            
+     0.51%            11  [.] l_ByteArray_extract                                                                                                                                     -      -            
+     0.49%            11  [.] mi_malloc                                                                                                                                               -      -            
+     0.46%            10  [.] _mi_malloc_generic(mi_heap_s*, unsigned long, bool, unsigned long)                                                                                      -      -            
+     0.46%            10  [.] __gmpz_init_set_ui                                                                                                                                      -      -            
+     0.46%            10  [.] _mi_page_retire(mi_page_s*)                                                                                                                             -      -            
+     0.46%            10  [k] 0xffffffffa970410b                                                                                                                                      -      -            
+     0.42%             9  [.] __gmpz_clear                                                                                                                                            -      -            
+     0.36%             8  [k] 0xffffffffa9704104                                                                                                                                      -      -            
+     0.33%             7  [k] 0xffffffffa86986ca                                                                                                                                      -      -            
+     0.32%             7  [.] mi_find_page(mi_heap_s*, unsigned long, unsigned long)                                                                                                  -      -            
+     0.32%             7  [.] __gmpz_realloc                                                                                                                                          -      -            
+     0.28%             6  [.] free@plt                                                                                                                                                -      -            
+     0.27%             6  [.] lean::mpz::~mpz()                                                                                                                                       -      -            
+     0.26%             6  [.] __gmp_default_allocate                                                                                                                                  -      -            
+     0.23%             5  [k] 0xffffffffa862f451                                                                                                                                      -      -            
+     0.23%             5  [.] __gmpn_lshift_x86_64                                                                                                                                    -      -            
+     0.23%             5  [k] 0xffffffffa8630bf4                                                                                                                                      -      -            
+     0.23%             5  [k] 0xffffffffa862369a                                                                                                                                      -      -            
+     0.23%             5  [k] 0xffffffffa9600bc7                                                                                                                                      -      -            
+     0.23%             5  [k] 0xffffffffa865b033                                                                                                                                      -      -            
+     0.19%             4  [k] 0xffffffffa862f1dc                                                                                                                                      -      -            
+     0.19%             4  [k] 0xffffffffa9452b6b                                                                                                                                      -      -            

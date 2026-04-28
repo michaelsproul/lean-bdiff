@@ -3556,6 +3556,7 @@ lean_dec(x_54);
 lean_inc_ref(x_8);
 x_56 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_AddressCache_State_encodeAddress(x_8, x_52, x_55);
 lean_dec(x_55);
+lean_dec(x_52);
 x_57 = !lean_is_exclusive(x_56);
 if (x_57 == 0)
 {
@@ -3851,6 +3852,7 @@ lean_dec(x_143);
 lean_inc_ref(x_8);
 x_145 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_AddressCache_State_encodeAddress(x_8, x_141, x_144);
 lean_dec(x_144);
+lean_dec(x_141);
 x_146 = lean_ctor_get(x_145, 1);
 lean_inc(x_146);
 x_147 = lean_ctor_get(x_145, 0);
@@ -4025,7 +4027,6 @@ x_172 = lean_ctor_get(x_18, 0);
 x_173 = lean_ctor_get(x_18, 1);
 lean_inc(x_173);
 x_174 = lean_nat_add(x_3, x_9);
-lean_inc(x_172);
 x_175 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_AddressCache_State_encodeAddress(x_8, x_172, x_174);
 lean_dec(x_174);
 x_176 = lean_ctor_get(x_175, 1);

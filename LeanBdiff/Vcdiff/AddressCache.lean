@@ -20,14 +20,14 @@ open LeanBdiff.Vcdiff
 def defaultNearSize : Nat := 4
 def defaultSameSize : Nat := 3
 
-/-- Mutable address cache state. -/
+/-- Mutable address cache state. Addresses stored as `UInt32` — sufficient
+    for the `source.size < 2^31` invariant we carry. -/
 structure State where
   sNear    : Nat := defaultNearSize
   sSame    : Nat := defaultSameSize
-  near     : Array Nat    -- circular buffer of size sNear
-  nearIdx  : Nat := 0     -- next write position in near
-  same     : Array Nat    -- flat array of size sSame * 256
-  deriving Repr
+  near     : Array UInt32    -- circular buffer of size sNear
+  nearIdx  : Nat := 0        -- next write position in near
+  same     : Array UInt32    -- flat array of size sSame * 256
 
 /-- Create a fresh cache with all entries zeroed. -/
 def State.init (sNear := defaultNearSize) (sSame := defaultSameSize) : State :=
@@ -41,13 +41,14 @@ def State.numModes (s : State) : Nat := 2 + s.sNear + s.sSame
 
 /-- Update the cache after decoding an address. -/
 @[inline] def State.update (s : State) (addr : Nat) : State :=
+  let a32 : UInt32 := addr.toUInt32
   let s := if s.sNear > 0 then
     { s with
-      near := s.near.set! s.nearIdx addr,
+      near := s.near.set! s.nearIdx a32,
       nearIdx := (s.nearIdx + 1) % s.sNear }
   else s
   if s.sSame > 0 then
-    { s with same := s.same.set! (addr % (s.sSame * 256)) addr }
+    { s with same := s.same.set! (addr % (s.sSame * 256)) a32 }
   else s
 
 /-- Check NEAR modes, returning best mode/encoding found so far. -/
@@ -56,8 +57,8 @@ def State.tryNearModes (s : State) (addr : Nat) (bestMode : Nat) (bestEnc : Byte
   | 0 => (bestMode, bestEnc)
   | fuel + 1 =>
     let i := s.sNear - fuel - 1
-    let base := s.near[i]!
-    let (m, e) := if addr >= base then
+    let base := s.near[i]!.toNat
+    let (m, e) := if addr ≥ base then
       let encN := Varint.encode (addr - base)
       if encN.size < bestEnc.size then (2 + i, encN) else (bestMode, bestEnc)
     else (bestMode, bestEnc)
@@ -70,7 +71,7 @@ def State.trySameModes (s : State) (addr : Nat) (bestMode : Nat) (bestEnc : Byte
   | fuel + 1 =>
     let bank := s.sSame - fuel - 1
     let slot := bank * 256 + (addr % 256)
-    if s.same[slot]! == addr && addr != 0 then
+    if s.same[slot]!.toNat == addr ∧ addr ≠ 0 then
       (2 + s.sNear + bank, ByteArray.mk #[addr.toUInt8])
     else
       s.trySameModes addr bestMode bestEnc fuel
@@ -110,14 +111,14 @@ def State.encodeAddress (s : State) (addr : Nat) (here : Nat)
     -- NEAR cache: offset from cached address
     let nearIdx := mode - 2
     let (offset, cur') ← Varint.decode addrCursor
-    let base := cache.near[nearIdx]!
+    let base := cache.near[nearIdx]!.toNat
     let addr := base + offset
     return (addr, cur', cache.update addr)
   else if mode < 2 + cache.sNear + cache.sSame then
     -- SAME cache: single byte lookup
     let (b, cur') ← addrCursor.readByte
     let sameIdx := mode - 2 - cache.sNear
-    let addr := cache.same[sameIdx * 256 + b.toNat]!
+    let addr := cache.same[sameIdx * 256 + b.toNat]!.toNat
     return (addr, cur', cache.update addr)
   else
     .error (.invalidAddressMode mode)

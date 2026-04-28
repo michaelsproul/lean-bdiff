@@ -132,11 +132,10 @@ def benchCase01Decode (iters : Nat) : IO Unit := do
   IO.println s!"case01 decode: source {source.size}B, diff {diff.size}B, target {expected.size}B"
 
   let (decNs, result) ← timeMedian iters (doDecode diff source)
-  let (adlerNs, _) ← timeMedian iters (doAdler32 expected)
   match result with
   | .ok r =>
     if r == expected then
-      IO.println s!"  decode {fmtTime decNs} median, adler32 {fmtTime adlerNs} median  [iters={iters}]"
+      IO.println s!"  decode {fmtTime decNs} median  [iters={iters}]"
     else
       IO.println s!"  MISMATCH! decoded {r.size}B vs expected {expected.size}B"
   | .error e =>
