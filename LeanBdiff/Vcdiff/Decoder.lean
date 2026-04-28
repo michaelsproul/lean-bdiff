@@ -246,7 +246,7 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
   let entry := CodeTable.lookup opcode
   -- Resolve inst1 size (0 in table means read varint)
   let (inst1Size, instCursor'') ←
-    if entry.inst1.size == 0 && entry.inst1.type != .noop then do
+    if entry.inst1.size == 0 && !entry.inst1.type.isNoop then do
       let (sz, c) ← Varint.decode instCursor'
       pure (sz, c)
     else
@@ -254,14 +254,14 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
   -- Execute inst1
   let here := sourceWindow.size + target.size
   let (target', dataCursor', addrCursor', addrCache') ←
-    if entry.inst1.type != .noop then
+    if !entry.inst1.type.isNoop then
       execHalfInst entry.inst1 inst1Size sourceWindow target
         dataCursor addrCursor addrCache here
     else
       .ok (target, dataCursor, addrCursor, addrCache)
   -- Resolve inst2 size
   let (inst2Size, instCursor''') ←
-    if entry.inst2.size == 0 && entry.inst2.type != .noop then do
+    if entry.inst2.size == 0 && !entry.inst2.type.isNoop then do
       let (sz, c) ← Varint.decode instCursor''
       pure (sz, c)
     else
@@ -269,7 +269,7 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
   -- Execute inst2
   let here' := sourceWindow.size + target'.size
   let (target'', dataCursor'', addrCursor'', addrCache'') ←
-    if entry.inst2.type != .noop then
+    if !entry.inst2.type.isNoop then
       execHalfInst entry.inst2 inst2Size sourceWindow target'
         dataCursor' addrCursor' addrCache' here'
     else

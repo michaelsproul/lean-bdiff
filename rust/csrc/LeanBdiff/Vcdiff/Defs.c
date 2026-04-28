@@ -298,6 +298,8 @@ static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instBEqInstType___cl
 LEAN_EXPORT const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instBEqInstType = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instBEqInstType___closed__0_value;
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instInhabitedInstType_default;
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instInhabitedInstType;
+LEAN_EXPORT uint8_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_InstType_isNoop(lean_object*);
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_InstType_isNoop___boxed(lean_object*);
 static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instReprHalfInst_repr___redArg___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 3, .m_capacity = 3, .m_length = 2, .m_data = "{ "};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instReprHalfInst_repr___redArg___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instReprHalfInst_repr___redArg___closed__0_value;
 static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instReprHalfInst_repr___redArg___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 5, .m_capacity = 5, .m_length = 4, .m_data = "type"};
@@ -2865,6 +2867,33 @@ _start:
 lean_object* x_1; 
 x_1 = lean_box(0);
 return x_1;
+}
+}
+LEAN_EXPORT uint8_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_InstType_isNoop(lean_object* x_1) {
+_start:
+{
+if (lean_obj_tag(x_1) == 0)
+{
+uint8_t x_2; 
+x_2 = 1;
+return x_2;
+}
+else
+{
+uint8_t x_3; 
+x_3 = 0;
+return x_3;
+}
+}
+}
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_InstType_isNoop___boxed(lean_object* x_1) {
+_start:
+{
+uint8_t x_2; lean_object* x_3; 
+x_2 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_InstType_isNoop(x_1);
+lean_dec(x_1);
+x_3 = lean_box(x_2);
+return x_3;
 }
 }
 static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_instReprHalfInst_repr___redArg___closed__7(void) {

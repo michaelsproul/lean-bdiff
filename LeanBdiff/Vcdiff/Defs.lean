@@ -76,6 +76,12 @@ inductive InstType where
   | copy (mode : UInt8)
   deriving Repr, BEq, Inhabited
 
+/-- Fast tag check for `noop`. Compiles to a single `lean_obj_tag(x) == 0`
+    comparison instead of going through the derived `BEq` switch. -/
+@[inline] def InstType.isNoop : InstType → Bool
+  | .noop => true
+  | _ => false
+
 /-- A single half-instruction from the code table. -/
 structure HalfInst where
   type : InstType
