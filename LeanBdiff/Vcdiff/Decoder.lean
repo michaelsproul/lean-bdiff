@@ -325,7 +325,11 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
 
     `instSec`/`dataSec`/`addrSec` are the three section ByteArrays (fixed
     for the duration of the loop). `iPos`/`dPos`/`aPos` are the current
-    read positions in each. `fuel` bounds iterations (≤ instSec.size). -/
+    read positions in each. `fuel` bounds iterations (≤ instSec.size).
+
+    The inner match dispatches directly on (inst1.type, inst2.type) and
+    chains recursions without allocating a tuple to hold the post-inst1
+    state — the state lives in the continuation's bound variables. -/
 def applyWindowFast (sourceSegment instSec dataSec addrSec : ByteArray)
     : Nat → ByteArray → Nat → Nat → Nat → AddressCache.State →
       DecodeResult ByteArray
@@ -341,50 +345,54 @@ def applyWindowFast (sourceSegment instSec dataSec addrSec : ByteArray)
       match resolveSize instSec iPos' entry.inst1 with
       | .error e => .error e
       | .ok (inst1Size, iPos'') =>
-        -- Dispatch inst1 directly (no 4-tuple wrapper around the result).
-        let r1 : DecodeResult (ByteArray × Nat × Nat × AddressCache.State) :=
-          match entry.inst1.type with
-          | .noop => .ok (target, dPos, aPos, cache)
-          | .add =>
-            match execAdd target dataSec dPos inst1Size with
-            | .error e => .error e
-            | .ok (t', dp') => .ok (t', dp', aPos, cache)
-          | .run =>
-            match execRun target dataSec dPos inst1Size with
-            | .error e => .error e
-            | .ok (t', dp') => .ok (t', dp', aPos, cache)
-          | .copy mode =>
-            let here := sourceSegment.size + target.size
-            match execCopy sourceSegment target addrSec aPos inst1Size cache here mode with
-            | .error e => .error e
-            | .ok (t', ap', c') => .ok (t', dPos, ap', c')
-        match r1 with
-        | .error e => .error e
-        | .ok (target', dPos', aPos', cache') =>
+        -- Run inst1 into (target', dPos', aPos', cache'), then inst2, then recurse.
+        -- Each inst1 case inlines the full chain so the post-inst1 state never
+        -- needs to be wrapped in a `DecodeResult (ByteArray × Nat × Nat × State)`
+        -- tuple between the two halves.
+        let afterInst1 (target' : ByteArray) (dPos' aPos' : Nat)
+            (cache' : AddressCache.State) : DecodeResult ByteArray :=
           match resolveSize instSec iPos'' entry.inst2 with
           | .error e => .error e
           | .ok (inst2Size, iPos''') =>
-            let r2 : DecodeResult (ByteArray × Nat × Nat × AddressCache.State) :=
-              match entry.inst2.type with
-              | .noop => .ok (target', dPos', aPos', cache')
-              | .add =>
-                match execAdd target' dataSec dPos' inst2Size with
-                | .error e => .error e
-                | .ok (t', dp') => .ok (t', dp', aPos', cache')
-              | .run =>
-                match execRun target' dataSec dPos' inst2Size with
-                | .error e => .error e
-                | .ok (t', dp') => .ok (t', dp', aPos', cache')
-              | .copy mode =>
-                let here' := sourceSegment.size + target'.size
-                match execCopy sourceSegment target' addrSec aPos' inst2Size cache' here' mode with
-                | .error e => .error e
-                | .ok (t', ap', c') => .ok (t', dPos', ap', c')
-            match r2 with
-            | .error e => .error e
-            | .ok (target'', dPos'', aPos'', cache'') =>
+            match entry.inst2.type with
+            | .noop =>
               applyWindowFast sourceSegment instSec dataSec addrSec
-                fuel target'' iPos''' dPos'' aPos'' cache''
+                fuel target' iPos''' dPos' aPos' cache'
+            | .add =>
+              match execAdd target' dataSec dPos' inst2Size with
+              | .error e => .error e
+              | .ok (t', dp') =>
+                applyWindowFast sourceSegment instSec dataSec addrSec
+                  fuel t' iPos''' dp' aPos' cache'
+            | .run =>
+              match execRun target' dataSec dPos' inst2Size with
+              | .error e => .error e
+              | .ok (t', dp') =>
+                applyWindowFast sourceSegment instSec dataSec addrSec
+                  fuel t' iPos''' dp' aPos' cache'
+            | .copy mode =>
+              let here' := sourceSegment.size + target'.size
+              match execCopy sourceSegment target' addrSec aPos' inst2Size cache' here' mode with
+              | .error e => .error e
+              | .ok (t', ap', c') =>
+                applyWindowFast sourceSegment instSec dataSec addrSec
+                  fuel t' iPos''' dPos' ap' c'
+        match entry.inst1.type with
+        | .noop =>
+          afterInst1 target dPos aPos cache
+        | .add =>
+          match execAdd target dataSec dPos inst1Size with
+          | .error e => .error e
+          | .ok (t', dp') => afterInst1 t' dp' aPos cache
+        | .run =>
+          match execRun target dataSec dPos inst1Size with
+          | .error e => .error e
+          | .ok (t', dp') => afterInst1 t' dp' aPos cache
+        | .copy mode =>
+          let here := sourceSegment.size + target.size
+          match execCopy sourceSegment target addrSec aPos inst1Size cache here mode with
+          | .error e => .error e
+          | .ok (t', ap', c') => afterInst1 t' dPos ap' c'
 
 /-- Legacy Cursor-based loop kept for proof compatibility. -/
 def applyWindowLoop (sourceSegment : ByteArray)
