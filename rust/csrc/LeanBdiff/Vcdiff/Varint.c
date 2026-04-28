@@ -105,16 +105,22 @@ static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_encode___closed__2;
 lean_object* lean_array_mk(lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_encode(lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_encode___boxed(lean_object*);
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 0}, .m_objs = {((lean_object*)(((size_t)(7) << 1) | 1))}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__0_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 0}, .m_objs = {((lean_object*)(((size_t)(6) << 1) | 1))}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__1 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__1_value;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 0}, .m_objs = {((lean_object*)(((size_t)(7) << 1) | 1))}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__0_value;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 0}, .m_objs = {((lean_object*)(((size_t)(6) << 1) | 1))}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__1 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__1_value;
 lean_object* lean_nat_shiftl(lean_object*, lean_object*);
 lean_object* lean_uint8_to_nat(uint8_t);
 lean_object* lean_nat_land(lean_object*, lean_object*);
 lean_object* lean_nat_lor(lean_object*, lean_object*);
 uint8_t lean_uint8_land(uint8_t, uint8_t);
 uint8_t lean_uint8_dec_eq(uint8_t, uint8_t);
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos(lean_object*, lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 0}, .m_objs = {((lean_object*)(((size_t)(7) << 1) | 1))}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__0_value;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 0}, .m_objs = {((lean_object*)(((size_t)(6) << 1) | 1))}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__1 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop___closed__1_value;
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decode(lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_numDigits(lean_object*);
@@ -745,6 +751,92 @@ lean_object* x_2;
 x_2 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_encode(x_1);
 lean_dec(x_1);
 return x_2;
+}
+}
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4) {
+_start:
+{
+lean_object* x_5; uint8_t x_6; 
+x_5 = lean_unsigned_to_nat(0u);
+x_6 = lean_nat_dec_eq(x_4, x_5);
+if (x_6 == 1)
+{
+lean_object* x_7; 
+lean_dec(x_4);
+lean_dec(x_3);
+lean_dec(x_2);
+x_7 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__0));
+return x_7;
+}
+else
+{
+lean_object* x_8; uint8_t x_9; 
+x_8 = lean_byte_array_size(x_1);
+x_9 = lean_nat_dec_lt(x_2, x_8);
+if (x_9 == 0)
+{
+lean_object* x_10; 
+lean_dec(x_4);
+lean_dec(x_3);
+lean_dec(x_2);
+x_10 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___closed__1));
+return x_10;
+}
+else
+{
+uint8_t x_11; lean_object* x_12; lean_object* x_13; lean_object* x_14; lean_object* x_15; lean_object* x_16; lean_object* x_17; uint8_t x_18; uint8_t x_19; uint8_t x_20; uint8_t x_21; 
+x_11 = lean_byte_array_fget(x_1, x_2);
+x_12 = lean_unsigned_to_nat(7u);
+x_13 = lean_nat_shiftl(x_3, x_12);
+lean_dec(x_3);
+x_14 = lean_uint8_to_nat(x_11);
+x_15 = lean_unsigned_to_nat(127u);
+x_16 = lean_nat_land(x_14, x_15);
+x_17 = lean_nat_lor(x_13, x_16);
+lean_dec(x_16);
+lean_dec(x_13);
+x_18 = 128;
+x_19 = lean_uint8_land(x_11, x_18);
+x_20 = 0;
+x_21 = lean_uint8_dec_eq(x_19, x_20);
+if (x_21 == 0)
+{
+lean_object* x_22; lean_object* x_23; lean_object* x_24; 
+x_22 = lean_unsigned_to_nat(1u);
+x_23 = lean_nat_sub(x_4, x_22);
+lean_dec(x_4);
+x_24 = lean_nat_add(x_2, x_22);
+lean_dec(x_2);
+x_2 = x_24;
+x_3 = x_17;
+x_4 = x_23;
+goto _start;
+}
+else
+{
+lean_object* x_26; lean_object* x_27; lean_object* x_28; lean_object* x_29; 
+lean_dec(x_4);
+x_26 = lean_unsigned_to_nat(1u);
+x_27 = lean_nat_add(x_2, x_26);
+lean_dec(x_2);
+x_28 = lean_alloc_ctor(0, 2, 0);
+lean_ctor_set(x_28, 0, x_17);
+lean_ctor_set(x_28, 1, x_27);
+x_29 = lean_alloc_ctor(1, 1, 0);
+lean_ctor_set(x_29, 0, x_28);
+return x_29;
+}
+}
+}
+}
+}
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4) {
+_start:
+{
+lean_object* x_5; 
+x_5 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoopPos(x_1, x_2, x_3, x_4);
+lean_dec_ref(x_1);
+return x_5;
 }
 }
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_decodeLoop(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4) {

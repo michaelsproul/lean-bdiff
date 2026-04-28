@@ -300,15 +300,15 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
 @[inline] def execCopy (sourceWindow target addrSec : ByteArray)
     (aPos instSize : Nat) (cache : AddressCache.State) (here : Nat) (mode : UInt8)
     : DecodeResult (ByteArray × Nat × AddressCache.State) :=
-  match AddressCache.decode mode.toNat here ⟨addrSec, aPos⟩ cache with
+  match AddressCache.decodePos mode.toNat here addrSec aPos cache with
   | .error e => .error e
-  | .ok (addr, cur', cache') =>
+  | .ok (addr, aPos', cache') =>
     let windowSize := sourceWindow.size + target.size
     if addr ≥ windowSize then
       .error (.copyOutOfBounds addr instSize windowSize)
     else
       let target' := copyBytes sourceWindow target addr instSize
-      .ok (target', cur'.pos, cache')
+      .ok (target', aPos', cache')
 
 /-- Resolve an instruction's actual size: 0 in the code table means "read
     the size from the instruction stream as a varint".
@@ -316,9 +316,7 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
 @[inline] def resolveSize (instSec : ByteArray) (iPos : Nat) (inst : HalfInst)
     : DecodeResult (Nat × Nat) :=
   if inst.size == 0 ∧ !inst.type.isNoop then
-    match Varint.decodeLoop instSec iPos 0 5 with
-    | .ok (sz, c) => .ok (sz, c.pos)
-    | .error e => .error e
+    Varint.decodeLoopPos instSec iPos 0 5
   else
     .ok (inst.size, iPos)
 

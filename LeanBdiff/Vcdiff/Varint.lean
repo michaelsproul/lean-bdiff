@@ -62,6 +62,24 @@ def encode (n : Nat) : ByteArray :=
 
 -- ## Decoding
 
+/-- Recursive varint decode loop that returns just `(value, newPos)`
+    — no `Cursor` allocation. Preferred in hot paths that already thread
+    positions as bare `Nat`. -/
+def decodeLoopPos (data : ByteArray) (pos : Nat) (acc : Nat) (remaining : Nat)
+    : DecodeResult (Nat × Nat) :=
+  match remaining with
+  | 0 => .error .varintOverflow
+  | r + 1 =>
+    if h : pos < data.size then
+      let b := data[pos]
+      let acc' := (acc <<< 7) ||| (b.toNat &&& 0x7F)
+      if b &&& 0x80 == 0 then
+        .ok (acc', pos + 1)
+      else
+        decodeLoopPos data (pos + 1) acc' r
+    else
+      .error .truncatedInput
+
 /-- Recursive varint decode loop. Reads up to `remaining` bytes from `data`
     starting at `pos`, accumulating the result in `acc`. -/
 def decodeLoop (data : ByteArray) (pos : Nat) (acc : Nat) (remaining : Nat)

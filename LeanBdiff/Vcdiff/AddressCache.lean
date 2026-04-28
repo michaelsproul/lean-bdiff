@@ -123,4 +123,37 @@ def State.encodeAddress (s : State) (addr : Nat) (here : Nat)
   else
     .error (.invalidAddressMode mode)
 
+/-- Scalar-position variant of `decode`: takes the addr section and `aPos`
+    directly (no `Cursor`), returns `(addr, new aPos, updated cache)`. -/
+@[inline] def decodePos (mode : Nat) (here : Nat) (addrSec : ByteArray)
+    (aPos : Nat) (cache : State) : DecodeResult (Nat × Nat × State) :=
+  if mode == 0 then
+    match Varint.decodeLoopPos addrSec aPos 0 5 with
+    | .error e => .error e
+    | .ok (addr, aPos') => .ok (addr, aPos', cache.update addr)
+  else if mode == 1 then
+    match Varint.decodeLoopPos addrSec aPos 0 5 with
+    | .error e => .error e
+    | .ok (offset, aPos') =>
+      let addr := here - offset
+      .ok (addr, aPos', cache.update addr)
+  else if mode < 2 + cache.sNear then
+    let nearIdx := mode - 2
+    match Varint.decodeLoopPos addrSec aPos 0 5 with
+    | .error e => .error e
+    | .ok (offset, aPos') =>
+      let base := cache.near[nearIdx]!.toNat
+      let addr := base + offset
+      .ok (addr, aPos', cache.update addr)
+  else if mode < 2 + cache.sNear + cache.sSame then
+    if aPos < addrSec.size then
+      let b := addrSec[aPos]!
+      let sameIdx := mode - 2 - cache.sNear
+      let addr := cache.same[sameIdx * 256 + b.toNat]!.toNat
+      .ok (addr, aPos + 1, cache.update addr)
+    else
+      .error .truncatedInput
+  else
+    .error (.invalidAddressMode mode)
+
 end LeanBdiff.Vcdiff.AddressCache
