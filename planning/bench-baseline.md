@@ -171,6 +171,22 @@ Reordered priorities:
 |---|---|---|---|
 | 2026-04-28 | baseline (bbb384b) | 5920 ms | 10.74x |
 | 2026-04-28 | Step 1.1 flat chain source index | 4165 ms | 7.55x |
+| 2026-04-28 | Step 1.6 USize extend loops | 3253 ms | 5.90x |
+
+### Step 1.6 notes (partial: extend loops only)
+
+- Replaced `extendForward`/`extendBackward` `Nat`-recursive definitions with
+  fuel-driven `USize` auxiliary loops (`extendForwardAux`, `extendBackwardAux`)
+  that use `ByteArray.uget` for scalar-indexed reads.
+- Fuel is bounded by `min (source.size - sp) (target.size - tp)` (or
+  `min sp tp` for backward), passed in from an `@[inline]` entry point.
+- case01 encode 4165 ms → 3253 ms (22% further, cumulative 45%).
+- Profile (`planning/profile-step1.6-case01-encode.txt`) shows extend loops
+  dropped from 36.6% → 36.0% self-time but the **total** shrank, so absolute
+  cost fell; the loops are now doing real work at near-native speed.
+- `lean_dec_ref_cold` still 10% — likely from `Nat`-valued `Match` fields
+  and per-call `findBestMatchRec` state. Will shrink further once more
+  inner paths move off boxed `Nat`.
 
 ### Step 1.1 notes
 

@@ -108,29 +108,57 @@ structure Match where
   length : Nat
   deriving Repr
 
+/-- Fuel-driven forward extension loop. `fuel` bounds iterations; the caller
+    passes `min (source.size - sp) (target.size - tp)` so the check never
+    exceeds either array. Uses `USize` indexing on the hot path. -/
+def extendForwardAux (source target : ByteArray) (sp tp : USize)
+    (len : USize) : Nat → USize
+  | 0 => len
+  | fuel + 1 =>
+    -- Bounds are guaranteed by the caller's choice of fuel, but we use
+    -- `!`-indexing since we don't carry explicit proofs through the loop.
+    let si := sp + len
+    let ti := tp + len
+    if h : si.toNat < source.size ∧ ti.toNat < target.size then
+      if source.uget si h.1 == target.uget ti h.2 then
+        extendForwardAux source target sp tp (len + 1) fuel
+      else len
+    else len
+
 /-- Count consecutive matching bytes forwards from a given offset. -/
-def extendForward (source : ByteArray) (sp : Nat)
-    (target : ByteArray) (tp : Nat) (len : Nat) : Nat :=
-  if sp + len < source.size ∧ tp + len < target.size ∧
-     (source[sp + len]! == target[tp + len]!) = true then
-    extendForward source sp target tp (len + 1)
-  else len
-termination_by source.size - (sp + len)
+@[inline] def extendForward (source : ByteArray) (sp : Nat)
+    (target : ByteArray) (tp : Nat) : Nat :=
+  let fuel := min (source.size - sp) (target.size - tp)
+  (extendForwardAux source target sp.toUSize tp.toUSize 0 fuel).toNat
+
+/-- Fuel-driven backward extension loop. -/
+def extendBackwardAux (source target : ByteArray) (sp tp : USize)
+    (back : USize) : Nat → USize
+  | 0 => back
+  | fuel + 1 =>
+    -- We need sp > back ∧ tp > back, i.e. sp - back - 1 ≥ 0 and same for tp.
+    -- Fuel = min sp tp guarantees this.
+    if back < sp ∧ back < tp then
+      let si := sp - back - 1
+      let ti := tp - back - 1
+      if h : si.toNat < source.size ∧ ti.toNat < target.size then
+        if source.uget si h.1 == target.uget ti h.2 then
+          extendBackwardAux source target sp tp (back + 1) fuel
+        else back
+      else back
+    else back
 
 /-- Count consecutive matching bytes backwards from a given offset. -/
-def extendBackward (source : ByteArray) (sp : Nat)
-    (target : ByteArray) (tp : Nat) (back : Nat) : Nat :=
-  if sp > back ∧ tp > back ∧
-     (source[sp - back - 1]! == target[tp - back - 1]!) = true then
-    extendBackward source sp target tp (back + 1)
-  else back
-termination_by sp - back
+@[inline] def extendBackward (source : ByteArray) (sp : Nat)
+    (target : ByteArray) (tp : Nat) : Nat :=
+  let fuel := min sp tp
+  (extendBackwardAux source target sp.toUSize tp.toUSize 0 fuel).toNat
 
 /-- Extend a match forwards and backwards to find the longest match. -/
-def extendMatch (source : ByteArray) (sourcePos : Nat)
+@[inline] def extendMatch (source : ByteArray) (sourcePos : Nat)
     (target : ByteArray) (targetPos : Nat) : Match :=
-  let len := extendForward source sourcePos target targetPos 0
-  let back := extendBackward source sourcePos target targetPos 0
+  let len := extendForward source sourcePos target targetPos
+  let back := extendBackward source sourcePos target targetPos
   { sourcePos := sourcePos - back, targetPos := targetPos - back, length := len + back }
 
 /-- Walk a chain of candidate source positions, keeping the best match.
