@@ -208,11 +208,13 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
   match inst.type with
   | .noop => return (target, dataCursor, addrCursor, addrCache)
   | .add =>
-    -- Copy instSize bytes from data section to target
+    -- Copy instSize bytes from data section to target. We go through
+    -- `copySlice` directly to avoid the intermediate ByteArray from
+    -- `readBytes` (target.extract + append = two copies; copySlice = one).
     if !dataCursor.hasBytes instSize then
       throw .truncatedInput
-    let (addData, dataCursor') ← dataCursor.readBytes instSize
-    let target' := target ++ addData
+    let target' := dataCursor.data.copySlice dataCursor.pos target target.size instSize false
+    let dataCursor' : Varint.Cursor := { dataCursor with pos := dataCursor.pos + instSize }
     return (target', dataCursor', addrCursor, addrCache)
   | .run =>
     -- Read 1 byte from data section, repeat instSize times
