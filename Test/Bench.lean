@@ -1,5 +1,15 @@
 /-
-  Simple benchmark for VCDIFF encoder/decoder performance.
+  Benchmark harness for VCDIFF encoder/decoder.
+
+  Reports median of N iterations (default N=5). CLI:
+    bench-vcdiff                        -- all workloads, default iters
+    bench-vcdiff decode                 -- case01 decode only
+    bench-vcdiff encode                 -- 1MB synthetic + case01 encode
+    bench-vcdiff case01-encode          -- just case01 encode
+    bench-vcdiff case01-decode          -- alias for decode
+    bench-vcdiff synthetic              -- 1MB synthetic encode+decode
+  All forms accept a trailing integer N for iteration count, e.g.
+    bench-vcdiff decode 9
 -/
 import LeanBdiff.Vcdiff
 
@@ -25,156 +35,158 @@ def genData (size : Nat) (seed : UInt32) : ByteArray := Id.run do
 @[noinline] def doAdler32 (data : ByteArray) : IO UInt32 :=
   pure (Decoder.adler32 data)
 
-def bench (name : String) (srcSize tgtSize : Nat) (modRate : Nat) : IO Unit := do
+/-- Insertion-sort an `Array Nat` (small N, order doesn't matter). -/
+def sortNats (xs : Array Nat) : Array Nat := Id.run do
+  let mut a := xs
+  for i in [1:a.size] do
+    let mut j := i
+    while j > 0 ∧ a[j-1]! > a[j]! do
+      let tmp := a[j-1]!
+      a := a.set! (j-1) a[j]!
+      a := a.set! j tmp
+      j := j - 1
+  a
+
+def median (xs : Array Nat) : Nat :=
+  let s := sortNats xs
+  if s.size == 0 then 0 else s[s.size / 2]!
+
+def mean (xs : Array Nat) : Nat :=
+  if xs.size == 0 then 0 else xs.foldl (· + ·) 0 / xs.size
+
+/-- Time `action` once, return elapsed nanoseconds and the result. -/
+@[inline] def timeNs (action : IO α) : IO (Nat × α) := do
+  let t0 ← IO.monoNanosNow
+  let r ← action
+  let t1 ← IO.monoNanosNow
+  pure (t1 - t0, r)
+
+/-- Run `action` `iters` times (+1 warmup), report median ns. -/
+def timeMedian (iters : Nat) (action : IO α) : IO (Nat × α) := do
+  -- warmup
+  let (_, _) ← timeNs action
+  let mut samples : Array Nat := Array.mkEmpty iters
+  let mut last ← action
+  for _ in [:iters] do
+    let (ns, r) ← timeNs action
+    samples := samples.push ns
+    last := r
+  pure (median samples, last)
+
+/-- Format nanoseconds as millis with 3 fractional digits. -/
+def fmtTime (ns : Nat) : String :=
+  let us := ns / 1000
+  let ms := us / 1000
+  let frac := us % 1000
+  let pad :=
+    if frac < 10 then "00"
+    else if frac < 100 then "0"
+    else ""
+  s!"{ms}.{pad}{frac}ms"
+
+-- ## Synthetic encode+decode workload
+
+def benchSynthetic (iters : Nat) : IO Unit := do
+  let name := "1MB 10%mod"
+  let srcSize := 1_000_000
+  let tgtSize := 1_000_000
+  let modRate := 10
   let source := genData srcSize 42
-  let mut target := ByteArray.empty
   let base := genData tgtSize 42
+  let mut target := ByteArray.empty
   for i in [:tgtSize] do
-    if modRate > 0 && i % modRate == 0 then
+    if modRate > 0 ∧ i % modRate == 0 then
       target := target.push ((base[i]!.toNat + 1) % 256).toUInt8
     else
       target := target.push base[i]!
 
-  -- Write to temp files to ensure data is materialized
-  IO.FS.writeBinFile "/tmp/bench_src" source
-  IO.FS.writeBinFile "/tmp/bench_tgt" target
-  let src ← IO.FS.readBinFile "/tmp/bench_src"
-  let tgt ← IO.FS.readBinFile "/tmp/bench_tgt"
+  IO.FS.writeBinFile "/tmp/bench_src.bin" source
+  IO.FS.writeBinFile "/tmp/bench_tgt.bin" target
+  let src ← IO.FS.readBinFile "/tmp/bench_src.bin"
+  let tgt ← IO.FS.readBinFile "/tmp/bench_tgt.bin"
 
-  -- Encode
-  let encStart ← IO.monoNanosNow
-  let patch ← doEncode src tgt
-  let encStop ← IO.monoNanosNow
-  let encMs := (encStop - encStart) / 1000000
+  let (encNs, patch) ← timeMedian iters (doEncode src tgt)
+  let (decNs, decoded) ← timeMedian iters (doDecode patch src)
 
-  -- Decode
-  let decStart ← IO.monoNanosNow
-  let decoded ← doDecode patch src
-  let decStop ← IO.monoNanosNow
-  let decMs := (decStop - decStart) / 1000000
+  IO.FS.writeBinFile "/tmp/bench_patch.bin" patch
 
-  let patchSize := patch.size
-  let ratio := if tgtSize > 0 then (patchSize * 100) / tgtSize else 0
   match decoded with
   | .ok r =>
     if r == tgt then
-      IO.println s!"{name}: encode {encMs}ms, decode {decMs}ms, patch {patchSize}B ({ratio}%)"
+      IO.println s!"{name}: encode {fmtTime encNs} median, decode {fmtTime decNs} median, \
+patch {patch.size}B ({(patch.size * 100) / tgtSize}%)  [iters={iters}]"
     else
       IO.println s!"{name}: MISMATCH! decoded {r.size}B vs target {tgtSize}B"
   | .error e =>
     IO.println s!"{name}: DECODE ERROR: {e}"
 
--- Count instruction types from instruction section
-def countInstructions (instSec : ByteArray) : IO Unit := do
-  let mut pos := 0
-  let mut adds : Nat := 0
-  let mut copies : Nat := 0
-  let mut runs : Nat := 0
-  let mut doubles : Nat := 0
-  let mut opcodes : Nat := 0
-  while pos < instSec.size do
-    let opcode := instSec[pos]!
-    pos := pos + 1
-    opcodes := opcodes + 1
-    let entry := CodeTable.lookup opcode
-    match entry.inst1.type with
-    | .add => adds := adds + 1
-    | .copy _ => copies := copies + 1
-    | .run => runs := runs + 1
-    | .noop => pure ()
-    if entry.inst1.size == 0 && entry.inst1.type != .noop then
-      while pos < instSec.size && (instSec[pos]! &&& 0x80 != 0) do
-        pos := pos + 1
-      if pos < instSec.size then pos := pos + 1
-    match entry.inst2.type with
-    | .add => adds := adds + 1; doubles := doubles + 1
-    | .copy _ => copies := copies + 1; doubles := doubles + 1
-    | .run => runs := runs + 1; doubles := doubles + 1
-    | .noop => pure ()
-    if entry.inst2.size == 0 && entry.inst2.type != .noop then
-      while pos < instSec.size && (instSec[pos]! &&& 0x80 != 0) do
-        pos := pos + 1
-      if pos < instSec.size then pos := pos + 1
-  IO.println s!"  opcodes={opcodes} ADDs={adds} COPYs={copies} RUNs={runs} doubles={doubles}"
+-- ## case01 decode workload
 
-def benchDecodeFile (name : String) (srcPath diffPath tgtPath : String)
-    (iters : Nat := 1) : IO Unit := do
+def benchCase01Decode (iters : Nat) : IO Unit := do
+  let srcPath := "test-data/case01/source_state_bytes.bin"
+  let diffPath := "test-data/case01/state_diff_bytes.bin"
+  let tgtPath := "test-data/case01/target_state_bytes.bin"
   let source ← IO.FS.readBinFile srcPath
   let diff ← IO.FS.readBinFile diffPath
   let expected ← IO.FS.readBinFile tgtPath
-  IO.println s!"{name}: source {source.size}B, diff {diff.size}B, target {expected.size}B"
+  IO.println s!"case01 decode: source {source.size}B, diff {diff.size}B, target {expected.size}B"
 
-  -- Warmup
-  let _ ← doDecode diff source
-  let _ ← doAdler32 expected
-
-  -- Benchmark adler32 alone on the target
-  let adlerStart ← IO.monoNanosNow
-  let mut adlerSum : UInt32 := 0
-  for _ in [:iters * 3] do
-    adlerSum ← doAdler32 expected
-  let adlerStop ← IO.monoNanosNow
-  let adlerMs := (adlerStop - adlerStart) / 1000000 / (iters * 3)
-  -- Force use of adlerSum to prevent elimination
-  if adlerSum == 0 then IO.println "  (adler32 zero — unexpected)"
-
-  -- Benchmark decode
-  let start ← IO.monoNanosNow
-  let mut lastResult := Except.ok ByteArray.empty
-  for _ in [:iters] do
-    lastResult ← doDecode diff source
-  let stop ← IO.monoNanosNow
-  let totalMs := (stop - start) / 1000000
-  let avgMs := totalMs / iters
-
-  -- Count windows and sections for profiling
-  let parseResult := Decoder.parseHeader ⟨diff, 0⟩
-  let windowInfo ← match parseResult with
-    | .ok (_, c) =>
-      match Decoder.parseWindow c with
-      | .ok (win, _) => pure s!"instSec={win.instSection.size}B dataSec={win.dataSection.size}B addrSec={win.addrSection.size}B tgtLen={win.targetLen}"
-      | .error _ => pure "parse error"
-    | .error _ => pure "header error"
-
-  match lastResult with
+  let (decNs, result) ← timeMedian iters (doDecode diff source)
+  let (adlerNs, _) ← timeMedian iters (doAdler32 expected)
+  match result with
   | .ok r =>
     if r == expected then
-      IO.println s!"  decode: {avgMs}ms avg ({iters} iters, {totalMs}ms total), adler32: {adlerMs}ms"
-      IO.println s!"  {windowInfo}"
-      match parseResult with
-      | .ok (_, c) =>
-        match Decoder.parseWindow c with
-        | .ok (win, _) => countInstructions win.instSection
-        | .error _ => pure ()
-      | .error _ => pure ()
+      IO.println s!"  decode {fmtTime decNs} median, adler32 {fmtTime adlerNs} median  [iters={iters}]"
     else
       IO.println s!"  MISMATCH! decoded {r.size}B vs expected {expected.size}B"
   | .error e =>
     IO.println s!"  DECODE ERROR: {e}"
 
+-- ## case01 encode workload (our encoder producing a patch for the real inputs)
+
+def benchCase01Encode (iters : Nat) : IO Unit := do
+  let srcPath := "test-data/case01/source_state_bytes.bin"
+  let tgtPath := "test-data/case01/target_state_bytes.bin"
+  let source ← IO.FS.readBinFile srcPath
+  let target ← IO.FS.readBinFile tgtPath
+  IO.println s!"case01 encode: source {source.size}B, target {target.size}B"
+
+  let (encNs, patch) ← timeMedian iters (doEncode source target)
+  let ratio := if target.size > 0 then (patch.size * 100) / target.size else 0
+  IO.println s!"  encode {fmtTime encNs} median, patch {patch.size}B ({ratio}%)  [iters={iters}]"
+
+  -- Verify roundtrip once
+  match Decoder.decode patch source with
+  | .ok r =>
+    if r == target then
+      IO.println "  roundtrip OK"
+    else
+      IO.println s!"  ROUNDTRIP MISMATCH! decoded {r.size}B vs target {target.size}B"
+  | .error e =>
+    IO.println s!"  ROUNDTRIP DECODE ERROR: {e}"
+
+-- ## Entry point
+
 def main (args : List String) : IO Unit := do
-  let mode := args.head?.getD "all"
+  -- Parse: <mode> [iters]
+  let (mode, iters) := match args with
+    | [] => ("all", 5)
+    | [m] => (m, 5)
+    | m :: n :: _ => (m, n.toNat?.getD 5)
 
-  if mode == "decode" || mode == "all" then
-    IO.println "VCDIFF Decode Benchmark"
-    IO.println "======================="
+  IO.println s!"=== lean-bdiff benchmark (mode={mode}, iters={iters}) ==="
+  IO.println ""
+
+  if mode == "case01-decode" ∨ mode == "decode" ∨ mode == "all" then
+    benchCase01Decode iters
     IO.println ""
 
-    benchDecodeFile "case01"
-      "test-data/case01/source_state_bytes.bin"
-      "test-data/case01/state_diff_bytes.bin"
-      "test-data/case01/target_state_bytes.bin"
-      3
-
+  if mode == "case01-encode" ∨ mode == "encode" ∨ mode == "all" then
+    benchCase01Encode iters
     IO.println ""
 
-  if mode == "encode" || mode == "all" then
-    IO.println "VCDIFF Encode+Decode Benchmark"
-    IO.println "=============================="
-    IO.println ""
-
-    bench "1MB   10% mod" 1000000 1000000 10
-
+  if mode == "synthetic" ∨ mode == "encode" ∨ mode == "all" then
+    benchSynthetic iters
     IO.println ""
 
   IO.println "Done."
