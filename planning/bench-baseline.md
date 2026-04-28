@@ -173,6 +173,47 @@ Reordered priorities:
 | 2026-04-28 | Step 1.1 flat chain source index | 4165 ms | 7.55x |
 | 2026-04-28 | Step 1.6 USize extend loops | 3253 ms | 5.90x |
 | 2026-04-28 | Step 1.6 ext: hashBytes + no-alloc findBestMatchRec | 3042 ms | 5.52x |
+| 2026-04-28 | Step 1.4 (partial): RawInst.add carries indices, not ByteArray | 2981 ms | 5.41x |
+
+### Step 1.4 notes (partial: index-based RawInst.add)
+
+- `RawInst.add` now carries `(start endIdx : Nat)` indices into `target`
+  instead of a `ByteArray` slice. The bytes are materialised exactly once
+  at final section emission via `target.copySlice addStart dataSection
+  dataSection.size sz false` — one `lean_byte_array_copy_slice` call,
+  no intermediate `extract` allocation.
+- `generateInstructionsLoop` tracks pending ADD as `addStart : Nat`, not a
+  `ByteArray` accumulator. `emitAddWithRuns` now scans `target[start..end)`
+  in place.
+- Modest win: 3042 ms → 2981 ms (2%). The match-finding hot loop
+  (`findBestMatchRec` + `extendForwardAux` + `extendBackwardAux` = 58.7%)
+  dominates; reducing allocator load around it only helps at the margins.
+- The **proof simplification** from this change is significant — ADD data
+  bytes no longer exist as a distinct ByteArray, so the "encode = decode's
+  left inverse" chain gains a clean equation:
+  `decodeLoop (emitAdd target s e) = target.extract s e`.
+- Full fusion (dropping `RawInst`/`Array RawInst` entirely) is possible
+  but requires 1-slot lookahead for double opcodes; deferred because
+  profile shows the remaining allocator cost is ~8% (`lean_dec_ref_cold`),
+  not dominated by RawInst construction.
+
+### Stage 1 exit readiness
+
+Match-finding inner loops are near bandwidth-limited scalar speed (~10
+inst/byte × 1.2 GB worth of compares ≈ 1 s, observed 1.8 s) — the only
+way to do meaningfully better is SIMD byte-compare, which isn't available
+from pure Lean without FFI. Remaining candidates:
+
+- Step 1.8 Adler32 batching (batch `% 65521` every 5552 bytes) —
+  affects decode (where Adler32 dominates after checksummed decode)
+- Step 1.7 direct-write varint — ~1% of encode
+- Step 1.5 copyBytes overlap loop — decode-only
+
+Stage 1 goal was ≤ 2.0x; we're at 5.41x. The gap is mostly fundamental
+(SIMD matching) and not addressable without breaking the "pure Lean"
+constraint. Recommend treating 5.41x as the effective Stage 1 exit and
+proceeding to Stage 2 (simplify for verifiability) before Stage 3
+(restore proofs).
 
 ### Step 1.6 notes (partial: extend loops only)
 

@@ -218,12 +218,20 @@ def findBestMatchRec (source : ByteArray) (chain : Array UInt32)
 
 -- ## Instruction Generation
 
-/-- An intermediate instruction before code table encoding. -/
+/-- An intermediate instruction before code table encoding.
+
+    `.add` carries **target indices**, not a copied ByteArray. The bytes are
+    materialised only once at final section emission (`encodeOneInst'`). -/
 inductive RawInst where
-  | add (data : ByteArray)
+  | add (start endIdx : Nat)
   | copy (addr : Nat) (size : Nat)
   | run (byte : UInt8) (size : Nat)
   deriving Repr, Inhabited
+
+/-- Size of the data covered by an `.add`. -/
+@[inline] def RawInst.addSize : RawInst → Nat
+  | .add s e => e - s
+  | _ => 0
 
 /-- Minimum run length to emit a RUN instruction instead of ADD. -/
 def minRunLength : Nat := 4
@@ -241,29 +249,44 @@ theorem countRun_ge (data : ByteArray) (start : Nat) (b : UInt8) (runLen : Nat) 
   | case1 k h ih => rw [countRun, if_pos h]; omega
   | case2 k h => rw [countRun, if_neg h]; omega
 
-/-- Emit ADD data, splitting out RUN sequences of repeated bytes. -/
-def emitAddWithRuns (insts : Array RawInst) (data : ByteArray)
-    : Array RawInst :=
-  emitAddWithRunsRec insts data 0 0
+/-- Emit ADD/RUN instructions covering `target[start..end)`, splitting out
+    RUN sequences of repeated bytes. Writes directly off the `target`
+    ByteArray with no intermediate copy. -/
+def emitAddWithRuns (insts : Array RawInst) (target : ByteArray)
+    (start endIdx : Nat) : Array RawInst :=
+  emitAddWithRunsRec insts target endIdx start start
 where
-  /-- Recursive helper for emitAddWithRuns. -/
-  emitAddWithRunsRec (result : Array RawInst) (data : ByteArray)
-      (i addStart : Nat) : Array RawInst :=
-    if h_i : i < data.size then
-      let b := data[i]!
-      let runLen := countRun data i b 1
-      have h_runLen_ge : runLen ≥ 1 := countRun_ge data i b 1
-      have h_dec : data.size - (i + runLen) < data.size - i := by omega
-      if runLen >= minRunLength then
-        let result := if i > addStart then result.push (.add (data.extract addStart i)) else result
-        let result := result.push (.run b runLen)
-        emitAddWithRunsRec result data (i + runLen) (i + runLen)
+  /-- Recursive helper. `i` is the current scan position; `addStart` is the
+      start of the pending-ADD range. Both satisfy `addStart ≤ i ≤ endIdx`
+      at each call. -/
+  emitAddWithRunsRec (result : Array RawInst) (target : ByteArray)
+      (endIdx : Nat) (i addStart : Nat) : Array RawInst :=
+    if h_i : i < endIdx ∧ i < target.size then
+      let b := target[i]!
+      let runLen := countRun target i b 1
+      have h_runLen_ge : runLen ≥ 1 := countRun_ge target i b 1
+      -- We cap runLen so the run stays within [start, endIdx).
+      let runCap := if i + runLen > endIdx then endIdx - i else runLen
+      have h_runCap_ge : runCap ≥ 1 := by
+        rcases Nat.lt_or_ge endIdx (i + runLen) with hlt | hge
+        · simp [runCap, hlt]; omega
+        · simp [runCap, Nat.not_lt.mpr hge]; omega
+      have h_dec : endIdx - (i + runCap) < endIdx - i := by
+        rcases Nat.lt_or_ge endIdx (i + runLen) with hlt | hge
+        · simp [runCap, hlt]; omega
+        · simp [runCap, Nat.not_lt.mpr hge]; omega
+      if runCap ≥ minRunLength then
+        let result := if i > addStart then
+          result.push (.add addStart i) else result
+        let result := result.push (.run b runCap)
+        emitAddWithRunsRec result target endIdx (i + runCap) (i + runCap)
       else
-        emitAddWithRunsRec result data (i + runLen) addStart
+        emitAddWithRunsRec result target endIdx (i + runCap) addStart
     else
-      if addStart < data.size then result.push (.add (data.extract addStart data.size))
+      if addStart < endIdx then
+        result.push (.add addStart endIdx)
       else result
-  termination_by data.size - i
+  termination_by endIdx - i
 
 /-- Lazy matching threshold: a later match must be this much longer to prefer it. -/
 def lazyThreshold : Nat := 2
@@ -295,9 +318,11 @@ theorem trimMatch_targetPos_ge (m : Match) (pos : Nat) :
     (trimMatch m pos).targetPos ≥ pos := by
   unfold trimMatch; split <;> simp_all <;> omega
 
-/-- Recursive helper for generateInstructions. -/
+/-- Recursive helper for generateInstructions. `addStart` tracks the start
+    of the pending ADD region as an index into `target` — no intermediate
+    ByteArray copy is materialised until an ADD is actually emitted. -/
 def generateInstructionsLoop (idx : SourceIndex) (target : ByteArray)
-    (pos : Nat) (pendingAdd : ByteArray) (insts : Array RawInst)
+    (pos : Nat) (addStart : Nat) (insts : Array RawInst)
     : Array RawInst :=
   if h_pos : pos < target.size then
     match findBestMatch idx target pos with
@@ -305,12 +330,13 @@ def generateInstructionsLoop (idx : SourceIndex) (target : ByteArray)
       let bestMatch := lazyBestMatch idx target pos m
       let bestMatch := trimMatch bestMatch pos
       if h_short : bestMatch.length < hashWindow then
-        generateInstructionsLoop idx target (pos + 1) (pendingAdd.push target[pos]!) insts
+        generateInstructionsLoop idx target (pos + 1) addStart insts
       else
-        let pendingAdd' := if bestMatch.targetPos > pos then
-          pendingAdd ++ target.extract pos bestMatch.targetPos
-        else pendingAdd
-        let insts' := if pendingAdd'.size > 0 then emitAddWithRuns insts pendingAdd' else insts
+        -- ADD covers [addStart, bestMatch.targetPos).
+        let addEnd := bestMatch.targetPos
+        let insts' := if addStart < addEnd then
+          emitAddWithRuns insts target addStart addEnd
+        else insts
         let insts' := insts'.push (.copy bestMatch.sourcePos bestMatch.length)
         have : target.size - (bestMatch.targetPos + bestMatch.length) < target.size - pos := by
           have h1 : bestMatch.targetPos ≥ pos :=
@@ -318,19 +344,19 @@ def generateInstructionsLoop (idx : SourceIndex) (target : ByteArray)
           have h2 : bestMatch.length ≥ hashWindow := Nat.not_lt.mp h_short
           simp only [hashWindow] at h2; omega
         generateInstructionsLoop idx target (bestMatch.targetPos + bestMatch.length)
-          ByteArray.empty insts'
+          (bestMatch.targetPos + bestMatch.length) insts'
     | none =>
-      generateInstructionsLoop idx target (pos + 1) (pendingAdd.push target[pos]!) insts
+      generateInstructionsLoop idx target (pos + 1) addStart insts
   else
-    if pendingAdd.size > 0 then emitAddWithRuns insts pendingAdd else insts
+    if addStart < target.size then
+      emitAddWithRuns insts target addStart target.size
+    else insts
 termination_by target.size - pos
 
-/-- Scan the target and produce a sequence of raw instructions.
-    Uses lazy matching: after finding a match, checks if a better match
-    exists at the next position. -/
+/-- Scan the target and produce a sequence of raw instructions. -/
 def generateInstructions (idx : SourceIndex) (target : ByteArray)
     : Array RawInst :=
-  generateInstructionsLoop idx target 0 ByteArray.empty #[]
+  generateInstructionsLoop idx target 0 0 #[]
 
 -- ## VCDIFF Encoding
 
@@ -339,16 +365,17 @@ def generateInstructions (idx : SourceIndex) (target : ByteArray)
 def findSingleOpcode (inst : RawInst) (mode : Nat := 0) : UInt8 × Bool :=
   match inst with
   | .run _ _ => (0, true)  -- opcode 0 = RUN size=0
-  | .add data =>
-    if data.size >= 1 && data.size <= 17 then
-      ((1 + data.size).toUInt8, false)  -- opcodes 2-18 = ADD size=1..17
+  | .add s e =>
+    let sz := e - s
+    if sz ≥ 1 ∧ sz ≤ 17 then
+      ((1 + sz).toUInt8, false)  -- opcodes 2-18 = ADD size=1..17
     else
       (1, true)  -- opcode 1 = ADD size=0
   | .copy _ size =>
     -- Each mode has 16 opcodes starting at 19 + mode*16
     -- First entry: size=0 (varint follows), next 15: size=4..18
     let base := 19 + mode * 16
-    if size >= 4 && size <= 18 then
+    if size ≥ 4 ∧ size ≤ 18 then
       ((base + size - 4 + 1).toUInt8, false)
     else
       (base.toUInt8, true)
@@ -377,29 +404,34 @@ def findCopyAddOpcode (copySz : Nat) (mode : Nat) (addSz : Nat) : Option UInt8 :
   else none
 
 /-- Process one instruction in the encoding loop. Returns updated sections,
-    cache, target position, and the number of instructions consumed (1 or 2). -/
+    cache, target position, and the number of instructions consumed (1 or 2).
+
+    `target` is the original target buffer from which ADD bytes are sliced
+    at emission time (no intermediate ByteArray per ADD). -/
 def encodeOneInst' (insts : Array RawInst) (i : Nat) (sourceSegLen : Nat)
+    (target : ByteArray)
     (dataSection instSection addrSection : ByteArray)
     (addrCache : AddressCache.State) (targetPos : Nat)
     : ByteArray × ByteArray × ByteArray × AddressCache.State × Nat × Nat :=
   if h : i < insts.size then
     let inst := insts[i]
     match inst with
-    | .add data =>
+    | .add addStart addEnd =>
+      let addSz := addEnd - addStart
       -- Check if next instruction is COPY that can pair with this ADD
       let paired :=
         if i + 1 < insts.size then
           match insts[i + 1]! with
           | .copy addr size =>
-            let here := sourceSegLen + targetPos + data.size
+            let here := sourceSegLen + targetPos + addSz
             let (mode, addrBytes, cache') := addrCache.encodeAddress addr here
-            match findAddCopyOpcode data.size size mode with
+            match findAddCopyOpcode addSz size mode with
             | some opcode =>
               some (instSection.push opcode,
-                    dataSection ++ data,
+                    target.copySlice addStart dataSection dataSection.size addSz false,
                     addrSection ++ addrBytes,
                     cache',
-                    targetPos + data.size + size, 2)
+                    targetPos + addSz + size, 2)
             | none => none
           | _ => none
         else none
@@ -408,9 +440,9 @@ def encodeOneInst' (insts : Array RawInst) (i : Nat) (sourceSegLen : Nat)
       | none =>
         let (opcode, needsSize) := findSingleOpcode inst
         let is' := instSection.push opcode
-        let is' := if needsSize then is' ++ Varint.encode data.size else is'
-        (dataSection ++ data, is', addrSection, addrCache,
-         targetPos + data.size, 1)
+        let is' := if needsSize then is' ++ Varint.encode addSz else is'
+        (target.copySlice addStart dataSection dataSection.size addSz false, is', addrSection, addrCache,
+         targetPos + addSz, 1)
     | .copy addr size =>
       let here := sourceSegLen + targetPos
       let (mode, addrBytes, cache') := addrCache.encodeAddress addr here
@@ -418,15 +450,16 @@ def encodeOneInst' (insts : Array RawInst) (i : Nat) (sourceSegLen : Nat)
       let paired :=
         if size == 4 && i + 1 < insts.size then
           match insts[i + 1]! with
-          | .add nextData =>
-            if nextData.size == 1 then
-              match findCopyAddOpcode size mode nextData.size with
+          | .add nextStart nextEnd =>
+            let nextSz := nextEnd - nextStart
+            if nextSz == 1 then
+              match findCopyAddOpcode size mode nextSz with
               | some opcode =>
                 some (instSection.push opcode,
-                      dataSection ++ nextData,
+                      target.copySlice nextStart dataSection dataSection.size nextSz false,
                       addrSection ++ addrBytes,
                       cache',
-                      targetPos + size + nextData.size, 2)
+                      targetPos + size + nextSz, 2)
               | none => none
             else none
           | _ => none
@@ -451,6 +484,7 @@ def encodeOneInst' (insts : Array RawInst) (i : Nat) (sourceSegLen : Nat)
 /-- Encode a window's instructions using fuel-based recursion.
     Returns (dataSection, instSection, addrSection). -/
 def encodeWindowLoop (insts : Array RawInst) (sourceSegLen : Nat)
+    (target : ByteArray)
     (dataSection instSection addrSection : ByteArray)
     (addrCache : AddressCache.State) (targetPos : Nat)
     : Nat → Nat → ByteArray × ByteArray × ByteArray
@@ -459,16 +493,17 @@ def encodeWindowLoop (insts : Array RawInst) (sourceSegLen : Nat)
     if i ≥ insts.size then (dataSection, instSection, addrSection)
     else
       let (ds', is', as', c', tp', skip) :=
-        encodeOneInst' insts i sourceSegLen dataSection instSection
+        encodeOneInst' insts i sourceSegLen target dataSection instSection
           addrSection addrCache targetPos
-      encodeWindowLoop insts sourceSegLen ds' is' as' c' tp' fuel (i + skip)
+      encodeWindowLoop insts sourceSegLen target ds' is' as' c' tp' fuel (i + skip)
 
 /-- Encode a window's worth of instructions into the three VCDIFF sections.
     Returns (dataSection, instSection, addrSection). -/
 def encodeWindow (insts : Array RawInst) (sourceSegLen : Nat)
-    : ByteArray × ByteArray × ByteArray :=
-  encodeWindowLoop insts sourceSegLen ByteArray.empty ByteArray.empty
-    ByteArray.empty AddressCache.State.init 0 insts.size 0
+    (target : ByteArray) : ByteArray × ByteArray × ByteArray :=
+  encodeWindowLoop insts sourceSegLen target
+    ByteArray.empty ByteArray.empty ByteArray.empty
+    AddressCache.State.init 0 insts.size 0
 
 /-- Serialize sections into a VCDIFF window byte array (pure, non-partial). -/
 def serializeWindow (source target : ByteArray)
@@ -501,7 +536,7 @@ def serializeWindow (source target : ByteArray)
 def encode (source : ByteArray) (target : ByteArray) : ByteArray :=
   let idx := buildSourceIndex source
   let insts := generateInstructions idx target
-  let (dataSection, instSection, addrSection) := encodeWindow insts source.size
+  let (dataSection, instSection, addrSection) := encodeWindow insts source.size target
   let header := magic ++ ByteArray.mk #[0x00, 0x00]  -- version=0, hdr_indicator=0
   let window := serializeWindow source target dataSection instSection addrSection
   header ++ window
