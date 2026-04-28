@@ -58,137 +58,70 @@ LEAN_EXPORT uint32_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashPower(lean_ob
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashPower___boxed(lean_object*);
 LEAN_EXPORT uint32_t lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_hashPower_spec__0(lean_object*, uint32_t, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_hashPower_spec__0___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
-static const lean_string_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 3, .m_capacity = 3, .m_length = 2, .m_data = "[]"};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__0_value;
-static const lean_ctor_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__0_value)}};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__1 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__1_value;
-static const lean_string_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__2_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 2, .m_capacity = 2, .m_length = 1, .m_data = "["};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__2 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__2_value;
-static const lean_string_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__3_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 2, .m_capacity = 2, .m_length = 1, .m_data = ","};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__3 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__3_value;
-static const lean_ctor_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__4_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__3_value)}};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__4 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__4_value;
-static const lean_ctor_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__5_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__4_value),((lean_object*)(((size_t)(1) << 1) | 1))}};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__5 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__5_value;
-static const lean_string_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__6_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 2, .m_capacity = 2, .m_length = 1, .m_data = "]"};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__6 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__6_value;
-lean_object* lean_string_length(lean_object*);
-static lean_once_cell_t lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__7_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__7;
-lean_object* lean_nat_to_int(lean_object*);
-static lean_once_cell_t lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__8_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__8;
-static const lean_ctor_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__9_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__2_value)}};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__9 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__9_value;
-static const lean_ctor_object lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__10_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__6_value)}};
-static const lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__10 = (const lean_object*)&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__10_value;
-lean_object* lp_lean_x2dbdiff_Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_AddressCache_instReprState_repr_spec__0_spec__0(lean_object*, lean_object*);
-lean_object* l_Std_Format_fill(lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_foldl___at___00List_foldl___at___00Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1_spec__2_spec__3(lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_foldl___at___00Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1_spec__2(lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1(lean_object*, lean_object*);
-static const lean_string_object lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 3, .m_capacity = 3, .m_length = 2, .m_data = "#["};
-static const lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__0_value;
-static lean_once_cell_t lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__1_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__1;
-static lean_once_cell_t lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__2_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__2;
-static const lean_ctor_object lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__3_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__0_value)}};
-static const lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__3 = (const lean_object*)&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__3_value;
-static const lean_string_object lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__4_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 4, .m_capacity = 4, .m_length = 3, .m_data = "#[]"};
-static const lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__4 = (const lean_object*)&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__4_value;
-static const lean_ctor_object lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__5_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__4_value)}};
-static const lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__5 = (const lean_object*)&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__5_value;
-lean_object* lean_array_get_size(lean_object*);
-uint8_t lean_nat_dec_eq(lean_object*, lean_object*);
-lean_object* lean_array_to_list(lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0(lean_object*);
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 3, .m_capacity = 3, .m_length = 2, .m_data = "{ "};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__0_value;
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 8, .m_capacity = 8, .m_length = 7, .m_data = "buckets"};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__1 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__1_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__2_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__1_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__2 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__2_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__3_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)(((size_t)(0) << 1) | 1)),((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__2_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__3 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__3_value;
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__4_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 5, .m_capacity = 5, .m_length = 4, .m_data = " := "};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__4 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__4_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__5_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__4_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__5 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__5_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__6_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__3_value),((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__5_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__6 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__6_value;
-static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__7_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__7;
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__8_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 5, .m_capacity = 5, .m_length = 4, .m_data = "mask"};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__8 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__8_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__9_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__8_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__9 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__9_value;
-static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__10_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__10;
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__11_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 11, .m_capacity = 11, .m_length = 10, .m_data = "sourceData"};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__11 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__11_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__12_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__11_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__12 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__12_value;
-static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__13_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__13;
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__14_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 3, .m_capacity = 3, .m_length = 2, .m_data = " }"};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__14 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__14_value;
-static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__15_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__15;
-static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__17_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__0_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__17 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__17_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__18_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__14_value)}};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__18 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__18_value;
-lean_object* l_Nat_reprFast(lean_object*);
-lean_object* l_ByteArray_toList(lean_object*);
-lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Option_repr___at___00LeanBdiff_Vcdiff_instReprHeader_repr_spec__0_spec__0___redArg(lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg(lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___boxed(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___boxed(lean_object*, lean_object*);
-static const lean_closure_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_closure_object) + sizeof(void*)*0, .m_other = 0, .m_tag = 245}, .m_fun = (void*)lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___boxed, .m_arity = 2, .m_num_fixed = 0, .m_objs = {} };
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex___closed__0_value;
-LEAN_EXPORT const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex___closed__0_value;
+LEAN_EXPORT uint32_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_sourceIdxSentinel;
+extern uint32_t l_instInhabitedUInt32;
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+uint32_t lean_uint32_land(uint32_t, uint32_t);
 lean_object* lean_uint32_to_nat(uint32_t);
-lean_object* lean_nat_land(lean_object*, lean_object*);
 lean_object* lean_array_get_borrowed(lean_object*, lean_object*, lean_object*);
 lean_object* lean_array_set(lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
+uint32_t lean_uint32_of_nat(lean_object*);
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(lean_object*, uint32_t, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed__const__1;
 lean_object* lean_nat_shiftl(lean_object*, lean_object*);
 lean_object* lean_nat_sub(lean_object*, lean_object*);
 lean_object* lean_mk_array(lean_object*, lean_object*);
 uint8_t lean_nat_dec_le(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed(lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0(lean_object*, uint32_t, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup(lean_object*, uint32_t);
+LEAN_EXPORT uint32_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup(lean_object*, uint32_t);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup___boxed(lean_object*, lean_object*);
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 10, .m_capacity = 10, .m_length = 9, .m_data = "sourcePos"};
+static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__0_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 3, .m_capacity = 3, .m_length = 2, .m_data = "{ "};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__0 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__0_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__0_value)}};
+static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__1_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 10, .m_capacity = 10, .m_length = 9, .m_data = "sourcePos"};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__1 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__1_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__2_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)(((size_t)(0) << 1) | 1)),((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__1_value)}};
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__2_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__1_value)}};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__2 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__2_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__3_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__2_value),((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__5_value)}};
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__3_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)(((size_t)(0) << 1) | 1)),((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__2_value)}};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__3 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__3_value;
-static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4;
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__5_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 10, .m_capacity = 10, .m_length = 9, .m_data = "targetPos"};
+static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 5, .m_capacity = 5, .m_length = 4, .m_data = " := "};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4_value;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__5_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4_value)}};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__5 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__5_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__6_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__5_value)}};
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__6_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__3_value),((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__5_value)}};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__6 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__6_value;
-static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 7, .m_capacity = 7, .m_length = 6, .m_data = "length"};
-static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7_value;
-static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__8_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7_value)}};
+lean_object* lean_nat_to_int(lean_object*);
+static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7_once = LEAN_ONCE_CELL_INITIALIZER;
+static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7;
+static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__8_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 2, .m_capacity = 2, .m_length = 1, .m_data = ","};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__8 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__8_value;
-static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9_once = LEAN_ONCE_CELL_INITIALIZER;
-static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__8_value)}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9_value;
+static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__10_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 10, .m_capacity = 10, .m_length = 9, .m_data = "targetPos"};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__10 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__10_value;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__11_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__10_value)}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__11 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__11_value;
+static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__12_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 7, .m_capacity = 7, .m_length = 6, .m_data = "length"};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__12 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__12_value;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__13_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__12_value)}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__13 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__13_value;
+static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__14_once = LEAN_ONCE_CELL_INITIALIZER;
+static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__14;
+static const lean_string_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__15_value = {.m_header = {.m_rc = 0, .m_cs_sz = 0, .m_other = 0, .m_tag = 249}, .m_size = 3, .m_capacity = 3, .m_length = 2, .m_data = " }"};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__15 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__15_value;
+lean_object* lean_string_length(lean_object*);
+static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__16_once = LEAN_ONCE_CELL_INITIALIZER;
+static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__16;
+static lean_once_cell_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__17_once = LEAN_ONCE_CELL_INITIALIZER;
+static lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__17;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__18_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__0_value)}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__18 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__18_value;
+static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__19_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*1 + 0, .m_other = 1, .m_tag = 3}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__15_value)}};
+static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__19 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__19_value;
+lean_object* l_Nat_reprFast(lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg(lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___boxed(lean_object*, lean_object*);
@@ -204,7 +137,11 @@ LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendBackwar
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendBackward___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendMatch(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendMatch___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
+uint8_t lean_nat_dec_eq(lean_object*, lean_object*);
+uint8_t lean_uint32_dec_eq(uint32_t, uint32_t);
+lean_object* lean_array_get_size(lean_object*);
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(lean_object*, lean_object*, lean_object*, lean_object*, uint32_t, lean_object*, lean_object*);
+lean_object* lean_array_fget_borrowed(lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec___boxed(lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch(lean_object*, lean_object*, lean_object*, lean_object*);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch___boxed(lean_object*, lean_object*, lean_object*, lean_object*);
@@ -241,6 +178,8 @@ static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instRepr
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprRawInst_repr___closed__9 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprRawInst_repr___closed__9_value;
 static const lean_ctor_object lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprRawInst_repr___closed__10_value = {.m_header = {.m_rc = 0, .m_cs_sz = sizeof(lean_ctor_object) + sizeof(void*)*2 + 0, .m_other = 2, .m_tag = 5}, .m_objs = {((lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprRawInst_repr___closed__9_value),((lean_object*)(((size_t)(1) << 1) | 1))}};
 static const lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprRawInst_repr___closed__10 = (const lean_object*)&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprRawInst_repr___closed__10_value;
+lean_object* l_ByteArray_toList(lean_object*);
+lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Option_repr___at___00LeanBdiff_Vcdiff_instReprHeader_repr_spec__0_spec__0___redArg(lean_object*);
 lean_object* l_Repr_addAppParen(lean_object*, lean_object*);
 lean_object* lean_uint8_to_nat(uint8_t);
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprRawInst_repr(lean_object*, lean_object*);
@@ -788,427 +727,24 @@ x_8 = lean_box_uint32(x_7);
 return x_8;
 }
 }
-static lean_object* _init_lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__7(void) {
+static uint32_t _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_sourceIdxSentinel(void) {
 _start:
 {
-lean_object* x_1; lean_object* x_2; 
-x_1 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__2));
-x_2 = lean_string_length(x_1);
+uint32_t x_1; 
+x_1 = 4294967295;
+return x_1;
+}
+}
+static lean_object* _init_lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1(void) {
+_start:
+{
+uint32_t x_1; lean_object* x_2; 
+x_1 = l_instInhabitedUInt32;
+x_2 = lean_box_uint32(x_1);
 return x_2;
 }
 }
-static lean_object* _init_lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__8(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = lean_obj_once(&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__7, &lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__7_once, _init_lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__7);
-x_2 = lean_nat_to_int(x_1);
-return x_2;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(lean_object* x_1) {
-_start:
-{
-if (lean_obj_tag(x_1) == 0)
-{
-lean_object* x_2; 
-x_2 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__1));
-return x_2;
-}
-else
-{
-lean_object* x_3; lean_object* x_4; lean_object* x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; lean_object* x_9; lean_object* x_10; lean_object* x_11; 
-x_3 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__5));
-x_4 = lp_lean_x2dbdiff_Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_AddressCache_instReprState_repr_spec__0_spec__0(x_1, x_3);
-x_5 = lean_obj_once(&lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__8, &lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__8_once, _init_lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__8);
-x_6 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__9));
-x_7 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_7, 0, x_6);
-lean_ctor_set(x_7, 1, x_4);
-x_8 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__10));
-x_9 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_9, 0, x_7);
-lean_ctor_set(x_9, 1, x_8);
-x_10 = lean_alloc_ctor(4, 2, 0);
-lean_ctor_set(x_10, 0, x_5);
-lean_ctor_set(x_10, 1, x_9);
-x_11 = l_Std_Format_fill(x_10);
-return x_11;
-}
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_foldl___at___00List_foldl___at___00Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1_spec__2_spec__3(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
-_start:
-{
-if (lean_obj_tag(x_3) == 0)
-{
-lean_dec(x_1);
-return x_2;
-}
-else
-{
-uint8_t x_4; 
-x_4 = !lean_is_exclusive(x_3);
-if (x_4 == 0)
-{
-lean_object* x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; 
-x_5 = lean_ctor_get(x_3, 0);
-x_6 = lean_ctor_get(x_3, 1);
-lean_inc(x_1);
-lean_ctor_set_tag(x_3, 5);
-lean_ctor_set(x_3, 1, x_1);
-lean_ctor_set(x_3, 0, x_2);
-x_7 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(x_5);
-x_8 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_8, 0, x_3);
-lean_ctor_set(x_8, 1, x_7);
-x_2 = x_8;
-x_3 = x_6;
-goto _start;
-}
-else
-{
-lean_object* x_10; lean_object* x_11; lean_object* x_12; lean_object* x_13; lean_object* x_14; 
-x_10 = lean_ctor_get(x_3, 0);
-x_11 = lean_ctor_get(x_3, 1);
-lean_inc(x_11);
-lean_inc(x_10);
-lean_dec(x_3);
-lean_inc(x_1);
-x_12 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_12, 0, x_2);
-lean_ctor_set(x_12, 1, x_1);
-x_13 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(x_10);
-x_14 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_14, 0, x_12);
-lean_ctor_set(x_14, 1, x_13);
-x_2 = x_14;
-x_3 = x_11;
-goto _start;
-}
-}
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_foldl___at___00Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1_spec__2(lean_object* x_1, lean_object* x_2, lean_object* x_3) {
-_start:
-{
-if (lean_obj_tag(x_3) == 0)
-{
-lean_dec(x_1);
-return x_2;
-}
-else
-{
-uint8_t x_4; 
-x_4 = !lean_is_exclusive(x_3);
-if (x_4 == 0)
-{
-lean_object* x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; lean_object* x_9; 
-x_5 = lean_ctor_get(x_3, 0);
-x_6 = lean_ctor_get(x_3, 1);
-lean_inc(x_1);
-lean_ctor_set_tag(x_3, 5);
-lean_ctor_set(x_3, 1, x_1);
-lean_ctor_set(x_3, 0, x_2);
-x_7 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(x_5);
-x_8 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_8, 0, x_3);
-lean_ctor_set(x_8, 1, x_7);
-x_9 = lp_lean_x2dbdiff_List_foldl___at___00List_foldl___at___00Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1_spec__2_spec__3(x_1, x_8, x_6);
-return x_9;
-}
-else
-{
-lean_object* x_10; lean_object* x_11; lean_object* x_12; lean_object* x_13; lean_object* x_14; lean_object* x_15; 
-x_10 = lean_ctor_get(x_3, 0);
-x_11 = lean_ctor_get(x_3, 1);
-lean_inc(x_11);
-lean_inc(x_10);
-lean_dec(x_3);
-lean_inc(x_1);
-x_12 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_12, 0, x_2);
-lean_ctor_set(x_12, 1, x_1);
-x_13 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(x_10);
-x_14 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_14, 0, x_12);
-lean_ctor_set(x_14, 1, x_13);
-x_15 = lp_lean_x2dbdiff_List_foldl___at___00List_foldl___at___00Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1_spec__2_spec__3(x_1, x_14, x_11);
-return x_15;
-}
-}
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1(lean_object* x_1, lean_object* x_2) {
-_start:
-{
-if (lean_obj_tag(x_1) == 0)
-{
-lean_object* x_3; 
-lean_dec(x_2);
-x_3 = lean_box(0);
-return x_3;
-}
-else
-{
-lean_object* x_4; 
-x_4 = lean_ctor_get(x_1, 1);
-if (lean_obj_tag(x_4) == 0)
-{
-lean_object* x_5; lean_object* x_6; 
-lean_dec(x_2);
-x_5 = lean_ctor_get(x_1, 0);
-lean_inc(x_5);
-lean_dec_ref(x_1);
-x_6 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(x_5);
-return x_6;
-}
-else
-{
-lean_object* x_7; lean_object* x_8; lean_object* x_9; 
-lean_inc(x_4);
-x_7 = lean_ctor_get(x_1, 0);
-lean_inc(x_7);
-lean_dec_ref(x_1);
-x_8 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(x_7);
-x_9 = lp_lean_x2dbdiff_List_foldl___at___00Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1_spec__2(x_2, x_8, x_4);
-return x_9;
-}
-}
-}
-}
-static lean_object* _init_lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__1(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = ((lean_object*)(lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__0));
-x_2 = lean_string_length(x_1);
-return x_2;
-}
-}
-static lean_object* _init_lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__2(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = lean_obj_once(&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__1, &lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__1_once, _init_lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__1);
-x_2 = lean_nat_to_int(x_1);
-return x_2;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0(lean_object* x_1) {
-_start:
-{
-lean_object* x_2; lean_object* x_3; uint8_t x_4; 
-x_2 = lean_array_get_size(x_1);
-x_3 = lean_unsigned_to_nat(0u);
-x_4 = lean_nat_dec_eq(x_2, x_3);
-if (x_4 == 0)
-{
-lean_object* x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; lean_object* x_9; lean_object* x_10; lean_object* x_11; lean_object* x_12; lean_object* x_13; lean_object* x_14; 
-x_5 = lean_array_to_list(x_1);
-x_6 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__5));
-x_7 = lp_lean_x2dbdiff_Std_Format_joinSep___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__1(x_5, x_6);
-x_8 = lean_obj_once(&lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__2, &lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__2_once, _init_lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__2);
-x_9 = ((lean_object*)(lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__3));
-x_10 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_10, 0, x_9);
-lean_ctor_set(x_10, 1, x_7);
-x_11 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__10));
-x_12 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_12, 0, x_10);
-lean_ctor_set(x_12, 1, x_11);
-x_13 = lean_alloc_ctor(4, 2, 0);
-lean_ctor_set(x_13, 0, x_8);
-lean_ctor_set(x_13, 1, x_12);
-x_14 = l_Std_Format_fill(x_13);
-return x_14;
-}
-else
-{
-lean_object* x_15; 
-lean_dec_ref(x_1);
-x_15 = ((lean_object*)(lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0___closed__5));
-return x_15;
-}
-}
-}
-static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__7(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = lean_unsigned_to_nat(11u);
-x_2 = lean_nat_to_int(x_1);
-return x_2;
-}
-}
-static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__10(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = lean_unsigned_to_nat(8u);
-x_2 = lean_nat_to_int(x_1);
-return x_2;
-}
-}
-static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__13(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = lean_unsigned_to_nat(14u);
-x_2 = lean_nat_to_int(x_1);
-return x_2;
-}
-}
-static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__15(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__0));
-x_2 = lean_string_length(x_1);
-return x_2;
-}
-}
-static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16(void) {
-_start:
-{
-lean_object* x_1; lean_object* x_2; 
-x_1 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__15, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__15_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__15);
-x_2 = lean_nat_to_int(x_1);
-return x_2;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg(lean_object* x_1) {
-_start:
-{
-lean_object* x_2; lean_object* x_3; lean_object* x_4; lean_object* x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; lean_object* x_9; uint8_t x_10; lean_object* x_11; lean_object* x_12; lean_object* x_13; lean_object* x_14; lean_object* x_15; lean_object* x_16; lean_object* x_17; lean_object* x_18; lean_object* x_19; lean_object* x_20; lean_object* x_21; lean_object* x_22; lean_object* x_23; lean_object* x_24; lean_object* x_25; lean_object* x_26; lean_object* x_27; lean_object* x_28; lean_object* x_29; lean_object* x_30; lean_object* x_31; lean_object* x_32; lean_object* x_33; lean_object* x_34; lean_object* x_35; lean_object* x_36; lean_object* x_37; lean_object* x_38; lean_object* x_39; lean_object* x_40; lean_object* x_41; lean_object* x_42; lean_object* x_43; 
-x_2 = lean_ctor_get(x_1, 0);
-lean_inc_ref(x_2);
-x_3 = lean_ctor_get(x_1, 1);
-lean_inc(x_3);
-x_4 = lean_ctor_get(x_1, 2);
-lean_inc_ref(x_4);
-lean_dec_ref(x_1);
-x_5 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__5));
-x_6 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__6));
-x_7 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__7, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__7_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__7);
-x_8 = lp_lean_x2dbdiff_Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0(x_2);
-x_9 = lean_alloc_ctor(4, 2, 0);
-lean_ctor_set(x_9, 0, x_7);
-lean_ctor_set(x_9, 1, x_8);
-x_10 = 0;
-x_11 = lean_alloc_ctor(6, 1, 1);
-lean_ctor_set(x_11, 0, x_9);
-lean_ctor_set_uint8(x_11, sizeof(void*)*1, x_10);
-x_12 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_12, 0, x_6);
-lean_ctor_set(x_12, 1, x_11);
-x_13 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__4));
-x_14 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_14, 0, x_12);
-lean_ctor_set(x_14, 1, x_13);
-x_15 = lean_box(1);
-x_16 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_16, 0, x_14);
-lean_ctor_set(x_16, 1, x_15);
-x_17 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__9));
-x_18 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_18, 0, x_16);
-lean_ctor_set(x_18, 1, x_17);
-x_19 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_19, 0, x_18);
-lean_ctor_set(x_19, 1, x_5);
-x_20 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__10, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__10_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__10);
-x_21 = l_Nat_reprFast(x_3);
-x_22 = lean_alloc_ctor(3, 1, 0);
-lean_ctor_set(x_22, 0, x_21);
-x_23 = lean_alloc_ctor(4, 2, 0);
-lean_ctor_set(x_23, 0, x_20);
-lean_ctor_set(x_23, 1, x_22);
-x_24 = lean_alloc_ctor(6, 1, 1);
-lean_ctor_set(x_24, 0, x_23);
-lean_ctor_set_uint8(x_24, sizeof(void*)*1, x_10);
-x_25 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_25, 0, x_19);
-lean_ctor_set(x_25, 1, x_24);
-x_26 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_26, 0, x_25);
-lean_ctor_set(x_26, 1, x_13);
-x_27 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_27, 0, x_26);
-lean_ctor_set(x_27, 1, x_15);
-x_28 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__12));
-x_29 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_29, 0, x_27);
-lean_ctor_set(x_29, 1, x_28);
-x_30 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_30, 0, x_29);
-lean_ctor_set(x_30, 1, x_5);
-x_31 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__13, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__13_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__13);
-x_32 = l_ByteArray_toList(x_4);
-lean_dec_ref(x_4);
-x_33 = lp_lean_x2dbdiff_List_repr_x27___at___00Option_repr___at___00LeanBdiff_Vcdiff_instReprHeader_repr_spec__0_spec__0___redArg(x_32);
-x_34 = lean_alloc_ctor(4, 2, 0);
-lean_ctor_set(x_34, 0, x_31);
-lean_ctor_set(x_34, 1, x_33);
-x_35 = lean_alloc_ctor(6, 1, 1);
-lean_ctor_set(x_35, 0, x_34);
-lean_ctor_set_uint8(x_35, sizeof(void*)*1, x_10);
-x_36 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_36, 0, x_30);
-lean_ctor_set(x_36, 1, x_35);
-x_37 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16);
-x_38 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__17));
-x_39 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_39, 0, x_38);
-lean_ctor_set(x_39, 1, x_36);
-x_40 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__18));
-x_41 = lean_alloc_ctor(5, 2, 0);
-lean_ctor_set(x_41, 0, x_39);
-lean_ctor_set(x_41, 1, x_40);
-x_42 = lean_alloc_ctor(4, 2, 0);
-lean_ctor_set(x_42, 0, x_37);
-lean_ctor_set(x_42, 1, x_41);
-x_43 = lean_alloc_ctor(6, 1, 1);
-lean_ctor_set(x_43, 0, x_42);
-lean_ctor_set_uint8(x_43, sizeof(void*)*1, x_10);
-return x_43;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr(lean_object* x_1, lean_object* x_2) {
-_start:
-{
-lean_object* x_3; 
-x_3 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg(x_1);
-return x_3;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___boxed(lean_object* x_1, lean_object* x_2) {
-_start:
-{
-lean_object* x_3; 
-x_3 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr(x_1, x_2);
-lean_dec(x_2);
-return x_3;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0(lean_object* x_1, lean_object* x_2) {
-_start:
-{
-lean_object* x_3; 
-x_3 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg(x_1);
-return x_3;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___boxed(lean_object* x_1, lean_object* x_2) {
-_start:
-{
-lean_object* x_3; 
-x_3 = lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0(x_1, x_2);
-lean_dec(x_2);
-return x_3;
-}
-}
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(lean_object* x_1, uint32_t x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
 _start:
 {
 lean_object* x_6; lean_object* x_7; uint8_t x_8; 
@@ -1222,79 +758,138 @@ return x_4;
 }
 else
 {
-lean_object* x_9; uint32_t x_10; lean_object* x_11; lean_object* x_12; lean_object* x_13; lean_object* x_14; lean_object* x_15; lean_object* x_16; lean_object* x_17; 
-x_9 = lean_unsigned_to_nat(4u);
-x_10 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_1, x_5, x_9);
-x_11 = lean_uint32_to_nat(x_10);
-x_12 = lean_nat_land(x_11, x_2);
-lean_dec(x_11);
-x_13 = lean_box(0);
-x_14 = lean_array_get_borrowed(x_13, x_4, x_12);
-lean_inc(x_14);
-lean_inc(x_5);
-x_15 = lean_alloc_ctor(1, 2, 0);
-lean_ctor_set(x_15, 0, x_5);
-lean_ctor_set(x_15, 1, x_14);
-x_16 = lean_array_set(x_4, x_12, x_15);
-lean_dec(x_12);
-x_17 = lean_nat_add(x_5, x_7);
+uint8_t x_9; 
+x_9 = !lean_is_exclusive(x_4);
+if (x_9 == 0)
+{
+lean_object* x_10; lean_object* x_11; lean_object* x_12; uint32_t x_13; uint32_t x_14; lean_object* x_15; lean_object* x_16; lean_object* x_17; lean_object* x_18; uint32_t x_19; lean_object* x_20; lean_object* x_21; lean_object* x_22; 
+x_10 = lean_ctor_get(x_4, 0);
+x_11 = lean_ctor_get(x_4, 1);
+x_12 = lean_unsigned_to_nat(4u);
+x_13 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_1, x_5, x_12);
+x_14 = lean_uint32_land(x_13, x_2);
+x_15 = lean_uint32_to_nat(x_14);
+x_16 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_17 = lean_array_get_borrowed(x_16, x_11, x_15);
+lean_inc(x_17);
+x_18 = lean_array_set(x_10, x_5, x_17);
+x_19 = lean_uint32_of_nat(x_5);
+x_20 = lean_box_uint32(x_19);
+x_21 = lean_array_set(x_11, x_15, x_20);
+lean_dec(x_15);
+lean_ctor_set(x_4, 1, x_21);
+lean_ctor_set(x_4, 0, x_18);
+x_22 = lean_nat_add(x_5, x_7);
 lean_dec(x_5);
-x_4 = x_16;
-x_5 = x_17;
+x_5 = x_22;
 goto _start;
+}
+else
+{
+lean_object* x_24; lean_object* x_25; lean_object* x_26; uint32_t x_27; uint32_t x_28; lean_object* x_29; lean_object* x_30; lean_object* x_31; lean_object* x_32; uint32_t x_33; lean_object* x_34; lean_object* x_35; lean_object* x_36; lean_object* x_37; 
+x_24 = lean_ctor_get(x_4, 0);
+x_25 = lean_ctor_get(x_4, 1);
+lean_inc(x_25);
+lean_inc(x_24);
+lean_dec(x_4);
+x_26 = lean_unsigned_to_nat(4u);
+x_27 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_1, x_5, x_26);
+x_28 = lean_uint32_land(x_27, x_2);
+x_29 = lean_uint32_to_nat(x_28);
+x_30 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_31 = lean_array_get_borrowed(x_30, x_25, x_29);
+lean_inc(x_31);
+x_32 = lean_array_set(x_24, x_5, x_31);
+x_33 = lean_uint32_of_nat(x_5);
+x_34 = lean_box_uint32(x_33);
+x_35 = lean_array_set(x_25, x_29, x_34);
+lean_dec(x_29);
+x_36 = lean_alloc_ctor(0, 2, 0);
+lean_ctor_set(x_36, 0, x_32);
+lean_ctor_set(x_36, 1, x_35);
+x_37 = lean_nat_add(x_5, x_7);
+lean_dec(x_5);
+x_4 = x_36;
+x_5 = x_37;
+goto _start;
+}
 }
 }
 }
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
 _start:
 {
-lean_object* x_6; 
-x_6 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(x_1, x_2, x_3, x_4, x_5);
-lean_dec_ref(x_3);
+uint32_t x_6; lean_object* x_7; 
+x_6 = lean_unbox_uint32(x_2);
 lean_dec(x_2);
+x_7 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(x_1, x_6, x_3, x_4, x_5);
+lean_dec_ref(x_3);
 lean_dec_ref(x_1);
-return x_6;
+return x_7;
+}
+}
+static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed__const__1(void) {
+_start:
+{
+uint32_t x_1; lean_object* x_2; 
+x_1 = 4294967295;
+x_2 = lean_box_uint32(x_1);
+return x_2;
 }
 }
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex(lean_object* x_1, lean_object* x_2) {
 _start:
 {
-lean_object* x_3; lean_object* x_4; lean_object* x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; lean_object* x_9; uint8_t x_10; 
+lean_object* x_3; lean_object* x_4; lean_object* x_5; uint32_t x_6; lean_object* x_7; lean_object* x_8; lean_object* x_9; lean_object* x_10; lean_object* x_11; lean_object* x_12; uint8_t x_13; 
 x_3 = lean_unsigned_to_nat(1u);
 x_4 = lean_nat_shiftl(x_3, x_2);
 x_5 = lean_nat_sub(x_4, x_3);
-x_6 = lean_box(0);
-x_7 = lean_mk_array(x_4, x_6);
-x_8 = lean_unsigned_to_nat(4u);
+x_6 = lean_uint32_of_nat(x_5);
+lean_dec(x_5);
+x_7 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed__const__1;
+x_8 = lean_mk_array(x_4, x_7);
 x_9 = lean_byte_array_size(x_1);
-x_10 = lean_nat_dec_le(x_8, x_9);
-if (x_10 == 0)
+x_10 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed__const__1;
+x_11 = lean_mk_array(x_9, x_10);
+x_12 = lean_unsigned_to_nat(4u);
+x_13 = lean_nat_dec_le(x_12, x_9);
+if (x_13 == 0)
 {
-lean_object* x_11; 
-x_11 = lean_alloc_ctor(0, 3, 0);
-lean_ctor_set(x_11, 0, x_7);
-lean_ctor_set(x_11, 1, x_5);
-lean_ctor_set(x_11, 2, x_1);
-return x_11;
+lean_object* x_14; 
+x_14 = lean_alloc_ctor(0, 3, 4);
+lean_ctor_set(x_14, 0, x_8);
+lean_ctor_set(x_14, 1, x_11);
+lean_ctor_set(x_14, 2, x_1);
+lean_ctor_set_uint32(x_14, sizeof(void*)*3, x_6);
+return x_14;
 }
 else
 {
-lean_object* x_12; lean_object* x_13; lean_object* x_14; lean_object* x_15; lean_object* x_16; lean_object* x_17; 
-x_12 = lean_unsigned_to_nat(0u);
-x_13 = lean_nat_sub(x_9, x_8);
-x_14 = lean_nat_add(x_13, x_3);
-lean_dec(x_13);
-x_15 = lean_alloc_ctor(0, 3, 0);
-lean_ctor_set(x_15, 0, x_12);
-lean_ctor_set(x_15, 1, x_14);
-lean_ctor_set(x_15, 2, x_3);
-x_16 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(x_1, x_5, x_15, x_7, x_12);
-lean_dec_ref(x_15);
-x_17 = lean_alloc_ctor(0, 3, 0);
-lean_ctor_set(x_17, 0, x_16);
-lean_ctor_set(x_17, 1, x_5);
-lean_ctor_set(x_17, 2, x_1);
-return x_17;
+lean_object* x_15; lean_object* x_16; lean_object* x_17; lean_object* x_18; lean_object* x_19; lean_object* x_20; lean_object* x_21; lean_object* x_22; lean_object* x_23; 
+x_15 = lean_unsigned_to_nat(0u);
+x_16 = lean_nat_sub(x_9, x_12);
+x_17 = lean_nat_add(x_16, x_3);
+lean_dec(x_16);
+x_18 = lean_alloc_ctor(0, 3, 0);
+lean_ctor_set(x_18, 0, x_15);
+lean_ctor_set(x_18, 1, x_17);
+lean_ctor_set(x_18, 2, x_3);
+x_19 = lean_alloc_ctor(0, 2, 0);
+lean_ctor_set(x_19, 0, x_11);
+lean_ctor_set(x_19, 1, x_8);
+x_20 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg(x_1, x_6, x_18, x_19, x_15);
+lean_dec_ref(x_18);
+x_21 = lean_ctor_get(x_20, 0);
+lean_inc(x_21);
+x_22 = lean_ctor_get(x_20, 1);
+lean_inc(x_22);
+lean_dec_ref(x_20);
+x_23 = lean_alloc_ctor(0, 3, 4);
+lean_ctor_set(x_23, 0, x_22);
+lean_ctor_set(x_23, 1, x_21);
+lean_ctor_set(x_23, 2, x_1);
+lean_ctor_set_uint32(x_23, sizeof(void*)*3, x_6);
+return x_23;
 }
 }
 }
@@ -1307,7 +902,7 @@ lean_dec(x_2);
 return x_3;
 }
 }
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0(lean_object* x_1, uint32_t x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
 _start:
 {
 lean_object* x_8; 
@@ -1318,42 +913,43 @@ return x_8;
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
 _start:
 {
-lean_object* x_8; 
-x_8 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0(x_1, x_2, x_3, x_4, x_5, x_6, x_7);
-lean_dec_ref(x_3);
+uint32_t x_8; lean_object* x_9; 
+x_8 = lean_unbox_uint32(x_2);
 lean_dec(x_2);
+x_9 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0(x_1, x_8, x_3, x_4, x_5, x_6, x_7);
+lean_dec_ref(x_3);
 lean_dec_ref(x_1);
-return x_8;
+return x_9;
 }
 }
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup(lean_object* x_1, uint32_t x_2) {
+LEAN_EXPORT uint32_t lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup(lean_object* x_1, uint32_t x_2) {
 _start:
 {
-lean_object* x_3; lean_object* x_4; lean_object* x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; 
+lean_object* x_3; uint32_t x_4; uint32_t x_5; lean_object* x_6; lean_object* x_7; lean_object* x_8; uint32_t x_9; 
 x_3 = lean_ctor_get(x_1, 0);
-x_4 = lean_ctor_get(x_1, 1);
-x_5 = lean_box(0);
-x_6 = lean_uint32_to_nat(x_2);
-x_7 = lean_nat_land(x_6, x_4);
+x_4 = lean_ctor_get_uint32(x_1, sizeof(void*)*3);
+x_5 = lean_uint32_land(x_2, x_4);
+x_6 = lean_uint32_to_nat(x_5);
+x_7 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_8 = lean_array_get_borrowed(x_7, x_3, x_6);
 lean_dec(x_6);
-x_8 = lean_array_get_borrowed(x_5, x_3, x_7);
-lean_dec(x_7);
-lean_inc(x_8);
-return x_8;
+x_9 = lean_unbox_uint32(x_8);
+return x_9;
 }
 }
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup___boxed(lean_object* x_1, lean_object* x_2) {
 _start:
 {
-uint32_t x_3; lean_object* x_4; 
+uint32_t x_3; uint32_t x_4; lean_object* x_5; 
 x_3 = lean_unbox_uint32(x_2);
 lean_dec(x_2);
 x_4 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup(x_1, x_3);
 lean_dec_ref(x_1);
-return x_4;
+x_5 = lean_box_uint32(x_4);
+return x_5;
 }
 }
-static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4(void) {
+static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7(void) {
 _start:
 {
 lean_object* x_1; lean_object* x_2; 
@@ -1362,11 +958,29 @@ x_2 = lean_nat_to_int(x_1);
 return x_2;
 }
 }
-static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9(void) {
+static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__14(void) {
 _start:
 {
 lean_object* x_1; lean_object* x_2; 
 x_1 = lean_unsigned_to_nat(10u);
+x_2 = lean_nat_to_int(x_1);
+return x_2;
+}
+}
+static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__16(void) {
+_start:
+{
+lean_object* x_1; lean_object* x_2; 
+x_1 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__0));
+x_2 = lean_string_length(x_1);
+return x_2;
+}
+}
+static lean_object* _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__17(void) {
+_start:
+{
+lean_object* x_1; lean_object* x_2; 
+x_1 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__16, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__16_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__16);
 x_2 = lean_nat_to_int(x_1);
 return x_2;
 }
@@ -1382,9 +996,9 @@ lean_inc(x_3);
 x_4 = lean_ctor_get(x_1, 2);
 lean_inc(x_4);
 lean_dec_ref(x_1);
-x_5 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__5));
-x_6 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__3));
-x_7 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__4);
+x_5 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__5));
+x_6 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__6));
+x_7 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__7);
 x_8 = l_Nat_reprFast(x_2);
 x_9 = lean_alloc_ctor(3, 1, 0);
 lean_ctor_set(x_9, 0, x_8);
@@ -1398,7 +1012,7 @@ lean_ctor_set_uint8(x_12, sizeof(void*)*1, x_11);
 x_13 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_13, 0, x_6);
 lean_ctor_set(x_13, 1, x_12);
-x_14 = ((lean_object*)(lp_lean_x2dbdiff_List_repr_x27___at___00Array_repr___at___00LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr_spec__0_spec__0___redArg___closed__4));
+x_14 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9));
 x_15 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_15, 0, x_13);
 lean_ctor_set(x_15, 1, x_14);
@@ -1406,7 +1020,7 @@ x_16 = lean_box(1);
 x_17 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_17, 0, x_15);
 lean_ctor_set(x_17, 1, x_16);
-x_18 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__6));
+x_18 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__11));
 x_19 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_19, 0, x_17);
 lean_ctor_set(x_19, 1, x_18);
@@ -1431,14 +1045,14 @@ lean_ctor_set(x_26, 1, x_14);
 x_27 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_27, 0, x_26);
 lean_ctor_set(x_27, 1, x_16);
-x_28 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__8));
+x_28 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__13));
 x_29 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_29, 0, x_27);
 lean_ctor_set(x_29, 1, x_28);
 x_30 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_30, 0, x_29);
 lean_ctor_set(x_30, 1, x_5);
-x_31 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__9);
+x_31 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__14, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__14_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__14);
 x_32 = l_Nat_reprFast(x_4);
 x_33 = lean_alloc_ctor(3, 1, 0);
 lean_ctor_set(x_33, 0, x_32);
@@ -1451,12 +1065,12 @@ lean_ctor_set_uint8(x_35, sizeof(void*)*1, x_11);
 x_36 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_36, 0, x_30);
 lean_ctor_set(x_36, 1, x_35);
-x_37 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__16);
-x_38 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__17));
+x_37 = lean_obj_once(&lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__17, &lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__17_once, _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__17);
+x_38 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__18));
 x_39 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_39, 0, x_38);
 lean_ctor_set(x_39, 1, x_36);
-x_40 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprSourceIndex_repr___redArg___closed__18));
+x_40 = ((lean_object*)(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instReprMatch_repr___redArg___closed__19));
 x_41 = lean_alloc_ctor(5, 2, 0);
 lean_ctor_set(x_41, 0, x_39);
 lean_ctor_set(x_41, 1, x_40);
@@ -1752,113 +1366,133 @@ lean_dec_ref(x_1);
 return x_5;
 }
 }
-LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
+LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, uint32_t x_5, lean_object* x_6, lean_object* x_7) {
 _start:
 {
-if (lean_obj_tag(x_4) == 0)
+lean_object* x_8; uint8_t x_9; 
+x_8 = lean_unsigned_to_nat(0u);
+x_9 = lean_nat_dec_eq(x_6, x_8);
+if (x_9 == 1)
 {
-lean_dec(x_7);
-return x_6;
+lean_dec(x_6);
+return x_7;
 }
 else
 {
-lean_object* x_8; lean_object* x_9; lean_object* x_10; uint8_t x_15; 
-x_8 = lean_ctor_get(x_4, 0);
-x_9 = lean_ctor_get(x_4, 1);
-x_15 = lean_nat_dec_le(x_5, x_7);
-if (x_15 == 0)
+uint32_t x_10; uint8_t x_11; 
+x_10 = 4294967295;
+x_11 = lean_uint32_dec_eq(x_5, x_10);
+if (x_11 == 0)
 {
-lean_object* x_16; lean_object* x_17; lean_object* x_18; uint8_t x_19; 
-x_16 = lean_unsigned_to_nat(4u);
-x_17 = lean_nat_add(x_8, x_16);
-x_18 = lean_byte_array_size(x_1);
-x_19 = lean_nat_dec_le(x_17, x_18);
-lean_dec(x_17);
-if (x_19 == 0)
-{
-x_10 = x_6;
-goto block_14;
-}
-else
-{
-lean_object* x_20; lean_object* x_21; uint8_t x_22; 
-x_20 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendMatch(x_1, x_8, x_2, x_3);
-x_21 = lean_ctor_get(x_20, 2);
-lean_inc(x_21);
-x_22 = lean_nat_dec_le(x_16, x_21);
-if (x_22 == 0)
-{
-lean_dec(x_21);
-lean_dec_ref(x_20);
-x_10 = x_6;
-goto block_14;
-}
-else
-{
-if (lean_obj_tag(x_6) == 0)
-{
-lean_object* x_23; 
-lean_dec(x_21);
-x_23 = lean_alloc_ctor(1, 1, 0);
-lean_ctor_set(x_23, 0, x_20);
-x_10 = x_23;
-goto block_14;
-}
-else
-{
-lean_object* x_24; lean_object* x_25; uint8_t x_26; 
-x_24 = lean_ctor_get(x_6, 0);
-x_25 = lean_ctor_get(x_24, 2);
-x_26 = lean_nat_dec_lt(x_25, x_21);
-lean_dec(x_21);
+lean_object* x_12; lean_object* x_13; lean_object* x_14; lean_object* x_15; lean_object* x_23; lean_object* x_24; lean_object* x_25; uint8_t x_26; 
+x_12 = lean_unsigned_to_nat(1u);
+x_13 = lean_nat_sub(x_6, x_12);
+lean_dec(x_6);
+x_14 = lean_uint32_to_nat(x_5);
+x_23 = lean_unsigned_to_nat(4u);
+x_24 = lean_nat_add(x_14, x_23);
+x_25 = lean_byte_array_size(x_1);
+x_26 = lean_nat_dec_le(x_24, x_25);
+lean_dec(x_24);
 if (x_26 == 0)
 {
-lean_dec_ref(x_20);
-x_10 = x_6;
-goto block_14;
+x_15 = x_7;
+goto block_22;
 }
 else
 {
-uint8_t x_27; 
-x_27 = !lean_is_exclusive(x_6);
-if (x_27 == 0)
+lean_object* x_27; lean_object* x_28; uint8_t x_29; 
+x_27 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendMatch(x_1, x_14, x_3, x_4);
+x_28 = lean_ctor_get(x_27, 2);
+lean_inc(x_28);
+x_29 = lean_nat_dec_le(x_23, x_28);
+if (x_29 == 0)
 {
-lean_object* x_28; 
-x_28 = lean_ctor_get(x_6, 0);
 lean_dec(x_28);
-lean_ctor_set(x_6, 0, x_20);
-x_10 = x_6;
-goto block_14;
+lean_dec_ref(x_27);
+x_15 = x_7;
+goto block_22;
 }
 else
 {
-lean_object* x_29; 
-lean_dec(x_6);
-x_29 = lean_alloc_ctor(1, 1, 0);
-lean_ctor_set(x_29, 0, x_20);
-x_10 = x_29;
-goto block_14;
-}
-}
-}
-}
-}
+if (lean_obj_tag(x_7) == 0)
+{
+lean_object* x_30; 
+lean_dec(x_28);
+x_30 = lean_alloc_ctor(1, 1, 0);
+lean_ctor_set(x_30, 0, x_27);
+x_15 = x_30;
+goto block_22;
 }
 else
 {
-lean_dec(x_7);
-return x_6;
-}
-block_14:
+lean_object* x_31; lean_object* x_32; uint8_t x_33; 
+x_31 = lean_ctor_get(x_7, 0);
+x_32 = lean_ctor_get(x_31, 2);
+x_33 = lean_nat_dec_lt(x_32, x_28);
+lean_dec(x_28);
+if (x_33 == 0)
 {
-lean_object* x_11; lean_object* x_12; 
-x_11 = lean_unsigned_to_nat(1u);
-x_12 = lean_nat_add(x_7, x_11);
+lean_dec_ref(x_27);
+x_15 = x_7;
+goto block_22;
+}
+else
+{
+uint8_t x_34; 
+x_34 = !lean_is_exclusive(x_7);
+if (x_34 == 0)
+{
+lean_object* x_35; 
+x_35 = lean_ctor_get(x_7, 0);
+lean_dec(x_35);
+lean_ctor_set(x_7, 0, x_27);
+x_15 = x_7;
+goto block_22;
+}
+else
+{
+lean_object* x_36; 
 lean_dec(x_7);
-x_4 = x_9;
-x_6 = x_10;
-x_7 = x_12;
+x_36 = lean_alloc_ctor(1, 1, 0);
+lean_ctor_set(x_36, 0, x_27);
+x_15 = x_36;
+goto block_22;
+}
+}
+}
+}
+}
+block_22:
+{
+lean_object* x_16; uint8_t x_17; 
+x_16 = lean_array_get_size(x_2);
+x_17 = lean_nat_dec_lt(x_14, x_16);
+if (x_17 == 0)
+{
+lean_dec(x_14);
+x_5 = x_10;
+x_6 = x_13;
+x_7 = x_15;
 goto _start;
+}
+else
+{
+lean_object* x_19; uint32_t x_20; 
+x_19 = lean_array_fget_borrowed(x_2, x_14);
+lean_dec(x_14);
+x_20 = lean_unbox_uint32(x_19);
+x_5 = x_20;
+x_6 = x_13;
+x_7 = x_15;
+goto _start;
+}
+}
+}
+else
+{
+lean_dec(x_6);
+return x_7;
 }
 }
 }
@@ -1866,14 +1500,15 @@ goto _start;
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec___boxed(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5, lean_object* x_6, lean_object* x_7) {
 _start:
 {
-lean_object* x_8; 
-x_8 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_1, x_2, x_3, x_4, x_5, x_6, x_7);
+uint32_t x_8; lean_object* x_9; 
+x_8 = lean_unbox_uint32(x_5);
 lean_dec(x_5);
+x_9 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_1, x_2, x_3, x_4, x_8, x_6, x_7);
 lean_dec(x_4);
-lean_dec(x_3);
+lean_dec_ref(x_3);
 lean_dec_ref(x_2);
 lean_dec_ref(x_1);
-return x_8;
+return x_9;
 }
 }
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4) {
@@ -1887,21 +1522,28 @@ x_8 = lean_nat_dec_lt(x_5, x_7);
 lean_dec(x_7);
 if (x_8 == 0)
 {
-lean_object* x_9; uint32_t x_10; lean_object* x_11; lean_object* x_12; lean_object* x_13; lean_object* x_14; 
-x_9 = lean_ctor_get(x_1, 2);
-x_10 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_2, x_3, x_6);
-x_11 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_SourceIndex_lookup(x_1, x_10);
-x_12 = lean_box(0);
-x_13 = lean_unsigned_to_nat(0u);
-x_14 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_9, x_2, x_3, x_11, x_4, x_12, x_13);
-lean_dec(x_11);
-return x_14;
+lean_object* x_9; lean_object* x_10; uint32_t x_11; lean_object* x_12; uint32_t x_13; uint32_t x_14; lean_object* x_15; lean_object* x_16; lean_object* x_17; lean_object* x_18; uint32_t x_19; lean_object* x_20; 
+x_9 = lean_ctor_get(x_1, 0);
+x_10 = lean_ctor_get(x_1, 1);
+x_11 = lean_ctor_get_uint32(x_1, sizeof(void*)*3);
+x_12 = lean_ctor_get(x_1, 2);
+x_13 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_2, x_3, x_6);
+x_14 = lean_uint32_land(x_13, x_11);
+x_15 = lean_uint32_to_nat(x_14);
+x_16 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_17 = lean_array_get_borrowed(x_16, x_9, x_15);
+lean_dec(x_15);
+x_18 = lean_box(0);
+x_19 = lean_unbox_uint32(x_17);
+x_20 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_12, x_10, x_2, x_3, x_19, x_4, x_18);
+return x_20;
 }
 else
 {
-lean_object* x_15; 
-x_15 = lean_box(0);
-return x_15;
+lean_object* x_21; 
+lean_dec(x_4);
+x_21 = lean_box(0);
+return x_21;
 }
 }
 }
@@ -1910,7 +1552,6 @@ _start:
 {
 lean_object* x_5; 
 x_5 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch(x_1, x_2, x_3, x_4);
-lean_dec(x_4);
 lean_dec(x_3);
 lean_dec_ref(x_2);
 lean_dec_ref(x_1);
@@ -2516,54 +2157,80 @@ x_6 = lean_unsigned_to_nat(64u);
 x_7 = lean_nat_dec_le(x_6, x_5);
 if (x_7 == 0)
 {
-lean_object* x_8; lean_object* x_9; lean_object* x_10; lean_object* x_11; lean_object* x_24; uint8_t x_36; 
+lean_object* x_8; lean_object* x_9; lean_object* x_10; lean_object* x_11; lean_object* x_38; uint8_t x_64; 
 x_8 = lean_unsigned_to_nat(1u);
 x_9 = lean_nat_add(x_3, x_8);
 x_10 = lean_byte_array_size(x_2);
-x_36 = lean_nat_dec_lt(x_9, x_10);
-if (x_36 == 0)
+x_64 = lean_nat_dec_lt(x_9, x_10);
+if (x_64 == 0)
 {
 lean_dec(x_9);
-x_24 = x_4;
-goto block_35;
+x_38 = x_4;
+goto block_63;
 }
 else
 {
-lean_object* x_37; lean_object* x_38; 
-x_37 = lean_unsigned_to_nat(8u);
-x_38 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch(x_1, x_2, x_9, x_37);
-lean_dec(x_9);
-if (lean_obj_tag(x_38) == 0)
+lean_object* x_65; lean_object* x_66; uint8_t x_67; 
+x_65 = lean_unsigned_to_nat(4u);
+x_66 = lean_nat_add(x_9, x_65);
+x_67 = lean_nat_dec_lt(x_10, x_66);
+lean_dec(x_66);
+if (x_67 == 0)
 {
-x_24 = x_4;
-goto block_35;
+lean_object* x_68; lean_object* x_69; uint32_t x_70; lean_object* x_71; lean_object* x_72; uint32_t x_73; uint32_t x_74; lean_object* x_75; lean_object* x_76; lean_object* x_77; lean_object* x_78; uint32_t x_79; lean_object* x_80; 
+x_68 = lean_ctor_get(x_1, 0);
+x_69 = lean_ctor_get(x_1, 1);
+x_70 = lean_ctor_get_uint32(x_1, sizeof(void*)*3);
+x_71 = lean_ctor_get(x_1, 2);
+x_72 = lean_unsigned_to_nat(8u);
+x_73 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_2, x_9, x_65);
+x_74 = lean_uint32_land(x_73, x_70);
+x_75 = lean_uint32_to_nat(x_74);
+x_76 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_77 = lean_array_get_borrowed(x_76, x_68, x_75);
+lean_dec(x_75);
+x_78 = lean_box(0);
+x_79 = lean_unbox_uint32(x_77);
+x_80 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_71, x_69, x_2, x_9, x_79, x_72, x_78);
+lean_dec(x_9);
+if (lean_obj_tag(x_80) == 0)
+{
+x_38 = x_4;
+goto block_63;
 }
 else
 {
-lean_object* x_39; lean_object* x_40; lean_object* x_41; lean_object* x_42; uint8_t x_43; 
-x_39 = lean_ctor_get(x_38, 0);
-lean_inc(x_39);
-lean_dec_ref(x_38);
-x_40 = lean_ctor_get(x_39, 2);
-x_41 = lean_unsigned_to_nat(2u);
-x_42 = lean_nat_add(x_5, x_41);
-x_43 = lean_nat_dec_lt(x_42, x_40);
-lean_dec(x_42);
-if (x_43 == 0)
+lean_object* x_81; lean_object* x_82; lean_object* x_83; lean_object* x_84; uint8_t x_85; 
+x_81 = lean_ctor_get(x_80, 0);
+lean_inc(x_81);
+lean_dec_ref(x_80);
+x_82 = lean_ctor_get(x_81, 2);
+x_83 = lean_unsigned_to_nat(2u);
+x_84 = lean_nat_add(x_5, x_83);
+x_85 = lean_nat_dec_lt(x_84, x_82);
+lean_dec(x_84);
+if (x_85 == 0)
 {
-lean_dec(x_39);
-x_24 = x_4;
-goto block_35;
+lean_dec(x_81);
+x_38 = x_4;
+goto block_63;
 }
 else
 {
 lean_dec_ref(x_4);
-x_24 = x_39;
-goto block_35;
+x_38 = x_81;
+goto block_63;
 }
 }
 }
-block_23:
+else
+{
+lean_dec(x_9);
+x_38 = x_4;
+goto block_63;
+}
+}
+block_37:
 {
 lean_object* x_12; lean_object* x_13; uint8_t x_14; 
 x_12 = lean_unsigned_to_nat(3u);
@@ -2576,85 +2243,136 @@ return x_11;
 }
 else
 {
-lean_object* x_15; lean_object* x_16; 
-x_15 = lean_unsigned_to_nat(8u);
-x_16 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch(x_1, x_2, x_13, x_15);
+lean_object* x_15; lean_object* x_16; uint8_t x_17; 
+x_15 = lean_unsigned_to_nat(4u);
+x_16 = lean_nat_add(x_13, x_15);
+x_17 = lean_nat_dec_lt(x_10, x_16);
+lean_dec(x_16);
+if (x_17 == 0)
+{
+lean_object* x_18; lean_object* x_19; uint32_t x_20; lean_object* x_21; lean_object* x_22; uint32_t x_23; uint32_t x_24; lean_object* x_25; lean_object* x_26; lean_object* x_27; lean_object* x_28; uint32_t x_29; lean_object* x_30; 
+x_18 = lean_ctor_get(x_1, 0);
+x_19 = lean_ctor_get(x_1, 1);
+x_20 = lean_ctor_get_uint32(x_1, sizeof(void*)*3);
+x_21 = lean_ctor_get(x_1, 2);
+x_22 = lean_unsigned_to_nat(8u);
+x_23 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_2, x_13, x_15);
+x_24 = lean_uint32_land(x_23, x_20);
+x_25 = lean_uint32_to_nat(x_24);
+x_26 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_27 = lean_array_get_borrowed(x_26, x_18, x_25);
+lean_dec(x_25);
+x_28 = lean_box(0);
+x_29 = lean_unbox_uint32(x_27);
+x_30 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_21, x_19, x_2, x_13, x_29, x_22, x_28);
 lean_dec(x_13);
-if (lean_obj_tag(x_16) == 0)
+if (lean_obj_tag(x_30) == 0)
 {
 return x_11;
 }
 else
 {
-lean_object* x_17; lean_object* x_18; lean_object* x_19; lean_object* x_20; lean_object* x_21; uint8_t x_22; 
-x_17 = lean_ctor_get(x_16, 0);
-lean_inc(x_17);
-lean_dec_ref(x_16);
-x_18 = lean_ctor_get(x_11, 2);
-x_19 = lean_ctor_get(x_17, 2);
-x_20 = lean_unsigned_to_nat(2u);
-x_21 = lean_nat_add(x_18, x_20);
-x_22 = lean_nat_dec_lt(x_21, x_19);
-lean_dec(x_21);
-if (x_22 == 0)
+lean_object* x_31; lean_object* x_32; lean_object* x_33; lean_object* x_34; lean_object* x_35; uint8_t x_36; 
+x_31 = lean_ctor_get(x_30, 0);
+lean_inc(x_31);
+lean_dec_ref(x_30);
+x_32 = lean_ctor_get(x_11, 2);
+x_33 = lean_ctor_get(x_31, 2);
+x_34 = lean_unsigned_to_nat(2u);
+x_35 = lean_nat_add(x_32, x_34);
+x_36 = lean_nat_dec_lt(x_35, x_33);
+lean_dec(x_35);
+if (x_36 == 0)
 {
-lean_dec(x_17);
+lean_dec(x_31);
 return x_11;
 }
 else
 {
 lean_dec_ref(x_11);
-return x_17;
+return x_31;
 }
 }
-}
-}
-block_35:
-{
-lean_object* x_25; lean_object* x_26; uint8_t x_27; 
-x_25 = lean_unsigned_to_nat(2u);
-x_26 = lean_nat_add(x_3, x_25);
-x_27 = lean_nat_dec_lt(x_26, x_10);
-if (x_27 == 0)
-{
-lean_dec(x_26);
-x_11 = x_24;
-goto block_23;
 }
 else
 {
-lean_object* x_28; lean_object* x_29; 
-x_28 = lean_unsigned_to_nat(8u);
-x_29 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch(x_1, x_2, x_26, x_28);
-lean_dec(x_26);
-if (lean_obj_tag(x_29) == 0)
+lean_dec(x_13);
+return x_11;
+}
+}
+}
+block_63:
 {
-x_11 = x_24;
-goto block_23;
+lean_object* x_39; lean_object* x_40; uint8_t x_41; 
+x_39 = lean_unsigned_to_nat(2u);
+x_40 = lean_nat_add(x_3, x_39);
+x_41 = lean_nat_dec_lt(x_40, x_10);
+if (x_41 == 0)
+{
+lean_dec(x_40);
+x_11 = x_38;
+goto block_37;
 }
 else
 {
-lean_object* x_30; lean_object* x_31; lean_object* x_32; lean_object* x_33; uint8_t x_34; 
-x_30 = lean_ctor_get(x_29, 0);
-lean_inc(x_30);
-lean_dec_ref(x_29);
-x_31 = lean_ctor_get(x_24, 2);
-x_32 = lean_ctor_get(x_30, 2);
-x_33 = lean_nat_add(x_31, x_25);
-x_34 = lean_nat_dec_lt(x_33, x_32);
-lean_dec(x_33);
-if (x_34 == 0)
+lean_object* x_42; lean_object* x_43; uint8_t x_44; 
+x_42 = lean_unsigned_to_nat(4u);
+x_43 = lean_nat_add(x_40, x_42);
+x_44 = lean_nat_dec_lt(x_10, x_43);
+lean_dec(x_43);
+if (x_44 == 0)
 {
-lean_dec(x_30);
-x_11 = x_24;
-goto block_23;
+lean_object* x_45; lean_object* x_46; uint32_t x_47; lean_object* x_48; lean_object* x_49; uint32_t x_50; uint32_t x_51; lean_object* x_52; lean_object* x_53; lean_object* x_54; lean_object* x_55; uint32_t x_56; lean_object* x_57; 
+x_45 = lean_ctor_get(x_1, 0);
+x_46 = lean_ctor_get(x_1, 1);
+x_47 = lean_ctor_get_uint32(x_1, sizeof(void*)*3);
+x_48 = lean_ctor_get(x_1, 2);
+x_49 = lean_unsigned_to_nat(8u);
+x_50 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_2, x_40, x_42);
+x_51 = lean_uint32_land(x_50, x_47);
+x_52 = lean_uint32_to_nat(x_51);
+x_53 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_54 = lean_array_get_borrowed(x_53, x_45, x_52);
+lean_dec(x_52);
+x_55 = lean_box(0);
+x_56 = lean_unbox_uint32(x_54);
+x_57 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_48, x_46, x_2, x_40, x_56, x_49, x_55);
+lean_dec(x_40);
+if (lean_obj_tag(x_57) == 0)
+{
+x_11 = x_38;
+goto block_37;
 }
 else
 {
-lean_dec_ref(x_24);
-x_11 = x_30;
-goto block_23;
+lean_object* x_58; lean_object* x_59; lean_object* x_60; lean_object* x_61; uint8_t x_62; 
+x_58 = lean_ctor_get(x_57, 0);
+lean_inc(x_58);
+lean_dec_ref(x_57);
+x_59 = lean_ctor_get(x_38, 2);
+x_60 = lean_ctor_get(x_58, 2);
+x_61 = lean_nat_add(x_59, x_39);
+x_62 = lean_nat_dec_lt(x_61, x_60);
+lean_dec(x_61);
+if (x_62 == 0)
+{
+lean_dec(x_58);
+x_11 = x_38;
+goto block_37;
 }
+else
+{
+lean_dec_ref(x_38);
+x_11 = x_58;
+goto block_37;
+}
+}
+}
+else
+{
+lean_dec(x_40);
+x_11 = x_38;
+goto block_37;
 }
 }
 }
@@ -2773,184 +2491,215 @@ return x_22;
 LEAN_EXPORT lean_object* lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_generateInstructionsLoop(lean_object* x_1, lean_object* x_2, lean_object* x_3, lean_object* x_4, lean_object* x_5) {
 _start:
 {
-lean_object* x_6; uint8_t x_7; 
-x_6 = lean_byte_array_size(x_2);
-x_7 = lean_nat_dec_lt(x_3, x_6);
-if (x_7 == 0)
+lean_object* x_6; uint8_t x_7; lean_object* x_21; uint8_t x_22; 
+x_21 = lean_byte_array_size(x_2);
+x_22 = lean_nat_dec_lt(x_3, x_21);
+if (x_22 == 0)
 {
-lean_object* x_8; lean_object* x_9; uint8_t x_10; 
+lean_object* x_23; lean_object* x_24; uint8_t x_25; 
 lean_dec(x_3);
-x_8 = lean_unsigned_to_nat(0u);
-x_9 = lean_byte_array_size(x_4);
-x_10 = lean_nat_dec_lt(x_8, x_9);
-if (x_10 == 0)
+x_23 = lean_unsigned_to_nat(0u);
+x_24 = lean_byte_array_size(x_4);
+x_25 = lean_nat_dec_lt(x_23, x_24);
+if (x_25 == 0)
 {
 lean_dec_ref(x_4);
 return x_5;
 }
 else
 {
-lean_object* x_11; 
-x_11 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_emitAddWithRuns(x_5, x_4);
+lean_object* x_26; 
+x_26 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_emitAddWithRuns(x_5, x_4);
 lean_dec_ref(x_4);
-return x_11;
+return x_26;
 }
 }
 else
 {
-lean_object* x_12; lean_object* x_13; 
-x_12 = lean_unsigned_to_nat(8u);
-x_13 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatch(x_1, x_2, x_3, x_12);
-if (lean_obj_tag(x_13) == 0)
-{
-lean_object* x_14; lean_object* x_15; uint8_t x_16; 
-x_14 = lean_unsigned_to_nat(1u);
-x_15 = lean_nat_add(x_3, x_14);
-if (x_7 == 0)
-{
-uint8_t x_20; lean_object* x_21; lean_object* x_22; uint8_t x_23; 
-lean_dec(x_3);
-x_20 = l_instInhabitedUInt8;
-x_21 = lean_box(x_20);
-x_22 = l_outOfBounds___redArg(x_21);
-x_23 = lean_unbox(x_22);
-lean_dec(x_22);
-x_16 = x_23;
-goto block_19;
-}
-else
-{
-uint8_t x_24; 
-x_24 = lean_byte_array_fget(x_2, x_3);
-lean_dec(x_3);
-x_16 = x_24;
-goto block_19;
-}
-block_19:
-{
-lean_object* x_17; 
-x_17 = lean_byte_array_push(x_4, x_16);
-x_3 = x_15;
-x_4 = x_17;
-goto _start;
-}
-}
-else
-{
-lean_object* x_25; lean_object* x_26; lean_object* x_27; lean_object* x_28; lean_object* x_29; lean_object* x_30; lean_object* x_31; lean_object* x_38; lean_object* x_44; uint8_t x_45; 
-x_25 = lean_ctor_get(x_13, 0);
-lean_inc(x_25);
-lean_dec_ref(x_13);
-x_26 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_lazyBestMatch(x_1, x_2, x_3, x_25);
-lean_inc(x_3);
-x_27 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_trimMatch(x_26, x_3);
-x_28 = lean_ctor_get(x_27, 0);
-lean_inc(x_28);
-x_29 = lean_ctor_get(x_27, 1);
-lean_inc(x_29);
-x_30 = lean_ctor_get(x_27, 2);
-lean_inc(x_30);
-lean_dec_ref(x_27);
-x_44 = lean_unsigned_to_nat(4u);
-x_45 = lean_nat_dec_lt(x_30, x_44);
-if (x_45 == 0)
-{
-uint8_t x_46; 
-x_46 = lean_nat_dec_lt(x_3, x_29);
-if (x_46 == 0)
-{
-lean_dec(x_3);
-x_38 = x_4;
-goto block_43;
-}
-else
-{
-lean_object* x_47; lean_object* x_48; lean_object* x_49; lean_object* x_50; lean_object* x_51; 
-x_47 = l_ByteArray_extract(x_2, x_3, x_29);
-x_48 = lean_unsigned_to_nat(0u);
-x_49 = lean_byte_array_size(x_4);
-x_50 = lean_byte_array_size(x_47);
-x_51 = lean_byte_array_copy_slice(x_47, x_48, x_4, x_49, x_50, x_45);
-lean_dec_ref(x_47);
-x_38 = x_51;
-goto block_43;
-}
-}
-else
-{
-lean_object* x_52; lean_object* x_53; uint8_t x_54; 
-lean_dec(x_30);
-lean_dec(x_29);
+lean_object* x_27; lean_object* x_28; uint8_t x_29; 
+x_27 = lean_unsigned_to_nat(4u);
+x_28 = lean_nat_add(x_3, x_27);
+x_29 = lean_nat_dec_lt(x_21, x_28);
 lean_dec(x_28);
-x_52 = lean_unsigned_to_nat(1u);
-x_53 = lean_nat_add(x_3, x_52);
-if (x_7 == 0)
+if (x_29 == 0)
 {
-uint8_t x_58; lean_object* x_59; lean_object* x_60; uint8_t x_61; 
-lean_dec(x_3);
-x_58 = l_instInhabitedUInt8;
-x_59 = lean_box(x_58);
-x_60 = l_outOfBounds___redArg(x_59);
-x_61 = lean_unbox(x_60);
-lean_dec(x_60);
-x_54 = x_61;
-goto block_57;
+lean_object* x_30; lean_object* x_31; uint32_t x_32; lean_object* x_33; lean_object* x_34; uint32_t x_35; uint32_t x_36; lean_object* x_37; lean_object* x_38; lean_object* x_39; lean_object* x_40; uint32_t x_41; lean_object* x_42; 
+x_30 = lean_ctor_get(x_1, 0);
+x_31 = lean_ctor_get(x_1, 1);
+x_32 = lean_ctor_get_uint32(x_1, sizeof(void*)*3);
+x_33 = lean_ctor_get(x_1, 2);
+x_34 = lean_unsigned_to_nat(8u);
+x_35 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashBytes(x_2, x_3, x_27);
+x_36 = lean_uint32_land(x_35, x_32);
+x_37 = lean_uint32_to_nat(x_36);
+x_38 = lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1;
+x_39 = lean_array_get_borrowed(x_38, x_30, x_37);
+lean_dec(x_37);
+x_40 = lean_box(0);
+x_41 = lean_unbox_uint32(x_39);
+x_42 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec(x_33, x_31, x_2, x_3, x_41, x_34, x_40);
+if (lean_obj_tag(x_42) == 0)
+{
+goto block_20;
 }
 else
 {
-uint8_t x_62; 
-x_62 = lean_byte_array_fget(x_2, x_3);
+lean_object* x_43; lean_object* x_44; lean_object* x_45; lean_object* x_46; lean_object* x_47; lean_object* x_48; lean_object* x_49; lean_object* x_56; uint8_t x_62; 
+x_43 = lean_ctor_get(x_42, 0);
+lean_inc(x_43);
+lean_dec_ref(x_42);
+x_44 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_lazyBestMatch(x_1, x_2, x_3, x_43);
+lean_inc(x_3);
+x_45 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_trimMatch(x_44, x_3);
+x_46 = lean_ctor_get(x_45, 0);
+lean_inc(x_46);
+x_47 = lean_ctor_get(x_45, 1);
+lean_inc(x_47);
+x_48 = lean_ctor_get(x_45, 2);
+lean_inc(x_48);
+lean_dec_ref(x_45);
+x_62 = lean_nat_dec_lt(x_48, x_27);
+if (x_62 == 0)
+{
+uint8_t x_63; 
+x_63 = lean_nat_dec_lt(x_3, x_47);
+if (x_63 == 0)
+{
 lean_dec(x_3);
-x_54 = x_62;
-goto block_57;
-}
-block_57:
-{
-lean_object* x_55; 
-x_55 = lean_byte_array_push(x_4, x_54);
-x_3 = x_53;
-x_4 = x_55;
-goto _start;
-}
-}
-block_37:
-{
-lean_object* x_32; lean_object* x_33; lean_object* x_34; lean_object* x_35; 
-lean_inc(x_30);
-x_32 = lean_alloc_ctor(1, 2, 0);
-lean_ctor_set(x_32, 0, x_28);
-lean_ctor_set(x_32, 1, x_30);
-x_33 = lean_array_push(x_31, x_32);
-x_34 = lean_nat_add(x_29, x_30);
-lean_dec(x_30);
-lean_dec(x_29);
-x_35 = l_ByteArray_empty;
-x_3 = x_34;
-x_4 = x_35;
-x_5 = x_33;
-goto _start;
-}
-block_43:
-{
-lean_object* x_39; lean_object* x_40; uint8_t x_41; 
-x_39 = lean_unsigned_to_nat(0u);
-x_40 = lean_byte_array_size(x_38);
-x_41 = lean_nat_dec_lt(x_39, x_40);
-if (x_41 == 0)
-{
-lean_dec_ref(x_38);
-x_31 = x_5;
-goto block_37;
+x_56 = x_4;
+goto block_61;
 }
 else
 {
-lean_object* x_42; 
-x_42 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_emitAddWithRuns(x_5, x_38);
-lean_dec_ref(x_38);
-x_31 = x_42;
-goto block_37;
+lean_object* x_64; lean_object* x_65; lean_object* x_66; lean_object* x_67; lean_object* x_68; 
+x_64 = l_ByteArray_extract(x_2, x_3, x_47);
+x_65 = lean_unsigned_to_nat(0u);
+x_66 = lean_byte_array_size(x_4);
+x_67 = lean_byte_array_size(x_64);
+x_68 = lean_byte_array_copy_slice(x_64, x_65, x_4, x_66, x_67, x_62);
+lean_dec_ref(x_64);
+x_56 = x_68;
+goto block_61;
 }
 }
+else
+{
+lean_object* x_69; lean_object* x_70; uint8_t x_71; 
+lean_dec(x_48);
+lean_dec(x_47);
+lean_dec(x_46);
+x_69 = lean_unsigned_to_nat(1u);
+x_70 = lean_nat_add(x_3, x_69);
+if (x_22 == 0)
+{
+uint8_t x_75; lean_object* x_76; lean_object* x_77; uint8_t x_78; 
+lean_dec(x_3);
+x_75 = l_instInhabitedUInt8;
+x_76 = lean_box(x_75);
+x_77 = l_outOfBounds___redArg(x_76);
+x_78 = lean_unbox(x_77);
+lean_dec(x_77);
+x_71 = x_78;
+goto block_74;
+}
+else
+{
+uint8_t x_79; 
+x_79 = lean_byte_array_fget(x_2, x_3);
+lean_dec(x_3);
+x_71 = x_79;
+goto block_74;
+}
+block_74:
+{
+lean_object* x_72; 
+x_72 = lean_byte_array_push(x_4, x_71);
+x_3 = x_70;
+x_4 = x_72;
+goto _start;
+}
+}
+block_55:
+{
+lean_object* x_50; lean_object* x_51; lean_object* x_52; lean_object* x_53; 
+lean_inc(x_48);
+x_50 = lean_alloc_ctor(1, 2, 0);
+lean_ctor_set(x_50, 0, x_46);
+lean_ctor_set(x_50, 1, x_48);
+x_51 = lean_array_push(x_49, x_50);
+x_52 = lean_nat_add(x_47, x_48);
+lean_dec(x_48);
+lean_dec(x_47);
+x_53 = l_ByteArray_empty;
+x_3 = x_52;
+x_4 = x_53;
+x_5 = x_51;
+goto _start;
+}
+block_61:
+{
+lean_object* x_57; lean_object* x_58; uint8_t x_59; 
+x_57 = lean_unsigned_to_nat(0u);
+x_58 = lean_byte_array_size(x_56);
+x_59 = lean_nat_dec_lt(x_57, x_58);
+if (x_59 == 0)
+{
+lean_dec_ref(x_56);
+x_49 = x_5;
+goto block_55;
+}
+else
+{
+lean_object* x_60; 
+x_60 = lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_emitAddWithRuns(x_5, x_56);
+lean_dec_ref(x_56);
+x_49 = x_60;
+goto block_55;
+}
+}
+}
+}
+else
+{
+goto block_20;
+}
+}
+block_10:
+{
+lean_object* x_8; 
+x_8 = lean_byte_array_push(x_4, x_7);
+x_3 = x_6;
+x_4 = x_8;
+goto _start;
+}
+block_20:
+{
+lean_object* x_11; lean_object* x_12; lean_object* x_13; uint8_t x_14; 
+x_11 = lean_unsigned_to_nat(1u);
+x_12 = lean_nat_add(x_3, x_11);
+x_13 = lean_byte_array_size(x_2);
+x_14 = lean_nat_dec_lt(x_3, x_13);
+if (x_14 == 0)
+{
+uint8_t x_15; lean_object* x_16; lean_object* x_17; uint8_t x_18; 
+lean_dec(x_3);
+x_15 = l_instInhabitedUInt8;
+x_16 = lean_box(x_15);
+x_17 = l_outOfBounds___redArg(x_16);
+x_18 = lean_unbox(x_17);
+lean_dec(x_17);
+x_6 = x_12;
+x_7 = x_18;
+goto block_10;
+}
+else
+{
+uint8_t x_19; 
+x_19 = lean_byte_array_fget(x_2, x_3);
+lean_dec(x_3);
+x_6 = x_12;
+x_7 = x_19;
+goto block_10;
 }
 }
 }
@@ -4691,6 +4440,11 @@ lean_mark_persistent(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_adler32___closed_
 lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashMultiplier = _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashMultiplier();
 lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashWindow = _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashWindow();
 lean_mark_persistent(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_hashWindow);
+lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_sourceIdxSentinel = _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_sourceIdxSentinel();
+lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1 = _init_lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1();
+lean_mark_persistent(lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg___boxed__const__1);
+lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed__const__1 = _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed__const__1();
+lean_mark_persistent(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_buildSourceIndex___boxed__const__1);
 lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instInhabitedRawInst_default = _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instInhabitedRawInst_default();
 lean_mark_persistent(lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instInhabitedRawInst_default);
 lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instInhabitedRawInst = _init_lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_instInhabitedRawInst();

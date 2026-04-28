@@ -170,3 +170,17 @@ Reordered priorities:
 | Date | Change | case01-encode median (direct) | Ratio vs xdelta3 in-proc |
 |---|---|---|---|
 | 2026-04-28 | baseline (bbb384b) | 5920 ms | 10.74x |
+| 2026-04-28 | Step 1.1 flat chain source index | 4165 ms | 7.55x |
+
+### Step 1.1 notes
+
+- Replaced `SourceIndex.buckets : Array (List Nat)` with `head + chain : Array UInt32`
+  (xdelta3-style `large_table` + `large_prev`). `findBestMatchRec` walks the chain
+  via fuel recursion instead of consuming a `List`.
+- All 29 tests pass, case01 and synthetic patches are byte-identical to baseline.
+- Profile (`planning/profile-step1.1-case01-encode.txt`) shows match-extension
+  cost now dominates at 36.6% (`extendForward` 16.0% + `extendBackward` 11.7% +
+  `extendMatch` 8.9%). `findBestMatchRec` dropped from 29.1% → 20.5%.
+- `mi_free` halved (6.3% → 3.9%), confirming the list-cons allocation pressure
+  is gone. `lean_dec_ref_cold` stayed elevated (10.7% → 12.4%) — likely
+  ByteArray RC in `extractForward`/`hashBytes`. Addressed by Step 1.6 next.

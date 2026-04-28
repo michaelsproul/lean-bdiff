@@ -1,0 +1,66 @@
+# perf report for bench-vcdiff (case01-encode)
+# generated 2026-04-28T11:05:35+10:00
+# toolchain: leanprover/lean4:v4.29.0-rc6
+# uname: Linux geralt 6.8.0-110-generic #110-Ubuntu SMP PREEMPT_DYNAMIC Thu Mar 19 15:09:20 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+
+## Top 30 (flat, self time)
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 126K of event 'cycles:P'
+# Event count (approx.): 143766668286
+#
+# Overhead       Samples  Symbol                                                                                                                                                       IPC   [IPC Coverage]
+# ........  ............  ...........................................................................................................................................................  ....................
+#
+    20.51%         25986  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findBestMatchRec                                                                                               -      -            
+    15.99%         20275  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendForward                                                                                                  -      -            
+    12.37%         15701  [.] lean_dec_ref_cold                                                                                                                                        -      -            
+    11.65%         14763  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendBackward                                                                                                 -      -            
+     8.94%         11322  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_extendMatch                                                                                                    -      -            
+     4.24%          5347  [.] lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_hashBytes_spec__0___redArg         -      -            
+     3.92%          4979  [.] mi_free                                                                                                                                                  -      -            
+     2.82%          3571  [.] mi_malloc_small                                                                                                                                          -      -            
+     1.56%          1978  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_generateInstructionsLoop                                                                                       -      -            
+     1.38%          1742  [.] lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_adler32_spec__0___redArg           -      -            
+     1.08%          1385  [.] lean_copy_expand_array                                                                                                                                   -      -            
+     1.03%          1304  [.] lean_inc_heartbeat                                                                                                                                       -      -            
+     1.02%          1303  [.] l_List_reverseAux___redArg                                                                                                                               -      -            
+     0.90%          1127  [.] lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Encoder_buildSourceIndex_spec__0___redArg  -      -            
+     0.78%           993  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_AddressCache_State_encodeAddress                                                                                       -      -            
+     0.71%           901  [.] lean_list_to_array                                                                                                                                       -      -            
+     0.69%           875  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_lazyBestMatch                                                                                                  -      -            
+     0.67%           858  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_encodeOneInst_x27                                                                                              -      -            
+     0.64%           815  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_setContinuationBits                                                                                             -      -            
+     0.62%           788  [.] lean_byte_array_copy_slice                                                                                                                               -      -            
+     0.60%           761  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_toBase128                                                                                                       -      -            
+     0.54%           683  [.] lean_byte_array_push                                                                                                                                     -      -            
+     0.52%           659  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_AddressCache_State_tryNearModes                                                                                        -      -            
+     0.48%           610  [.] _mi_malloc_generic(mi_heap_s*, unsigned long, bool, unsigned long)                                                                                       -      -            
+     0.42%           530  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_AddressCache_State_trySameModes                                                                                        -      -            
+     0.41%           522  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_countRun                                                                                                       -      -            
+     0.38%           487  [.] mi_find_page(mi_heap_s*, unsigned long, unsigned long)                                                                                                   -      -            
+     0.32%           403  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_encodeWindowLoop                                                                                               -      -            
+     0.31%           402  [.] l_List_lengthTR___redArg                                                                                                                                 -      -            
+     0.30%           388  [.] mi_free_size                                                                                                                                             -      -            
+     0.29%           370  [.] lean_byte_array_mk                                                                                                                                       -      -            
+     0.29%           367  [.] __memmove_avx_unaligned_erms                                                                                                                             -      -            
+     0.29%           367  [.] lean_array_push                                                                                                                                          -      -            
+     0.24%           308  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_emitAddWithRuns_emitAddWithRunsRec                                                                             -      -            
+     0.20%           247  [.] lp_lean_x2dbdiff___private_Init_Data_Range_Basic_0__Std_Legacy_Range_forIn_x27_loop___at___00LeanBdiff_Vcdiff_Decoder_adler32_spec__0___redArg           -      -            
+     0.17%           215  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Decoder_applyWindowLoop                                                                                                -      -            
+     0.17%           213  [.] mi_malloc                                                                                                                                                -      -            
+     0.15%           189  [k] 0xffffffffa93d3c07                                                                                                                                       -      -            
+     0.15%           191  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_findSingleOpcode                                                                                               -      -            
+     0.14%           173  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Varint_encode                                                                                                          -      -            
+     0.11%           144  [.] lp_lean_x2dbdiff_LeanBdiff_Vcdiff_Encoder_trimMatch                                                                                                      -      -            
+     0.09%           115  [.] l_List_appendTR___redArg                                                                                                                                 -      -            
+     0.06%            78  [.] lean_mk_array                                                                                                                                            -      -            
+     0.06%            71  [.] lean_byte_array_data                                                                                                                                     -      -            
+     0.06%            70  [.] lean_alloc_object                                                                                                                                        -      -            
+     0.04%            56  [k] 0xffffffffa970410b                                                                                                                                       -      -            
+     0.04%            51  [.] l_Array_isEqvAux___at___00ByteArray_instBEq_beq_spec__0___redArg                                                                                         -      -            
+     0.04%            47  [k] 0xffffffffa960128c                                                                                                                                       -      -            
+     0.03%            40  [k] 0xffffffffa9600ba0                                                                                                                                       -      -            

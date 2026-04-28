@@ -58,30 +58,46 @@ def hashPower (window : Nat) : UInt32 := Id.run do
 
 -- ## Source Index
 
-/-- A hash table mapping hash values to source positions.
-    Uses Array of lists for simplicity. -/
-structure SourceIndex where
-  buckets : Array (List Nat)
-  mask : Nat  -- bucketCount - 1 (power of 2)
-  sourceData : ByteArray
-  deriving Repr
+/-- Sentinel for empty chain slots. Source sizes are bounded by `2^31` so no
+    real position collides. -/
+def sourceIdxSentinel : UInt32 := 0xFFFFFFFF
 
-/-- Build a source index. Hashes every position in the source with a window of `hashWindow`. -/
+/-- A hash table mapping hash values to source positions, using a flat
+    chain representation (xdelta3-style `large_table` + `large_prev`).
+
+    * `head[bucket]` is the most-recent source position hashing to `bucket`,
+      or `sourceIdxSentinel`.
+    * `chain[pos]` is the previous position sharing a bucket with `pos`,
+      or `sourceIdxSentinel`.
+
+    Insertion is O(1) with two unboxed `UInt32` writes; no `List`/box traffic. -/
+structure SourceIndex where
+  head : Array UInt32        -- size = bucketCount
+  chain : Array UInt32       -- size = sourceData.size
+  mask : UInt32              -- bucketCount - 1 (power of 2)
+  sourceData : ByteArray
+
+/-- Build a source index. Hashes every position in the source with a window
+    of `hashWindow`. Positions are stored most-recent-first in each chain
+    (same order the old `List Nat` produced). -/
 def buildSourceIndex (source : ByteArray) (bucketBits : Nat := 16) : SourceIndex := Id.run do
   let bucketCount := 1 <<< bucketBits
-  let mask := bucketCount - 1
-  let mut buckets := Array.replicate bucketCount ([] : List Nat)
+  let mask : UInt32 := (bucketCount - 1).toUInt32
+  let mut head : Array UInt32 := Array.replicate bucketCount sourceIdxSentinel
+  let mut chain : Array UInt32 := Array.replicate source.size sourceIdxSentinel
   if source.size >= hashWindow then
     for pos in [:source.size - hashWindow + 1] do
       let h := hashBytes source pos hashWindow
-      let idx := h.toNat &&& mask
-      buckets := buckets.set! idx (pos :: buckets[idx]!)
-  { buckets, mask, sourceData := source }
+      let bucket := (h &&& mask).toNat
+      chain := chain.set! pos head[bucket]!
+      head := head.set! bucket pos.toUInt32
+  { head, chain, mask, sourceData := source }
 
-/-- Look up candidate source positions for a hash value. -/
-def SourceIndex.lookup (idx : SourceIndex) (h : UInt32) : List Nat :=
-  let bucket := h.toNat &&& idx.mask
-  idx.buckets[bucket]!
+/-- Look up the start of the candidate chain for a hash value.
+    Returns `sourceIdxSentinel` if the bucket is empty. -/
+@[inline] def SourceIndex.lookup (idx : SourceIndex) (h : UInt32) : UInt32 :=
+  let bucket := (h &&& idx.mask).toNat
+  idx.head[bucket]!
 
 -- ## Match Finding
 
@@ -117,34 +133,43 @@ def extendMatch (source : ByteArray) (sourcePos : Nat)
   let back := extendBackward source sourcePos target targetPos 0
   { sourcePos := sourcePos - back, targetPos := targetPos - back, length := len + back }
 
-/-- Recursive helper: scan candidate list for best match. -/
-def findBestMatchRec (source : ByteArray) (target : ByteArray) (targetPos : Nat)
-    (candidates : List Nat) (maxChain : Nat) (best : Option Match) (checked : Nat)
+/-- Walk a chain of candidate source positions, keeping the best match.
+
+    `cand` is the current chain head (or `sourceIdxSentinel` for end-of-chain).
+    `fuel` bounds the chain walk depth. The `maxChain` argument to `findBestMatch`
+    becomes the initial fuel. -/
+def findBestMatchRec (source : ByteArray) (chain : Array UInt32)
+    (target : ByteArray) (targetPos : Nat)
+    (cand : UInt32) (fuel : Nat) (best : Option Match)
     : Option Match :=
-  match candidates with
-  | [] => best
-  | cand :: rest =>
-    if checked >= maxChain then best
+  match fuel with
+  | 0 => best
+  | fuel' + 1 =>
+    if cand == sourceIdxSentinel then best
     else
+      let candN := cand.toNat
       let best' :=
-        if cand + hashWindow <= source.size then
-          let m := extendMatch source cand target targetPos
-          if m.length >= hashWindow then
+        if candN + hashWindow ≤ source.size then
+          let m := extendMatch source candN target targetPos
+          if m.length ≥ hashWindow then
             match best with
             | none => some m
             | some prev => if m.length > prev.length then some m else best
           else best
         else best
-      findBestMatchRec source target targetPos rest maxChain best' (checked + 1)
+      -- Follow the chain. `chain[candN]` is the next older position; bounded
+      -- walk via fuel guarantees termination regardless of index validity.
+      let next := if h : candN < chain.size then chain[candN] else sourceIdxSentinel
+      findBestMatchRec source chain target targetPos next fuel' best'
 
 /-- Find the best match at a given target position. Returns none if no match >= MIN_MATCH. -/
-def findBestMatch (idx : SourceIndex) (target : ByteArray) (targetPos : Nat)
+@[inline] def findBestMatch (idx : SourceIndex) (target : ByteArray) (targetPos : Nat)
     (maxChain : Nat := 8) : Option Match :=
   if targetPos + hashWindow > target.size then none
   else
     let h := hashBytes target targetPos hashWindow
-    let candidates := idx.lookup h
-    findBestMatchRec idx.sourceData target targetPos candidates maxChain none 0
+    let cand := idx.lookup h
+    findBestMatchRec idx.sourceData idx.chain target targetPos cand maxChain none
 
 -- ## Instruction Generation
 
