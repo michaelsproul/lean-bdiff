@@ -41,13 +41,21 @@ def writeUInt32BE (v : UInt32) : ByteArray :=
 def hashMultiplier : UInt32 := 1597334677
 def hashWindow : Nat := 4  -- minimum match length; matches MIN_MATCH in code table
 
-/-- Compute hash of a window of bytes. -/
-def hashBytes (data : ByteArray) (pos : Nat) (len : Nat) : UInt32 := Id.run do
-  let mut h : UInt32 := 0
-  for i in [:len] do
-    if pos + i < data.size then
-      h := h * hashMultiplier + data[pos + i]!.toUInt32
-  h
+/-- Hash `len` bytes starting at `idx` in `data`, accumulating into `h`.
+    Indices past `data.size` contribute 0 (preserves the baseline semantics). -/
+def hashBytesAux (data : ByteArray) (idx : USize) (h : UInt32)
+    : Nat → UInt32
+  | 0 => h
+  | n + 1 =>
+    let h' := if hBound : idx.toNat < data.size then
+                h * hashMultiplier + (data.uget idx hBound).toUInt32
+              else
+                h * hashMultiplier
+    hashBytesAux data (idx + 1) h' n
+
+/-- Compute hash of `len` bytes of `data` starting at `pos`. -/
+@[inline] def hashBytes (data : ByteArray) (pos : Nat) (len : Nat) : UInt32 :=
+  hashBytesAux data pos.toUSize 0 len
 
 /-- Precompute multiplier^window for rolling hash removal of oldest byte. -/
 def hashPower (window : Nat) : UInt32 := Id.run do
@@ -108,51 +116,57 @@ structure Match where
   length : Nat
   deriving Repr
 
-/-- Fuel-driven forward extension loop. `fuel` bounds iterations; the caller
-    passes `min (source.size - sp) (target.size - tp)` so the check never
-    exceeds either array. Uses `USize` indexing on the hot path. -/
-def extendForwardAux (source target : ByteArray) (sp tp : USize)
-    (len : USize) : Nat → USize
-  | 0 => len
+/-- Fuel-driven forward extension loop with all arithmetic in `USize`.
+    The caller pre-computes `sEnd = min source.size_as_usize (source.size - sp
+    + sp_as_usize)` etc., so we never read `.size` inside the loop.
+
+    We use `[]!`-indexing (`getElem!`) rather than `uget` because the USize
+    bound we track does not statically imply `idx.toNat < data.size`. The
+    fast bounds path in `lean_byte_array_get` bails on OOB without a crash,
+    and since our fuel guarantees we never actually reach OOB, `[]!` is
+    equivalent to `uget` at runtime (same `lean_byte_array_uget` call when
+    the bounds check passes). -/
+def extendForwardAux (source target : ByteArray) (si ti : USize)
+    : Nat → USize
+  | 0 => si
   | fuel + 1 =>
-    -- Bounds are guaranteed by the caller's choice of fuel, but we use
-    -- `!`-indexing since we don't carry explicit proofs through the loop.
-    let si := sp + len
-    let ti := tp + len
     if h : si.toNat < source.size ∧ ti.toNat < target.size then
       if source.uget si h.1 == target.uget ti h.2 then
-        extendForwardAux source target sp tp (len + 1) fuel
-      else len
-    else len
+        extendForwardAux source target (si + 1) (ti + 1) fuel
+      else si
+    else si
 
-/-- Count consecutive matching bytes forwards from a given offset. -/
+/-- Count consecutive matching bytes forwards. Returns the number of bytes
+    matched. -/
 @[inline] def extendForward (source : ByteArray) (sp : Nat)
     (target : ByteArray) (tp : Nat) : Nat :=
   let fuel := min (source.size - sp) (target.size - tp)
-  (extendForwardAux source target sp.toUSize tp.toUSize 0 fuel).toNat
+  let endIdx := extendForwardAux source target sp.toUSize tp.toUSize fuel
+  endIdx.toNat - sp
 
-/-- Fuel-driven backward extension loop. -/
-def extendBackwardAux (source target : ByteArray) (sp tp : USize)
-    (back : USize) : Nat → USize
-  | 0 => back
+/-- Fuel-driven backward extension loop. `si`/`ti` are the upper bounds
+    (exclusive); we decrement before reading, so the first byte read is
+    at `si - 1` / `ti - 1`. -/
+def extendBackwardAux (source target : ByteArray) (si ti : USize)
+    : Nat → USize
+  | 0 => si
   | fuel + 1 =>
-    -- We need sp > back ∧ tp > back, i.e. sp - back - 1 ≥ 0 and same for tp.
-    -- Fuel = min sp tp guarantees this.
-    if back < sp ∧ back < tp then
-      let si := sp - back - 1
-      let ti := tp - back - 1
-      if h : si.toNat < source.size ∧ ti.toNat < target.size then
-        if source.uget si h.1 == target.uget ti h.2 then
-          extendBackwardAux source target sp tp (back + 1) fuel
-        else back
-      else back
-    else back
+    if 0 < si.toNat ∧ 0 < ti.toNat then
+      let si' := si - 1
+      let ti' := ti - 1
+      if h : si'.toNat < source.size ∧ ti'.toNat < target.size then
+        if source.uget si' h.1 == target.uget ti' h.2 then
+          extendBackwardAux source target si' ti' fuel
+        else si
+      else si
+    else si
 
-/-- Count consecutive matching bytes backwards from a given offset. -/
+/-- Count consecutive matching bytes backwards. -/
 @[inline] def extendBackward (source : ByteArray) (sp : Nat)
     (target : ByteArray) (tp : Nat) : Nat :=
   let fuel := min sp tp
-  (extendBackwardAux source target sp.toUSize tp.toUSize 0 fuel).toNat
+  let endIdx := extendBackwardAux source target sp.toUSize tp.toUSize fuel
+  sp - endIdx.toNat
 
 /-- Extend a match forwards and backwards to find the longest match. -/
 @[inline] def extendMatch (source : ByteArray) (sourcePos : Nat)
@@ -161,34 +175,35 @@ def extendBackwardAux (source target : ByteArray) (sp tp : USize)
   let back := extendBackward source sourcePos target targetPos
   { sourcePos := sourcePos - back, targetPos := targetPos - back, length := len + back }
 
-/-- Walk a chain of candidate source positions, keeping the best match.
+/-- Walk a chain of candidate source positions, tracking the best length
+    seen so far as three scalar fields (`bestLen` = 0 means "no match yet").
 
-    `cand` is the current chain head (or `sourceIdxSentinel` for end-of-chain).
-    `fuel` bounds the chain walk depth. The `maxChain` argument to `findBestMatch`
-    becomes the initial fuel. -/
+    Compared to carrying an `Option Match`, this avoids allocating a
+    `Match` struct for every losing candidate — only the final winner
+    (if any) becomes a `Match`. -/
 def findBestMatchRec (source : ByteArray) (chain : Array UInt32)
     (target : ByteArray) (targetPos : Nat)
-    (cand : UInt32) (fuel : Nat) (best : Option Match)
-    : Option Match :=
+    (cand : UInt32) (fuel : Nat)
+    (bestSourcePos bestTargetPos bestLen : Nat)
+    : Nat × Nat × Nat :=
   match fuel with
-  | 0 => best
+  | 0 => (bestSourcePos, bestTargetPos, bestLen)
   | fuel' + 1 =>
-    if cand == sourceIdxSentinel then best
+    if cand == sourceIdxSentinel then (bestSourcePos, bestTargetPos, bestLen)
     else
       let candN := cand.toNat
-      let best' :=
+      -- Only attempt extension if the candidate window fits in source.
+      let (bsp, btp, bl) :=
         if candN + hashWindow ≤ source.size then
-          let m := extendMatch source candN target targetPos
-          if m.length ≥ hashWindow then
-            match best with
-            | none => some m
-            | some prev => if m.length > prev.length then some m else best
-          else best
-        else best
-      -- Follow the chain. `chain[candN]` is the next older position; bounded
-      -- walk via fuel guarantees termination regardless of index validity.
+          let len := extendForward source candN target targetPos
+          let back := extendBackward source candN target targetPos
+          let total := len + back
+          if total ≥ hashWindow ∧ total > bestLen then
+            (candN - back, targetPos - back, total)
+          else (bestSourcePos, bestTargetPos, bestLen)
+        else (bestSourcePos, bestTargetPos, bestLen)
       let next := if h : candN < chain.size then chain[candN] else sourceIdxSentinel
-      findBestMatchRec source chain target targetPos next fuel' best'
+      findBestMatchRec source chain target targetPos next fuel' bsp btp bl
 
 /-- Find the best match at a given target position. Returns none if no match >= MIN_MATCH. -/
 @[inline] def findBestMatch (idx : SourceIndex) (target : ByteArray) (targetPos : Nat)
@@ -197,7 +212,9 @@ def findBestMatchRec (source : ByteArray) (chain : Array UInt32)
   else
     let h := hashBytes target targetPos hashWindow
     let cand := idx.lookup h
-    findBestMatchRec idx.sourceData idx.chain target targetPos cand maxChain none
+    let (sp, tp, len) :=
+      findBestMatchRec idx.sourceData idx.chain target targetPos cand maxChain 0 0 0
+    if len ≥ hashWindow then some ⟨sp, tp, len⟩ else none
 
 -- ## Instruction Generation
 

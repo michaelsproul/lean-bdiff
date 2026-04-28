@@ -172,6 +172,7 @@ Reordered priorities:
 | 2026-04-28 | baseline (bbb384b) | 5920 ms | 10.74x |
 | 2026-04-28 | Step 1.1 flat chain source index | 4165 ms | 7.55x |
 | 2026-04-28 | Step 1.6 USize extend loops | 3253 ms | 5.90x |
+| 2026-04-28 | Step 1.6 ext: hashBytes + no-alloc findBestMatchRec | 3042 ms | 5.52x |
 
 ### Step 1.6 notes (partial: extend loops only)
 
