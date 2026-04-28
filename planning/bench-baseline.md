@@ -199,21 +199,50 @@ Reordered priorities:
 
 ### Stage 1 exit readiness
 
-Match-finding inner loops are near bandwidth-limited scalar speed (~10
-inst/byte × 1.2 GB worth of compares ≈ 1 s, observed 1.8 s) — the only
-way to do meaningfully better is SIMD byte-compare, which isn't available
-from pure Lean without FFI. Remaining candidates:
+The remaining gap is dominated by byte-compare inner loops in
+`extendForwardAux` / `extendBackwardAux`. Investigation revealed:
 
-- Step 1.8 Adler32 batching (batch `% 65521` every 5552 bytes) —
-  affects decode (where Adler32 dominates after checksummed decode)
-- Step 1.7 direct-write varint — ~1% of encode
-- Step 1.5 copyBytes overlap loop — decode-only
+1. **xdelta3 does NOT use SIMD** (despite my earlier claim). Its
+   `xd3_forward_match` reads 4 bytes at a time as `int` via
+   `*(int*)s1c == *(int*)s2c`, gated on `UNALIGNED_OK` (set on x86_64).
+   gcc at `-O3` compiles this to scalar `MOV %eax, (%rsi)` + `CMP`
+   without auto-vectorising to SSE — but the 4x-per-iter throughput
+   is the key speedup.
 
-Stage 1 goal was ≤ 2.0x; we're at 5.41x. The gap is mostly fundamental
-(SIMD matching) and not addressable without breaking the "pure Lean"
-constraint. Recommend treating 5.41x as the effective Stage 1 exit and
-proceeding to Stage 2 (simplify for verifiability) before Stage 3
-(restore proofs).
+2. **Attempting the same 4-byte-at-a-time strategy in Lean regressed
+   perf** (2981 → 4200 ms, +40%). Root cause: Lean's `getElem!` on
+   `ByteArray USize` emits an `outOfBounds → box → unbox` dance in
+   generated C even when the OOB branch is unreachable. The direct
+   `uget` requires a static proof of `idx.toNat < data.size`, which
+   for pointer arithmetic like `si + 3` under USize overflow semantics
+   needs a multi-step proof (via `USize.toNat_add` mod, plus the
+   `source.size < 2^31` invariant) that hasn't been packaged as a
+   reusable Lean lemma yet.
+
+3. Getting 4x-per-iter would require either:
+   - Writing/importing a lemma `si.toNat + k < 2^63 → (si + k).toNat =
+     si.toNat + k` (standard and likely in mathlib but not trivially
+     found) so that `uget (si + k) _` has a clean proof
+   - Exposing a `ByteArray.getUInt32LE!` primitive via `@[extern]`
+     (single C function reading 4 bytes with one bounds check) —
+     this is still pure Lean at the user-code level but adds a
+     small external C helper, arguably within the "no unverified C"
+     rule since the helper is trivial
+   - Accepting the `getElem!` overhead and hoping gcc coalesces 4
+     bounds checks into one (current evidence: it does not)
+
+For now, **Stage 1 exits at 5.41x** (50% speedup from baseline). The
+remaining Stage 1 candidates (1.5 copyBytes, 1.7 varint write, 1.8
+Adler32 batching) are small wins that don't change the fundamental
+ratio. Recommended path:
+
+- **Stage 2** (simplify for verifiability) — consolidate helper lemmas,
+  package the `USize + k` bound as reusable infrastructure that both
+  proofs and a potential word-compare fast path can share.
+- **Stage 3** (restore proofs) — the canonical goal of the whole
+  effort.
+- **Re-visit word-compare** later, once the `USize + k` infrastructure
+  exists.
 
 ### Step 1.6 notes (partial: extend loops only)
 
