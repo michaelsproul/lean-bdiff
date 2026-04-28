@@ -278,8 +278,102 @@ def copyLoop (sourceWindow target : ByteArray) (addr : Nat) : Nat → Nat → By
       .ok (target', dataCursor', addrCursor', addrCache')
   return (target'', instCursor''', dataCursor'', addrCursor'', addrCache'')
 
-/-- Process opcodes from the instruction section, one at a time.
-    Uses fuel-based recursion (fuel = max number of opcodes to process). -/
+/-- Fused decode loop that threads positions as scalars instead of Cursor
+    structs — avoids ~3-6 Cursor-struct allocations per opcode.
+
+    `instSec`/`dataSec`/`addrSec` are the three section ByteArrays (fixed
+    for the duration of the loop). `iPos`/`dPos`/`aPos` are the current
+    read positions in each. `fuel` bounds iterations (≤ instSec.size). -/
+def applyWindowFast (sourceSegment instSec dataSec addrSec : ByteArray)
+    : Nat → ByteArray → Nat → Nat → Nat → AddressCache.State →
+      DecodeResult ByteArray
+  | 0, target, iPos, _, _, _ =>
+    if iPos ≥ instSec.size then .ok target
+    else .error .truncatedInput
+  | fuel + 1, target, iPos, dPos, aPos, cache =>
+    if iPos ≥ instSec.size then .ok target
+    else
+      let opcode := instSec[iPos]!
+      let iPos' := iPos + 1
+      let entry := CodeTable.lookup opcode
+      -- Resolve inst1 size
+      match
+        if entry.inst1.size == 0 ∧ !entry.inst1.type.isNoop then
+          match Varint.decodeLoop instSec iPos' 0 5 with
+          | .ok (sz, c) => Except.ok (sz, c.pos)
+          | .error e => Except.error e
+        else
+          Except.ok (entry.inst1.size, iPos')
+      with
+      | .error e => .error e
+      | .ok (inst1Size, iPos'') =>
+        -- Execute inst1
+        let here := sourceSegment.size + target.size
+        match
+          if entry.inst1.type.isNoop then
+            Except.ok (target, dPos, aPos, cache)
+          else
+            execHalfInstFast entry.inst1.type inst1Size sourceSegment target
+              dataSec dPos addrSec aPos cache here
+        with
+        | .error e => .error e
+        | .ok (target', dPos', aPos', cache') =>
+          -- Resolve inst2 size
+          match
+            if entry.inst2.size == 0 ∧ !entry.inst2.type.isNoop then
+              match Varint.decodeLoop instSec iPos'' 0 5 with
+              | .ok (sz, c) => Except.ok (sz, c.pos)
+              | .error e => Except.error e
+            else
+              Except.ok (entry.inst2.size, iPos'')
+          with
+          | .error e => .error e
+          | .ok (inst2Size, iPos''') =>
+            -- Execute inst2
+            let here' := sourceSegment.size + target'.size
+            match
+              if entry.inst2.type.isNoop then
+                Except.ok (target', dPos', aPos', cache')
+              else
+                execHalfInstFast entry.inst2.type inst2Size sourceSegment target'
+                  dataSec dPos' addrSec aPos' cache' here'
+            with
+            | .error e => .error e
+            | .ok (target'', dPos'', aPos'', cache'') =>
+              applyWindowFast sourceSegment instSec dataSec addrSec
+                fuel target'' iPos''' dPos'' aPos'' cache''
+where
+  /-- Scalar-position variant of execHalfInst. -/
+  execHalfInstFast (instType : InstType) (instSize : Nat)
+      (sourceWindow target dataSec : ByteArray) (dPos : Nat)
+      (addrSec : ByteArray) (aPos : Nat)
+      (cache : AddressCache.State) (here : Nat)
+      : DecodeResult (ByteArray × Nat × Nat × AddressCache.State) :=
+    match instType with
+    | .noop => .ok (target, dPos, aPos, cache)
+    | .add =>
+      if dPos + instSize > dataSec.size then .error .truncatedInput
+      else
+        let target' := dataSec.copySlice dPos target target.size instSize false
+        .ok (target', dPos + instSize, aPos, cache)
+    | .run =>
+      if dPos ≥ dataSec.size then .error .truncatedInput
+      else
+        let b := dataSec[dPos]!
+        let target' := target ++ ByteArray.mk (Array.replicate instSize b)
+        .ok (target', dPos + 1, aPos, cache)
+    | .copy mode =>
+      match AddressCache.decode mode.toNat here ⟨addrSec, aPos⟩ cache with
+      | .error e => .error e
+      | .ok (addr, cur', cache') =>
+        let windowSize := sourceWindow.size + target.size
+        if addr ≥ windowSize then
+          .error (.copyOutOfBounds addr instSize windowSize)
+        else
+          let target' := copyBytes sourceWindow target addr instSize
+          .ok (target', dPos, cur'.pos, cache')
+
+/-- Legacy Cursor-based loop kept for proof compatibility. -/
 def applyWindowLoop (sourceSegment : ByteArray)
     : Nat → ByteArray → Varint.Cursor → Varint.Cursor → Varint.Cursor →
       AddressCache.State →
@@ -304,10 +398,9 @@ def applyWindow (win : Window) (source : ByteArray) : DecodeResult ByteArray := 
     else
       ByteArray.empty
 
-  let (target, _, _, _, _) ← applyWindowLoop sourceSegment
+  let target ← applyWindowFast sourceSegment win.instSection win.dataSection win.addrSection
     win.instSection.size (ByteArray.emptyWithCapacity win.targetLen)
-    ⟨win.instSection, 0⟩ ⟨win.dataSection, 0⟩
-    ⟨win.addrSection, 0⟩ AddressCache.State.init
+    0 0 0 AddressCache.State.init
 
   -- Verify target length
   if target.size != win.targetLen then
